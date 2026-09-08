@@ -1,0 +1,90 @@
+import type { Bus, Coordinate } from "../types/bus";
+
+// Illustrative positions and stops only; these are not district route assignments.
+export const demoRoute: readonly Coordinate[] = [
+  [-86.1457, 39.9561],
+  [-86.1457, 39.957],
+  [-86.1457, 39.9579],
+  [-86.1457, 39.9588],
+  [-86.1457, 39.9597],
+  [-86.1457, 39.9606],
+  [-86.1457, 39.9615],
+  [-86.1457, 39.9624],
+  [-86.1457, 39.9633],
+];
+
+export function createMockBuses(now = new Date()): Bus[] {
+  const rows: Omit<Bus, "lastUpdated">[] = [
+    {
+      id: "12",
+      busNumber: "12",
+      route: "A",
+      latitude: 39.9791,
+      longitude: -86.1594,
+      status: "on-time",
+      etaMinutes: 9,
+      nextStop: "Carmel Elementary",
+      currentLocation: "Near Main St & Guilford Rd",
+    },
+    {
+      id: "28",
+      busNumber: "28",
+      route: "B",
+      latitude: 39.9563,
+      longitude: -86.1222,
+      status: "late",
+      delayMinutes: 3,
+      etaMinutes: 12,
+      nextStop: "Woodbrook Elementary",
+      currentLocation: "Near 116th St & Keystone Pkwy",
+    },
+    {
+      id: "71",
+      busNumber: "71",
+      route: "D",
+      latitude: 39.9932,
+      longitude: -86.1361,
+      status: "on-time",
+      etaMinutes: 7,
+      nextStop: "Carmel High School",
+      currentLocation: "Near Smokey Row Rd & Rangeline Rd",
+    },
+    {
+      id: "142",
+      busNumber: "142",
+      route: "F",
+      latitude: 39.9634,
+      longitude: -86.183,
+      status: "on-time",
+      etaMinutes: 4,
+      nextStop: "Orchard Park Elementary",
+      currentLocation: "Near 116th St & Spring Mill Rd",
+    },
+    {
+      id: "218",
+      busNumber: "218",
+      route: "C",
+      latitude: demoRoute[0][1],
+      longitude: demoRoute[0][0],
+      speed: 22,
+      heading: 0,
+      status: "on-time",
+      etaMinutes: 6,
+      nextStop: "Clay Center Elementary",
+      currentLocation: "Near 116th St & College Ave",
+    },
+    {
+      id: "224",
+      busNumber: "224",
+      route: "H",
+      latitude: 39.9789,
+      longitude: -86.2046,
+      status: "late",
+      delayMinutes: 5,
+      etaMinutes: 15,
+      nextStop: "Towne Meadow Elementary",
+      currentLocation: "Near 131st St & Towne Rd",
+    },
+  ];
+  return rows.map((bus) => ({ ...bus, lastUpdated: new Date(now) }));
+}
