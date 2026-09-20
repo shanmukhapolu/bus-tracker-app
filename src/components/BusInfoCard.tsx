@@ -19,12 +19,17 @@ export function BusInfoCard({
   hideButtonRef?: Ref<HTMLButtonElement>;
 }) {
   const [now, setNow] = useState(Date.now());
+
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
+
   const stale = now - bus.lastUpdated.getTime() > 30_000;
-  const unavailable = stale || bus.status === "offline";
+  const unavailable =
+    stale ||
+    bus.status === "offline" ||
+    (!demo && bus.trackingActive !== true);
 
   return (
     <section className="info-card" aria-label={`Bus ${bus.busNumber} details`}>
@@ -39,6 +44,7 @@ export function BusInfoCard({
           Hide <ChevronDown size={17} aria-hidden="true" />
         </button>
       </div>
+
       <div className="card-heading">
         <BusIcon />
         <div>
@@ -47,20 +53,23 @@ export function BusInfoCard({
         </div>
         <span className={`status-pill ${unavailable ? "offline" : bus.status}`}>
           <i />
-          {stale ? "Update delayed" : statusLabel(bus)}
+          {stale && !demo ? "Update delayed" : statusLabel(bus)}
         </span>
       </div>
+
       <div className="arrival-section">
         <div>
           <span className="eyebrow">
-            {demo ? "SIMULATED ARRIVAL" : "ESTIMATED ARRIVAL"}
+            {demo ? "SIMULATED ARRIVAL" : "LIVE ETA"}
           </span>
           <div className="eta">
             {unavailable || bus.etaMinutes === undefined ? "—" : bus.etaMinutes}
             <span>
               {!unavailable && bus.etaMinutes !== undefined
                 ? "min"
-                : "Unavailable"}
+                : demo
+                  ? "Unavailable"
+                  : "Route data needed"}
             </span>
           </div>
         </div>
@@ -69,18 +78,26 @@ export function BusInfoCard({
             <Route size={16} />
             Next stop
           </span>
-          <strong>{bus.nextStop ?? "Not available"}</strong>
+          <strong>
+            {demo ? bus.nextStop ?? "Not available" : "No live route feed"}
+          </strong>
         </div>
       </div>
+
       <div className="location-line">
         <span className="location-icon">
           <MapPin size={20} />
         </span>
         <div>
           <span>Current location</span>
-          <strong>{bus.currentLocation ?? "Location not available"}</strong>
+          <strong>
+            {!demo && bus.trackingActive
+              ? `Live GPS${bus.locationAccuracyMeters !== undefined ? ` · ±${Math.round(bus.locationAccuracyMeters)} m` : ""}`
+              : bus.currentLocation ?? "Location not available"}
+          </strong>
         </div>
       </div>
+
       <div className="card-footer">
         <span title={bus.lastUpdated.toLocaleString()}>
           <Clock3 size={14} />
