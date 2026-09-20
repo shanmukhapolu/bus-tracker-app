@@ -5,9 +5,18 @@ interface Props {
   menuOpen: boolean;
   demo: boolean;
   connected: boolean;
+  connectionError?: string;
+  lastSyncAt?: Date;
 }
 
-export function Header({ onMenu, menuOpen, demo, connected }: Props) {
+export function Header({
+  onMenu,
+  menuOpen,
+  demo,
+  connected,
+  connectionError,
+  lastSyncAt,
+}: Props) {
   return (
     <header className="header">
       <button
@@ -36,7 +45,12 @@ export function Header({ onMenu, menuOpen, demo, connected }: Props) {
         <span className="region">Carmel, Indiana</span>
         <span className={`live-indicator ${!connected ? "disconnected" : ""}`}>
           <i />
-          {!connected ? "OFFLINE" : demo ? "LIVE DEMO" : "LIVE"}
+          {!connected
+            ? "OFFLINE"
+            : demo
+              ? "LIVE DEMO"
+              : "LIVE"}
+
         </span>
       </div>
     </header>
