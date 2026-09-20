@@ -21,6 +21,33 @@ export interface DriverTrackingSession {
   stop: () => Promise<void>;
 }
 
+export type LocationPermissionState = "granted" | "denied" | "prompt" | "unknown";
+
+export async function getLocationPermissionState(): Promise<LocationPermissionState> {
+  if (!("permissions" in navigator) || !navigator.permissions?.query) {
+    return "unknown";
+  }
+
+  try {
+    const permission = await navigator.permissions.query({
+      name: "geolocation" as PermissionName,
+    });
+    return permission.state as LocationPermissionState;
+  } catch {
+    return "unknown";
+  }
+}
+
+export function getLocationSupportMessage() {
+  if (!window.isSecureContext) {
+    return "This page is not running in a secure context. Open the HTTPS Firebase Hosting URL directly.";
+  }
+  if (!("geolocation" in navigator)) {
+    return "This browser does not expose geolocation.";
+  }
+  return "";
+}
+
 interface StartOptions {
   busId: string;
   busNumber: string;
