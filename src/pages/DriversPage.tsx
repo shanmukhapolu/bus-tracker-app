@@ -1,153 +1,290 @@
-import { useEffect, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { LogIn, MapPin, Radio, ShieldCheck } from "lucide-react";
+import { createMockBuses } from "../data/mockBuses";
+import {
+  getLocationSupportMessage,
+  loadDriverProfile,
+  signInDriver,
+  signOutDriver,
+  startDriverTracking,
+  type DriverLocation,
+  type DriverProfile,
+  type DriverTrackingSession,
+} from "../services/driverTrackingService";
 
-interface LocationData {
-  latitude: number;
-  longitude: number;
-  accuracy: number;
-  altitude: number | null;
-  speed: number | null;
-  heading: number | null;
-  timestamp: number;
-}
+const buses = createMockBuses();
 
-function readPosition(position: GeolocationPosition): LocationData {
-  return {
-    latitude: position.coords.latitude,
-    longitude: position.coords.longitude,
-    accuracy: position.coords.accuracy,
-    altitude: position.coords.altitude,
-    speed: position.coords.speed,
-    heading: position.coords.heading,
-    timestamp: position.timestamp,
-  };
-}
-
-function getErrorMessage(error: GeolocationPositionError) {
-  if (error.code === error.PERMISSION_DENIED) {
-    return "Permission denied by the browser for this website.";
-  }
-
-  if (error.code === error.POSITION_UNAVAILABLE) {
-    return "Your device could not determine your location.";
-  }
-
-  if (error.code === error.TIMEOUT) {
-    return "The location request timed out. Try again.";
-  }
-
-  return error.message || "Could not get your location.";
-}
-
-function formatNumber(value: number | null, digits = 5) {
-  return value === null || !Number.isFinite(value)
-    ? "Unavailable"
-    : value.toFixed(digits);
+function formatAccuracy(value: number | null) {
+  return value === null ? "—" : `±${Math.round(value)} m`;
 }
 
 export function DriversPage() {
-  const [status, setStatus] = useState<"idle" | "requesting" | "tracking" | "error">(
-    "idle",
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [profile, setProfile] = useState<DriverProfile | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
+  const [selectedBusId, setSelectedBusId] = useState("");
+  const [session, setSession] = useState<DriverTrackingSession | null>(null);
+  const [position, setPosition] = useState<DriverLocation | null>(null);
+  const [status, setStatus] = useState<
+    "idle" | "signing-in" | "requesting" | "tracking" | "error"
+  >("idle");
+  const [message, setMessage] = useState("");
+  const [loginError, setLoginError] = useState("");
+
+  const emailInputRef = useRef<HTMLInputElement>(null);
+
+  const allowedBusIds = useMemo(
+    () =>
+      Object.entries(profile?.allowedBuses ?? {})
+        .filter(([, allowed]) => allowed)
+        .map(([busId]) => busId),
+    [profile],
   );
-  const [position, setPosition] = useState<LocationData | null>(null);
-  const [error, setError] = useState("");
-  const watchId = useRef<number | null>(null);
 
-  const stopTracking = () => {
-    if (watchId.current !== null) {
-      navigator.geolocation.clearWatch(watchId.current);
-      watchId.current = null;
-    }
+  const allowedBuses = useMemo(
+    () => buses.filter((bus) => allowedBusIds.includes(bus.id)),
+    [allowedBusIds],
+  );
 
-    setStatus("idle");
-  };
+  const selectedBus = buses.find((bus) => bus.id === selectedBusId);
 
-  useEffect(() => {
-    return () => {
-      if (watchId.current !== null && "geolocation" in navigator) {
-        navigator.geolocation.clearWatch(watchId.current);
+  const login = async () => {
+    setLoginError("");
+    setMessage("");
+    setStatus("signing-in");
+
+    try {
+      const result = await signInDriver(email.trim(), password);
+      const nextProfile = await loadDriverProfile(result.user.uid);
+
+      if (!nextProfile?.enabled) {
+        await signOutDriver();
+        throw new Error("This Firebase driver account is not enabled.");
       }
-    };
-  }, []);
 
-  const handleLocation = (nextPosition: GeolocationPosition) => {
-    setPosition(readPosition(nextPosition));
-    setError("");
-    setStatus("tracking");
-  };
+      const nextAllowedBusIds = Object.entries(nextProfile.allowedBuses ?? {})
+        .filter(([, allowed]) => allowed)
+        .map(([busId]) => busId);
 
-  const handleError = (locationError: GeolocationPositionError) => {
-    setError(getErrorMessage(locationError));
-    setStatus("error");
-  };
+      if (nextAllowedBusIds.length === 0) {
+        await signOutDriver();
+        throw new Error("This driver account has no assigned buses.");
+      }
 
-  const startTracking = () => {
-    if (!window.isSecureContext) {
-      setError("This page must be opened over HTTPS.");
+      setProfile(nextProfile);
+      setSelectedBusId((current) =>
+        current && nextAllowedBusIds.includes(current)
+          ? current
+          : nextAllowedBusIds[0],
+      );
+      setSignedIn(true);
+      setPassword("");
+      setStatus("idle");
+    } catch (error) {
       setStatus("error");
+      setLoginError(
+        error instanceof Error
+          ? error.message
+          : "Could not sign in as a driver.",
+      );
+    }
+  };
+
+  const stopTracking = async () => {
+    if (!session) return;
+
+    await session.stop();
+    setSession(null);
+    setPosition(null);
+    setStatus("idle");
+    setMessage("Tracking stopped. The live bus location was removed.");
+  };
+
+  const startTracking = async () => {
+    if (!selectedBus) return;
+
+    const supportMessage = getLocationSupportMessage();
+    if (supportMessage) {
+      setStatus("error");
+      setMessage(supportMessage);
       return;
     }
 
-    if (!("geolocation" in navigator)) {
-      setError("This browser does not support geolocation.");
-      setStatus("error");
-      return;
-    }
-
-    if (watchId.current !== null) {
-      navigator.geolocation.clearWatch(watchId.current);
-      watchId.current = null;
-    }
-
-    setError("");
+    setMessage("");
+    setLoginError("");
     setPosition(null);
     setStatus("requesting");
 
-    // IMPORTANT: this is intentionally called directly from the button click.
-    // The browser controls the real native location permission prompt.
-    navigator.geolocation.getCurrentPosition(
-      (nextPosition) => {
-        handleLocation(nextPosition);
+    try {
+      // startDriverTracking deliberately requests native GPS permission
+      // before it performs any Firebase/database operation.
+      const nextSession = await startDriverTracking({
+        busId: selectedBus.id,
+        busNumber: selectedBus.busNumber,
+        route: selectedBus.route,
+        onPosition: setPosition,
+        onError: setMessage,
+      });
 
-        watchId.current = navigator.geolocation.watchPosition(
-          handleLocation,
-          handleError,
-          {
-            enableHighAccuracy: true,
-            maximumAge: 1000,
-            timeout: 20000,
-          },
-        );
-      },
-      handleError,
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 20000,
-      },
-    );
+      setSession(nextSession);
+      setStatus("tracking");
+      setMessage(
+        `Bus ${selectedBus.busNumber} is live. Firebase is saving the latest GPS position every second.`,
+      );
+    } catch (error) {
+      setStatus("error");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not start live tracking.",
+      );
+    }
   };
 
-  const isTracking = status === "tracking" || status === "requesting";
+  const logout = async () => {
+    if (session) {
+      await stopTracking();
+    }
+
+    await signOutDriver();
+    setSignedIn(false);
+    setProfile(null);
+    setSelectedBusId("");
+    setEmail("");
+    setPassword("");
+    setStatus("idle");
+    setMessage("");
+    setLoginError("");
+  };
+
+  if (!signedIn) {
+    return (
+      <main className="simple-driver-page">
+        <section className="simple-driver-card">
+          <p className="simple-driver-eyebrow">DRIVER CONTROL</p>
+          <h1>Driver sign in</h1>
+          <p className="simple-driver-description">
+            Sign in first. Pressing Start Tracking then uses the exact browser
+            GPS flow from the working location test page.
+          </p>
+
+          <div className="simple-driver-form">
+            <label>
+              Driver email
+              <input
+                ref={emailInputRef}
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </label>
+
+            <label>
+              Password
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </label>
+          </div>
+
+          {loginError && (
+            <div className="simple-driver-status error" role="alert">
+              <span className="status-dot error" />
+              {loginError}
+            </div>
+          )}
+
+          <button
+            className="simple-driver-button"
+            type="button"
+            disabled={!email.trim() || !password || status === "signing-in"}
+            onClick={() => void login()}
+          >
+            <LogIn size={18} />
+            {status === "signing-in" ? "Signing in…" : "Sign in"}
+          </button>
+
+          <div className="simple-driver-note">
+            <ShieldCheck size={15} />
+            Driver access is controlled by Firebase.
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="simple-driver-page">
       <section className="simple-driver-card">
-        <p className="simple-driver-eyebrow">DRIVER LOCATION TEST</p>
-        <h1>Live location</h1>
-        <p className="simple-driver-description">
-          Press Start Tracking and this page will ask your browser for your
-          location. No Firebase, login, bus assignment, or backend is involved.
-        </p>
+        <div className="simple-driver-header">
+          <div>
+            <p className="simple-driver-eyebrow">DRIVER CONTROL</p>
+            <h1>Live location</h1>
+            <p className="simple-driver-description">
+              {profile?.displayName ?? email}
+            </p>
+          </div>
+
+          <button
+            className="simple-driver-link-button"
+            type="button"
+            onClick={() => void logout()}
+            disabled={status === "requesting"}
+          >
+            Sign out
+          </button>
+        </div>
+
+        <label className="simple-driver-bus">
+          Bus
+          <select
+            value={selectedBusId}
+            disabled={Boolean(session)}
+            onChange={(event) => setSelectedBusId(event.target.value)}
+          >
+            {allowedBuses.map((bus) => (
+              <option key={bus.id} value={bus.id}>
+                Bus {bus.busNumber} · Route {bus.route}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <button
           className="simple-driver-button"
           type="button"
-          onClick={isTracking ? stopTracking : startTracking}
+          onClick={() =>
+            session ? void stopTracking() : void startTracking()
+          }
+          disabled={!selectedBus || status === "requesting"}
         >
-          {isTracking ? "Stop Tracking" : "Start Tracking"}
+          {session ? (
+            <>
+              <Radio size={18} />
+              Stop Tracking
+            </>
+          ) : (
+            <>
+              <MapPin size={18} />
+              {status === "requesting"
+                ? "Requesting location…"
+                : "Start Tracking"}
+            </>
+          )}
         </button>
 
-        <div className={status === "error" ? "simple-driver-status error" : "simple-driver-status"}>
+        <div
+          className={
+            status === "error"
+              ? "simple-driver-status error"
+              : "simple-driver-status"
+          }
+        >
           <span
             className={
               status === "tracking"
@@ -159,62 +296,42 @@ export function DriversPage() {
           />
           {status === "idle" && "Ready to request location"}
           {status === "requesting" && "Requesting your location…"}
-          {status === "tracking" && "Location tracking is active"}
-          {status === "error" && error}
+          {status === "tracking" && (message || "Live tracking is active")}
+          {status === "error" && message}
         </div>
 
-        {position && (
+        {session && position && (
           <div className="simple-driver-coordinates">
             <div>
-              <span>Latitude</span>
-              <strong>{formatNumber(position.latitude)}</strong>
-            </div>
-            <div>
-              <span>Longitude</span>
-              <strong>{formatNumber(position.longitude)}</strong>
+              <span>GPS</span>
+              <strong>Connected</strong>
             </div>
             <div>
               <span>Accuracy</span>
-              <strong>±{Math.round(position.accuracy)} m</strong>
+              <strong>{formatAccuracy(position.accuracyMeters)}</strong>
             </div>
             <div>
-              <span>Speed</span>
-              <strong>
-                {position.speed === null
-                  ? "Unavailable"
-                  : `${(position.speed * 3.6).toFixed(1)} km/h`}
-              </strong>
+              <span>Database</span>
+              <strong>Saving every second</strong>
             </div>
             <div>
-              <span>Heading</span>
-              <strong>
-                {position.heading === null
-                  ? "Unavailable"
-                  : `${Math.round(position.heading)}°`}
-              </strong>
-            </div>
-            <div>
-              <span>Altitude</span>
-              <strong>
-                {position.altitude === null
-                  ? "Unavailable"
-                  : `${position.altitude.toFixed(1)} m`}
-              </strong>
+              <span>Bus</span>
+              <strong>{selectedBus?.busNumber ?? selectedBusId}</strong>
             </div>
           </div>
         )}
 
-        {!position && !error && (
+        {!session && (
           <div className="simple-driver-empty">
-            Coordinates will appear here after the browser grants location access.
+            Your coordinates are sent to Firebase only while tracking is active.
+            They are not shown on this page.
           </div>
         )}
 
-        {position && (
-          <p className="simple-driver-updated">
-            Last update: {new Date(position.timestamp).toLocaleTimeString()}
-          </p>
-        )}
+        <div className="simple-driver-note">
+          <ShieldCheck size={15} />
+          Live location is protected by the Firebase driver rules.
+        </div>
       </section>
     </main>
   );
