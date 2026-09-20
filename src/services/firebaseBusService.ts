@@ -1,9 +1,6 @@
 import { createMockBuses } from "../data/mockBuses";
 import type { Bus, BusSnapshot } from "../types/bus";
-import {
-  firebaseConfigured,
-  getFirebaseRuntime,
-} from "../config/firebase";
+import { firebaseConfig, firebaseConfigured } from "../config/firebase";
 import type { BusService } from "./busService";
 
 const LIVE_UPDATE_INTERVAL_MS = 1000;
@@ -32,16 +29,8 @@ function mergeLiveBuses(
 ): Bus[] {
   return BASE_BUSES.map((base) => {
     const live = data?.[base.id];
-    const active =
-      live?.active === true &&
-      isFiniteNumber(live.latitude) &&
-      isFiniteNumber(live.longitude);
 
-    if (!active) {
-      const endedAt = isFiniteNumber(live?.endedAt)
-        ? live.endedAt
-        : undefined;
-
+    if (!live) {
       return {
         ...base,
         trackingActive: false,
@@ -50,7 +39,33 @@ function mergeLiveBuses(
         speed: undefined,
         heading: undefined,
         currentLocation: "Not tracking",
-        lastUpdated: endedAt ? new Date(endedAt) : new Date(),
+        lastUpdated: base.lastUpdated,
+      };
+    }
+
+    const active =
+      live.active === true &&
+      isFiniteNumber(live.latitude) &&
+      isFiniteNumber(live.longitude);
+
+    const firebaseLastUpdated = isFiniteNumber(live.lastUpdated)
+      ? new Date(live.lastUpdated)
+      : isFiniteNumber(live.endedAt)
+        ? new Date(live.endedAt)
+        : base.lastUpdated;
+
+    if (!active) {
+      return {
+        ...base,
+        busNumber: live.busNumber ?? base.busNumber,
+        route: live.route ?? base.route,
+        trackingActive: false,
+        status: "offline",
+        etaMinutes: undefined,
+        speed: undefined,
+        heading: undefined,
+        currentLocation: "Not tracking",
+        lastUpdated: firebaseLastUpdated,
       };
     }
 
@@ -60,12 +75,8 @@ function mergeLiveBuses(
       route: live.route ?? base.route,
       latitude: live.latitude!,
       longitude: live.longitude!,
-      speed: isFiniteNumber(live.speedMps ?? undefined)
-        ? live.speedMps! * 3.6
-        : undefined,
-      heading: isFiniteNumber(live.headingDeg ?? undefined)
-        ? live.headingDeg!
-        : undefined,
+      speed: isFiniteNumber(live.speedMps) ? live.speedMps! * 3.6 : undefined,
+      heading: isFiniteNumber(live.headingDeg) ? live.headingDeg! : undefined,
       trackingActive: true,
       status: "on-time",
       delayMinutes: undefined,
@@ -75,11 +86,13 @@ function mergeLiveBuses(
       locationAccuracyMeters: isFiniteNumber(live.accuracyMeters)
         ? live.accuracyMeters
         : undefined,
-      lastUpdated: isFiniteNumber(live.lastUpdated)
-        ? new Date(live.lastUpdated)
-        : new Date(),
+      lastUpdated: firebaseLastUpdated,
     };
   });
+}
+
+function databaseUrl() {
+  return firebaseConfig.databaseURL!.replace(/\/+$/, "");
 }
 
 export function createFirebaseBusService(): BusService {
@@ -92,70 +105,84 @@ export function createFirebaseBusService(): BusService {
 
   const listeners = new Set<() => void>();
   let started = false;
-  let stopLiveListener: (() => void) | undefined;
-  let stopConnectionListener: (() => void) | undefined;
+  let pollTimer: ReturnType<typeof setInterval> | undefined;
 
   const notify = () => {
     listeners.forEach((listener) => listener());
   };
 
-  async function start() {
+  const refresh = async () => {
+    try {
+      const response = await fetch(`${databaseUrl()}/liveBuses.json`, {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Firebase returned HTTP ${response.status}.`);
+      }
+
+      const value = await response.json();
+
+      snapshot = {
+        ...snapshot,
+        buses: mergeLiveBuses(
+          value && typeof value === "object"
+            ? (value as Record<string, LiveBusRecord>)
+            : null,
+        ),
+        connected: true,
+        connectionError: undefined,
+        lastSyncAt: new Date(),
+      };
+      notify();
+    } catch (error) {
+      snapshot = {
+        ...snapshot,
+        connected: false,
+        connectionError:
+          error instanceof Error
+            ? error.message
+            : "Could not read live bus data from Firebase.",
+      };
+      notify();
+    }
+  };
+
+  const start = () => {
     if (started) return;
     started = true;
 
-    try {
-      const runtime = await getFirebaseRuntime();
-      const liveBusesRef = runtime.ref(runtime.db, "liveBuses");
-      const connectedRef = runtime.ref(runtime.db, ".info/connected");
+    void refresh();
+    pollTimer = setInterval(() => {
+      void refresh();
+    }, LIVE_UPDATE_INTERVAL_MS);
+  };
 
-      stopLiveListener = runtime.onValue(
-        liveBusesRef,
-        (dataSnapshot) => {
-          const value = dataSnapshot.val();
-          snapshot = {
-            ...snapshot,
-            buses: mergeLiveBuses(
-              value && typeof value === "object"
-                ? (value as Record<string, LiveBusRecord>)
-                : null,
-            ),
-          };
-          notify();
-        },
-        () => {
-          snapshot = { ...snapshot, connected: false };
-          notify();
-        },
-      );
+  const stop = () => {
+    if (!started) return;
+    started = false;
 
-      stopConnectionListener = runtime.onValue(connectedRef, (dataSnapshot) => {
-        snapshot = {
-          ...snapshot,
-          connected: dataSnapshot.val() === true,
-        };
-        notify();
-      });
-    } catch {
-      snapshot = { ...snapshot, connected: false };
-      notify();
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = undefined;
     }
-  }
+  };
 
   return {
     getSnapshot: () => snapshot,
     subscribe(listener) {
       listeners.add(listener);
-      void start();
+      start();
 
       return () => {
         listeners.delete(listener);
 
         if (listeners.size === 0) {
-          stopLiveListener?.();
-          stopConnectionListener?.();
-          stopLiveListener = undefined;
-          stopConnectionListener = undefined;
-          started = false;
+          stop();
         }
       };
     },
