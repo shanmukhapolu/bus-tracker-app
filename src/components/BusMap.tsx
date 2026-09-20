@@ -35,6 +35,7 @@ export function BusMap({
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [retry, setRetry] = useState(0);
   const busesRef = useRef(buses);
+  const previouslyLiveRef = useRef(false);
   busesRef.current = buses;
 
   const visibleBuses = demo ? buses : buses.filter((bus) => bus.trackingActive);
@@ -109,6 +110,30 @@ export function BusMap({
         : 800,
     });
   }, [map, selectedId, centerRequest]);
+
+  useEffect(() => {
+    if (!map || demo) {
+      previouslyLiveRef.current = false;
+      return;
+    }
+
+    const selected = busesRef.current.find((item) => item.id === selectedId);
+    const isLive = selected?.trackingActive === true;
+
+    if (isLive && !previouslyLiveRef.current && selected) {
+      const compact = window.matchMedia("(max-width: 899px)").matches;
+      map.easeTo({
+        center: [selected.longitude, selected.latitude],
+        zoom: 14,
+        offset: compact ? [0, -80] : [80, -20],
+        duration: matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? 0
+          : 700,
+      });
+    }
+
+    previouslyLiveRef.current = isLive;
+  }, [map, demo, selectedId, buses]);
 
   return (
     <div
