@@ -106,12 +106,16 @@ export function createFirebaseBusService(): BusService {
   const listeners = new Set<() => void>();
   let started = false;
   let pollTimer: ReturnType<typeof setInterval> | undefined;
+  let refreshing = false;
 
   const notify = () => {
     listeners.forEach((listener) => listener());
   };
 
   const refresh = async () => {
+    if (refreshing) return;
+    refreshing = true;
+
     try {
       const response = await fetch(`${databaseUrl()}/liveBuses.json`, {
         method: "GET",
@@ -149,6 +153,8 @@ export function createFirebaseBusService(): BusService {
             : "Could not read live bus data from Firebase.",
       };
       notify();
+    } finally {
+      refreshing = false;
     }
   };
 
