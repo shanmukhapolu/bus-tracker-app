@@ -1,6 +1,9 @@
 import { createMockBuses } from "../data/mockBuses";
 import type { Bus, BusSnapshot } from "../types/bus";
-import { firebaseConfig, firebaseConfigured } from "../config/firebase";
+import {
+  firebaseConfigured,
+  getFirebaseRuntime,
+} from "../config/firebase";
 import type { BusService } from "./busService";
 
 const LIVE_UPDATE_INTERVAL_MS = 1000;
@@ -91,10 +94,6 @@ function mergeLiveBuses(
   });
 }
 
-function databaseUrl() {
-  return firebaseConfig.databaseURL!.replace(/\/+$/, "");
-}
-
 export function createFirebaseBusService(): BusService {
   let snapshot: BusSnapshot = {
     buses: mergeLiveBuses(null),
@@ -105,44 +104,74 @@ export function createFirebaseBusService(): BusService {
 
   const listeners = new Set<() => void>();
   let started = false;
-  let pollTimer: ReturnType<typeof setInterval> | undefined;
-  let refreshing = false;
+  let stopLiveListener: (() => void) | undefined;
+  let stopConnectionListener: (() => void) | undefined;
 
   const notify = () => {
     listeners.forEach((listener) => listener());
   };
 
-  const refresh = async () => {
-    if (refreshing) return;
-    refreshing = true;
+  const start = async () => {
+    if (started) return;
+    started = true;
 
     try {
-      const response = await fetch(`${databaseUrl()}/liveBuses.json`, {
-        method: "GET",
-        cache: "no-store",
-        headers: {
-          Accept: "application/json",
+      const runtime = await getFirebaseRuntime();
+      const liveBusesRef = runtime.ref(runtime.db, "liveBuses");
+      const connectedRef = runtime.ref(runtime.db, ".info/connected");
+
+      stopLiveListener = runtime.onValue(
+        liveBusesRef,
+        (dataSnapshot) => {
+          const value = dataSnapshot.val();
+
+          snapshot = {
+            ...snapshot,
+            buses: mergeLiveBuses(
+              value && typeof value === "object"
+                ? (value as Record<string, LiveBusRecord>)
+                : null,
+            ),
+            connectionError: undefined,
+            lastSyncAt: new Date(),
+          };
+
+          notify();
         },
-      });
+        (error) => {
+          snapshot = {
+            ...snapshot,
+            connected: false,
+            connectionError:
+              error instanceof Error
+                ? error.message
+                : "Firebase denied access to live bus data.",
+          };
+          notify();
+        },
+      );
 
-      if (!response.ok) {
-        throw new Error(`Firebase returned HTTP ${response.status}.`);
-      }
-
-      const value = await response.json();
-
-      snapshot = {
-        ...snapshot,
-        buses: mergeLiveBuses(
-          value && typeof value === "object"
-            ? (value as Record<string, LiveBusRecord>)
-            : null,
-        ),
-        connected: true,
-        connectionError: undefined,
-        lastSyncAt: new Date(),
-      };
-      notify();
+      stopConnectionListener = runtime.onValue(
+        connectedRef,
+        (dataSnapshot) => {
+          snapshot = {
+            ...snapshot,
+            connected: dataSnapshot.val() === true,
+          };
+          notify();
+        },
+        (error) => {
+          snapshot = {
+            ...snapshot,
+            connected: false,
+            connectionError:
+              error instanceof Error
+                ? error.message
+                : "Could not connect to Firebase Realtime Database.",
+          };
+          notify();
+        },
+      );
     } catch (error) {
       snapshot = {
         ...snapshot,
@@ -150,39 +179,25 @@ export function createFirebaseBusService(): BusService {
         connectionError:
           error instanceof Error
             ? error.message
-            : "Could not read live bus data from Firebase.",
+            : "Could not initialize Firebase Realtime Database.",
       };
       notify();
-    } finally {
-      refreshing = false;
     }
-  };
-
-  const start = () => {
-    if (started) return;
-    started = true;
-
-    void refresh();
-    pollTimer = setInterval(() => {
-      void refresh();
-    }, LIVE_UPDATE_INTERVAL_MS);
   };
 
   const stop = () => {
-    if (!started) return;
+    stopLiveListener?.();
+    stopConnectionListener?.();
+    stopLiveListener = undefined;
+    stopConnectionListener = undefined;
     started = false;
-
-    if (pollTimer) {
-      clearInterval(pollTimer);
-      pollTimer = undefined;
-    }
   };
 
   return {
     getSnapshot: () => snapshot,
     subscribe(listener) {
       listeners.add(listener);
-      start();
+      void start();
 
       return () => {
         listeners.delete(listener);
