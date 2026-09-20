@@ -23,7 +23,7 @@ export const firebaseConfig = {
     "1:343059758295:web:0ac65d6cf2ddb389a0c492",
   measurementId:
     (env.VITE_FIREBASE_MEASUREMENT_ID as string | undefined) ?? "G-R4GTR1CDC3",
-  databaseURL: env.VITE_FIREBASE_DATABASE_URL as string | undefined,
+  databaseURL:\n    (env.VITE_FIREBASE_DATABASE_URL as string | undefined) ??\n    "https://chsbustracker2-default-rtdb.firebaseio.com",
 };
 
 export const firebaseConfigured = Boolean(
