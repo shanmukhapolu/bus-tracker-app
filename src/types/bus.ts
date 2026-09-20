@@ -22,6 +22,8 @@ export interface BusSnapshot {
   buses: Bus[];
   mode: "demo" | "live";
   connected: boolean;
+  connectionError?: string;
+  lastSyncAt?: Date;
   /** Typical cadence of server updates, used for presentation interpolation. */
   updateIntervalMs: number;
 }
