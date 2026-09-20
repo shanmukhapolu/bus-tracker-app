@@ -1,0 +1,24 @@
+{
+  "rules": {
+    "liveBuses": {
+      "$busId": {
+        ".read": true,
+        ".write": "auth != null && root.child('drivers').child(auth.uid).child('enabled').val() === true && root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true && ((!data.exists() && root.child('activeDrivers').child($busId).val() === auth.uid) || (data.exists() && data.child('driverUid').val() === auth.uid))",
+        ".validate": "newData.hasChildren(['busNumber', 'route', 'latitude', 'longitude', 'active', 'lastUpdated', 'driverUid']) && newData.child('busNumber').isString() && newData.child('route').isString() && newData.child('latitude').isNumber() && newData.child('longitude').isNumber() && newData.child('latitude').val() >= -90 && newData.child('latitude').val() <= 90 && newData.child('longitude').val() >= -180 && newData.child('longitude').val() <= 180 && newData.child('active').isBoolean() && newData.child('lastUpdated').isNumber() && newData.child('driverUid').val() === auth.uid"
+      }
+    },
+    "activeDrivers": {
+      "$busId": {
+        ".read": "auth != null && root.child('drivers').child(auth.uid).child('enabled').val() === true",
+        ".write": "auth != null && root.child('drivers').child(auth.uid).child('enabled').val() === true && root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true && ((!data.exists() && newData.val() === auth.uid) || (data.val() === auth.uid && !newData.exists()) || (data.val() === auth.uid && newData.val() === auth.uid))",
+        ".validate": "newData.val() === auth.uid"
+      }
+    },
+    "drivers": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    }
+  }
+}
