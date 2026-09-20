@@ -44,6 +44,7 @@ export function DriversPage() {
   const [starting, setStarting] = useState(false);
   const [locationPermission, setLocationPermission] =
     useState<LocationPermissionState>("unknown");
+  const [locationPromptOpen, setLocationPromptOpen] = useState(false);
 
   useEffect(() => {
     void getLocationPermissionState().then(setLocationPermission);
@@ -151,7 +152,7 @@ export function DriversPage() {
     setPosition(null);
   };
 
-  const startTracking = async () => {
+  const openLocationPrompt = () => {
     if (!selectedBus) return;
 
     const supportMessage = getLocationSupportMessage();
@@ -160,7 +161,15 @@ export function DriversPage() {
       return;
     }
 
+    setError("");
+    setLocationPromptOpen(true);
+  };
+
+  const startTracking = async () => {
+    if (!selectedBus) return;
+
     setStarting(true);
+    setLocationPromptOpen(false);
     setError("");
     setPosition(null);
 
@@ -172,6 +181,7 @@ export function DriversPage() {
         onPosition: setPosition,
         onError: setError,
       });
+
       setSession(nextSession);
     } catch (startError) {
       setError(
@@ -181,6 +191,7 @@ export function DriversPage() {
       );
     } finally {
       setStarting(false);
+      void getLocationPermissionState().then(setLocationPermission);
     }
   };
 
@@ -371,10 +382,9 @@ export function DriversPage() {
 
         {locationPermission === "denied" && !session && (
           <div className="drivers-error" role="alert">
-            Location access is currently blocked by this browser or device.
-            Change the site and browser location permission to Allow, then
-            reload this page. If you are viewing this inside another app,
-            open the HTTPS URL directly in Safari, Chrome, or Edge.
+            Your browser previously blocked this site's location request.
+            Use the browser site settings to change Location to Allow, then
+            press Start tracking again.
           </div>
         )}
 
@@ -388,7 +398,7 @@ export function DriversPage() {
           <button
             className="drivers-primary drivers-start"
             disabled={!selectedBus || starting}
-            onClick={() => void startTracking()}
+            onClick={openLocationPrompt}
           >
             <Radio size={19} />
             {starting ? "Starting GPS…" : "Start tracking"}
@@ -423,6 +433,73 @@ export function DriversPage() {
                 {position.longitude.toFixed(5)}
               </strong>
             </div>
+          </div>
+        )}
+
+        {locationPromptOpen && (
+          <div
+            className="drivers-location-backdrop"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                setLocationPromptOpen(false);
+              }
+            }}
+          >
+            <section
+              className="drivers-location-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="location-dialog-title"
+            >
+              <div className="drivers-location-icon">
+                <MapPin size={24} />
+              </div>
+              <p className="eyebrow">LOCATION ACCESS</p>
+              <h2 id="location-dialog-title">
+                Allow this website to track your location
+              </h2>
+              <p>
+                Your browser will now show its normal location permission
+                prompt. Tap <strong>Allow</strong> (or the equivalent option)
+                so the driver app can get your GPS position.
+              </p>
+              <div className="drivers-location-steps">
+                <div>
+                  <span>1</span>
+                  <p>Press “Allow location &amp; start tracking.”</p>
+                </div>
+                <div>
+                  <span>2</span>
+                  <p>Choose Allow in the browser's location prompt.</p>
+                </div>
+                <div>
+                  <span>3</span>
+                  <p>Keep this page open while the bus is moving.</p>
+                </div>
+              </div>
+              <div className="drivers-location-actions">
+                <button
+                  className="drivers-secondary"
+                  type="button"
+                  onClick={() => setLocationPromptOpen(false)}
+                  disabled={starting}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="drivers-primary"
+                  type="button"
+                  onClick={() => void startTracking()}
+                  disabled={starting}
+                >
+                  <MapPin size={17} />
+                  {starting
+                    ? "Requesting location…"
+                    : "Allow location & start tracking"}
+                </button>
+              </div>
+            </section>
           </div>
         )}
 
