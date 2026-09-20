@@ -16,7 +16,14 @@ export default function App() {
 }
 
 function PublicTracker() {
-  const { buses, mode, connected, updateIntervalMs } = useBuses();
+  const {
+    buses,
+    mode,
+    connected,
+    connectionError,
+    lastSyncAt,
+    updateIntervalMs,
+  } = useBuses();
   const [selectedId, setSelectedId] = useState("218");
   const [menuOpen, setMenuOpen] = useState(false);
   const [detailsVisible, setDetailsVisible] = useState(true);
@@ -65,6 +72,8 @@ function PublicTracker() {
         menuOpen={menuOpen}
         demo={mode === "demo"}
         connected={connected}
+        connectionError={connectionError}
+        lastSyncAt={lastSyncAt}
       />
       <main className="workspace">
         <SideMenu
@@ -85,6 +94,8 @@ function PublicTracker() {
             intervalMs={updateIntervalMs}
             demo={mode === "demo"}
             obscured={menuOpen}
+            connectionError={connectionError}
+            lastSyncAt={lastSyncAt}
           />
           <div className="info-position" inert={menuOpen}>
             {selected && !detailsVisible ? (
