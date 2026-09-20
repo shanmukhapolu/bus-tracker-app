@@ -18,6 +18,8 @@ interface Props {
   intervalMs: number;
   demo: boolean;
   obscured: boolean;
+  connectionError?: string;
+  lastSyncAt?: Date;
 }
 
 export function BusMap({
@@ -29,6 +31,8 @@ export function BusMap({
   intervalMs,
   demo,
   obscured,
+  connectionError,
+  lastSyncAt,
 }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<LibreMap | null>(null);
@@ -165,7 +169,13 @@ export function BusMap({
       </div>
       <div className="map-demo-pill">
         <Radio size={15} />
-        <span>{demo ? "Simulated GPS" : "Live GPS"}</span>
+        <span>
+          {demo
+            ? "Simulated GPS"
+            : lastSyncAt
+              ? `Live GPS · synced ${lastSyncAt.toLocaleTimeString()}`
+              : "Live GPS · connecting"}
+        </span>
       </div>
       <button
         className="map-recenter icon-button"
@@ -181,12 +191,21 @@ export function BusMap({
         <span className="key-dot other" />
         Other buses
       </div>
-      {!demo && visibleCount === 0 && state === "ready" && (
-        <div className="map-message">
-          <Radio size={16} />
-          <span>No buses are actively tracking right now.</span>
+      {!demo && connectionError && state === "ready" && (
+        <div className="map-message error" role="alert">
+          <strong>Live bus data is offline</strong>
+          <span>{connectionError}</span>
         </div>
       )}
+      {!demo &&
+        !connectionError &&
+        visibleCount === 0 &&
+        state === "ready" && (
+          <div className="map-message">
+            <Radio size={16} />
+            <span>No buses are actively tracking right now.</span>
+          </div>
+        )}
       {state === "loading" && (
         <div className="map-message" role="status">
           <span className="loading-dot" />
