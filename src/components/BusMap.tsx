@@ -37,6 +37,9 @@ export function BusMap({
   const busesRef = useRef(buses);
   busesRef.current = buses;
 
+  const visibleBuses = demo ? buses : buses.filter((bus) => bus.trackingActive);
+  const visibleCount = visibleBuses.length;
+
   useEffect(() => {
     if (!container.current) return;
     setState("loading");
@@ -90,7 +93,6 @@ export function BusMap({
     if (!map) return;
     const bus = busesRef.current.find((item) => item.id === selectedId);
     if (!bus) return;
-    // Camera changes only on selection/recenter, so live updates never fight a pan.
     const compact = window.matchMedia("(max-width: 899px)").matches;
     const shortLandscape =
       compact && window.matchMedia("(max-height: 500px)").matches;
@@ -116,7 +118,7 @@ export function BusMap({
     >
       <div className="map-canvas" ref={container} />
       {map &&
-        buses.map((bus) => (
+        visibleBuses.map((bus) => (
           <BusMarker
             key={`${retry}-${bus.id}`}
             map={map}
@@ -130,7 +132,11 @@ export function BusMap({
         <MapPinLabel />
         <span>Carmel, Indiana</span>
         <span className="map-label-divider" />
-        <span className="map-label-secondary">{buses.length} buses</span>
+        <span>
+          {demo
+            ? `${visibleCount} buses`
+            : `${visibleCount} active bus${visibleCount === 1 ? "" : "es"}`}
+        </span>
       </div>
       <div className="map-demo-pill">
         <Radio size={15} />
@@ -146,10 +152,16 @@ export function BusMap({
       </button>
       <div className="map-key">
         <span className="key-dot" />
-        Selected bus
+        {demo ? "Selected bus" : "Active bus"}
         <span className="key-dot other" />
         Other buses
       </div>
+      {!demo && visibleCount === 0 && state === "ready" && (
+        <div className="map-message">
+          <Radio size={16} />
+          <span>No buses are actively tracking right now.</span>
+        </div>
+      )}
       {state === "loading" && (
         <div className="map-message" role="status">
           <span className="loading-dot" />
