@@ -1732,3 +1732,122 @@ h1 {
     grid-template-columns: 1fr;
   }
 }
+
+
+.drivers-location-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: #122636b8;
+  backdrop-filter: blur(6px);
+}
+
+.drivers-location-dialog {
+  width: min(520px, 100%);
+  padding: 28px;
+  border: 1px solid #dfe7e7;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 70px #0d24343d;
+}
+
+.drivers-location-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+  border-radius: 13px;
+  background: #eef4fb;
+  color: #2464b8;
+}
+
+.drivers-location-dialog h2 {
+  margin: 5px 0 10px;
+  font-family: "Manrope", sans-serif;
+  font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: -0.7px;
+}
+
+.drivers-location-dialog > p:not(.eyebrow) {
+  margin: 0;
+  color: #687b8b;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.drivers-location-steps {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.drivers-location-steps > div {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  align-items: start;
+  gap: 9px;
+  padding: 10px 11px;
+  border: 1px solid #e6ebed;
+  border-radius: 9px;
+  background: #fafcfc;
+}
+
+.drivers-location-steps span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf4fb;
+  color: #2464b8;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.drivers-location-steps p {
+  margin: 2px 0 0;
+  color: #55697a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.drivers-location-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 21px;
+}
+
+.drivers-location-actions .drivers-primary,
+.drivers-location-actions .drivers-secondary {
+  min-height: 44px;
+}
+
+.drivers-location-actions .drivers-primary {
+  flex: 1;
+}
+
+@media (max-width: 520px) {
+  .drivers-location-dialog {
+    padding: 22px 18px;
+    border-radius: 16px;
+  }
+
+  .drivers-location-dialog h2 {
+    font-size: 21px;
+  }
+
+  .drivers-location-actions {
+    flex-direction: column-reverse;
+  }
+
+  .drivers-location-actions .drivers-primary,
+  .drivers-location-actions .drivers-secondary {
+    width: 100%;
+  }
+}
