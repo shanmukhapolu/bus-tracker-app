@@ -6,8 +6,13 @@ import { BusMap } from "./components/BusMap";
 import { BusInfoCard } from "./components/BusInfoCard";
 import { useBuses } from "./hooks/useBuses";
 import { useBusTools } from "./hooks/useBusTools";
+import { DriversPage } from "./pages/DriversPage";
 
 export default function App() {
+  if (window.location.pathname.replace(/\/+$/, "") === "/drivers") {
+    return <DriversPage />;
+  }
+
   const { buses, mode, connected, updateIntervalMs } = useBuses();
   const [selectedId, setSelectedId] = useState("218");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -105,7 +110,7 @@ export default function App() {
             )}
           </div>
           <div className="map-caption">
-            {mode === "demo" ? "DEMO MODE" : "BUS TRACKER"}
+            {mode === "demo" ? "DEMO MODE" : "LIVE TRACKING"}
             <span />
             Carmel Clay Schools
           </div>
