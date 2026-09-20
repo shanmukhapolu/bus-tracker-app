@@ -21,41 +21,7 @@ export interface DriverTrackingSession {
   stop: () => Promise<void>;
 }
 
-export type LocationPermissionState =
-  | "granted"
-  | "denied"
-  | "prompt"
-  | "unknown";
-
-export async function getLocationPermissionState(): Promise<LocationPermissionState> {
-  if (!("permissions" in navigator) || !navigator.permissions?.query) {
-    return "unknown";
-  }
-
-  try {
-    const permission = await navigator.permissions.query({
-      name: "geolocation" as PermissionName,
-    });
-
-    return permission.state as LocationPermissionState;
-  } catch {
-    return "unknown";
-  }
-}
-
-export function getLocationSupportMessage() {
-  if (!window.isSecureContext) {
-    return "Driver tracking requires HTTPS. Open the Firebase Hosting URL directly.";
-  }
-
-  if (!("geolocation" in navigator)) {
-    return "This browser does not provide location services.";
-  }
-
-  return "";
-}
-
-interface StartOptions {
+export interface DriverTrackingOptions {
   busId: string;
   busNumber: string;
   route: string;
@@ -71,24 +37,24 @@ const initialLocationOptions: PositionOptions = {
 
 const watchLocationOptions: PositionOptions = {
   enableHighAccuracy: true,
-  maximumAge: 2_000,
+  maximumAge: 1_000,
   timeout: 20_000,
 };
 
 function readableGeolocationError(error: GeolocationPositionError) {
   if (error.code === error.PERMISSION_DENIED) {
-    return "Location permission was denied. Use the browser's site settings to allow location, then press Start tracking again.";
+    return "Permission denied by the browser for this website.";
   }
 
   if (error.code === error.POSITION_UNAVAILABLE) {
-    return "Your device could not determine a location. Make sure device location services are on and try again outside or near a window.";
+    return "Your device could not determine your location.";
   }
 
   if (error.code === error.TIMEOUT) {
-    return "The GPS fix took too long. Keep location services on and try Start tracking again.";
+    return "The location request timed out. Try again.";
   }
 
-  return error.message || "The device could not provide a location.";
+  return error.message || "Could not get your location.";
 }
 
 function toLocation(position: GeolocationPosition): DriverLocation {
@@ -111,11 +77,9 @@ function toLocation(position: GeolocationPosition): DriverLocation {
 }
 
 /**
- * Request one real GPS fix immediately.
- *
- * This intentionally runs before Firebase initialization/transactions so the
- * browser's native "Allow location?" permission prompt is triggered directly
- * from the driver's button interaction.
+ * Keep this call extremely simple. It is deliberately the first async
+ * operation in the tracking flow so the browser sees the same native
+ * geolocation request as the working standalone HTML test.
  */
 function requestInitialLocation(): Promise<DriverLocation> {
   return new Promise((resolve, reject) => {
@@ -127,10 +91,45 @@ function requestInitialLocation(): Promise<DriverLocation> {
   });
 }
 
+export function getLocationSupportMessage() {
+  if (!window.isSecureContext) {
+    return "This page must be opened over HTTPS.";
+  }
+
+  if (!("geolocation" in navigator)) {
+    return "This browser does not support geolocation.";
+  }
+
+  return "";
+}
+
+export async function signInDriver(email: string, password: string) {
+  const runtime = await getFirebaseRuntime();
+  return runtime.signInWithEmailAndPassword(runtime.auth, email, password);
+}
+
+export async function signOutDriver() {
+  const runtime = await getFirebaseRuntime();
+  await runtime.signOut(runtime.auth);
+}
+
+export async function loadDriverProfile(
+  uid: string,
+): Promise<DriverProfile | null> {
+  const runtime = await getFirebaseRuntime();
+  const snapshot = await runtime.get(
+    runtime.ref(runtime.db, `drivers/${uid}`),
+  );
+
+  return snapshot.exists()
+    ? (snapshot.val() as DriverProfile)
+    : null;
+}
+
 async function publishPosition(
   runtime: FirebaseRuntime,
   liveRef: any,
-  options: StartOptions,
+  options: DriverTrackingOptions,
   position: DriverLocation,
 ) {
   const user = runtime.auth.currentUser;
@@ -153,38 +152,8 @@ async function publishPosition(
   });
 }
 
-export async function signInDriver(email: string, password: string) {
-  const runtime = await getFirebaseRuntime();
-  return runtime.signInWithEmailAndPassword(runtime.auth, email, password);
-}
-
-export async function listenForDriverAuth(
-  callback: (user: any | null) => void,
-) {
-  const runtime = await getFirebaseRuntime();
-  return runtime.onAuthStateChanged(runtime.auth, callback);
-}
-
-export async function signOutDriver() {
-  const runtime = await getFirebaseRuntime();
-  await runtime.signOut(runtime.auth);
-}
-
-export async function loadDriverProfile(
-  uid: string,
-): Promise<DriverProfile | null> {
-  const runtime = await getFirebaseRuntime();
-  const profileSnapshot = await runtime.get(
-    runtime.ref(runtime.db, `drivers/${uid}`),
-  );
-
-  return profileSnapshot.exists()
-    ? (profileSnapshot.val() as DriverProfile)
-    : null;
-}
-
 export async function startDriverTracking(
-  options: StartOptions,
+  options: DriverTrackingOptions,
 ): Promise<DriverTrackingSession> {
   const supportMessage = getLocationSupportMessage();
 
@@ -192,13 +161,10 @@ export async function startDriverTracking(
     throw new Error(supportMessage);
   }
 
-  // 1. Ask the browser for a real GPS fix FIRST. Do not initialize Firebase,
-  // acquire the bus lock, or await anything before this call.
+  // CRITICAL: this must stay before Firebase/database work.
   const firstLocation = await requestInitialLocation();
   options.onPosition(firstLocation);
 
-  // 2. Once the browser has granted location, connect to Firebase and claim
-  // the selected bus.
   const runtime = await getFirebaseRuntime();
   const user = runtime.auth.currentUser;
 
@@ -236,7 +202,7 @@ export async function startDriverTracking(
     try {
       await wakeLock.release();
     } catch {
-      // Some browsers release wake locks automatically.
+      // Wake lock can be released automatically by the browser.
     }
 
     wakeLock = null;
@@ -256,7 +222,7 @@ export async function startDriverTracking(
         wakeLock = null;
       });
     } catch {
-      // Wake lock is optional; location tracking can continue without it.
+      // Optional enhancement only.
     }
   };
 
@@ -270,8 +236,8 @@ export async function startDriverTracking(
     } catch (error) {
       options.onError(
         error instanceof Error
-          ? `GPS is active, but Firebase could not receive the latest position: ${error.message}`
-          : "GPS is active, but Firebase could not receive the latest position.",
+          ? `Firebase write failed: ${error.message}`
+          : "Firebase could not save the latest GPS position.",
       );
     } finally {
       publishing = false;
@@ -286,21 +252,19 @@ export async function startDriverTracking(
   };
 
   try {
-    // Make disconnect cleanup part of the session before its first live write.
+    // If the connection disappears, remove both the lock and live location.
+    // This avoids leaving stale coordinates publicly visible.
     await runtime.onDisconnect(lockRef).remove();
-    await runtime.onDisconnect(liveRef).update({
-      active: false,
-      endedAt: runtime.serverTimestamp(),
-      lastUpdated: runtime.serverTimestamp(),
-    });
+    await runtime.onDisconnect(liveRef).remove();
 
-    // 3. The initial fix succeeded, so now subscribe to continuous GPS updates.
     watchId = navigator.geolocation.watchPosition(
       (position) => {
         if (stopped) return;
 
         latestPosition = toLocation(position);
         options.onPosition(latestPosition);
+
+        // New GPS fixes are published immediately.
         void publishLatest();
       },
       (error) => {
@@ -311,6 +275,8 @@ export async function startDriverTracking(
       watchLocationOptions,
     );
 
+    // Continue publishing the latest known GPS position every second even
+    // when the browser has not delivered a new fix during that exact second.
     publishTimer = setInterval(() => {
       void publishLatest();
     }, 1_000);
@@ -353,15 +319,11 @@ export async function startDriverTracking(
         await runtime.onDisconnect(lockRef).cancel();
         await runtime.onDisconnect(liveRef).cancel();
       } catch {
-        // The server-side disconnect handlers may already have fired.
+        // The server-side disconnect handler may already have run.
       }
 
       try {
-        await runtime.update(liveRef, {
-          active: false,
-          endedAt: runtime.serverTimestamp(),
-          lastUpdated: runtime.serverTimestamp(),
-        });
+        await runtime.remove(liveRef);
       } finally {
         await runtime.remove(lockRef);
       }
@@ -372,17 +334,21 @@ export async function startDriverTracking(
       stop,
     };
   } catch (error) {
+    if (watchId !== undefined) {
+      navigator.geolocation.clearWatch(watchId);
+    }
+
     try {
       await runtime.onDisconnect(lockRef).cancel();
       await runtime.onDisconnect(liveRef).cancel();
+      await runtime.remove(liveRef);
       await runtime.remove(lockRef);
     } catch {
       // Best-effort cleanup.
     }
 
-    const message =
-      error instanceof Error ? error.message : "Could not start tracking.";
-
-    throw new Error(message);
+    throw new Error(
+      error instanceof Error ? error.message : "Could not start tracking.",
+    );
   }
 }
