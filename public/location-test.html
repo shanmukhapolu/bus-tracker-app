@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Location Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 60px auto;
+      padding: 20px;
+      line-height: 1.5;
+      background: #f5f5f5;
+    }
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 28px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+    }
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 14px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #1677ff;
+      color: white;
+    }
+    #status {
+      margin-top: 20px;
+      padding: 14px;
+      border-radius: 10px;
+      background: #eee;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Location Tracking Test</h1>
+    <p>
+      Press the button. The browser should show its native location permission
+      prompt for this website.
+    </p>
+    <button id="start">Start Tracking</button>
+    <div id="status">Not started.</div>
+  </div>
+
+  <script>
+    const button = document.getElementById("start");
+    const status = document.getElementById("status");
+
+    function setStatus(message) {
+      status.textContent = message;
+    }
+
+    function startTracking() {
+      if (!window.isSecureContext) {
+        setStatus("ERROR: This page is not in a secure context. Use HTTPS.");
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        setStatus("ERROR: Geolocation is not supported by this browser.");
+        return;
+      }
+
+      setStatus(
+        "Requesting location permission...\n" +
+        "The browser should now show its native location prompt."
+      );
+
+      navigator.geolocation.watchPosition(
+        (position) => {
+          const { latitude, longitude, accuracy, speed, heading } =
+            position.coords;
+
+          setStatus(
+            "TRACKING ACTIVE\n\n" +
+            "Latitude: " + latitude + "\n" +
+            "Longitude: " + longitude + "\n" +
+            "Accuracy: " +
+              (accuracy == null ? "unknown" : accuracy.toFixed(1) + " meters") +
+              "\n" +
+            "Speed: " +
+              (speed == null ? "unknown" : speed.toFixed(2) + " m/s") +
+              "\n" +
+            "Heading: " +
+              (heading == null ? "unknown" : heading.toFixed(0) + "°")
+          );
+        },
+        (error) => {
+          let message = "Location error.\n";
+
+          if (error.code === error.PERMISSION_DENIED) {
+            message += "PERMISSION DENIED";
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            message += "POSITION UNAVAILABLE";
+          } else if (error.code === error.TIMEOUT) {
+            message += "TIMEOUT";
+          } else {
+            message += error.message || "Unknown error";
+          }
+
+          setStatus(message);
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 1000,
+          timeout: 20000
+        }
+      );
+
+      button.disabled = true;
+      button.textContent = "Tracking...";
+    }
+
+    button.addEventListener("click", startTracking);
+  </script>
+</body>
+</html>
