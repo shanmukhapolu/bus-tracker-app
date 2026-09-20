@@ -172,8 +172,8 @@ The repository is now wired for Firebase Hosting and Realtime Database deploymen
 
 In Firebase Console for `chsbustracker2`:
 
-1. Create **Realtime Database** and choose its region. Start in locked mode. Firebase provides the database URL after the database is created; this URL must be added locally as `VITE_FIREBASE_DATABASE_URL`. Firebase documents that the URL format depends on the database region. citeturn482753search2
-2. Enable **Authentication → Sign-in method → Email/Password**. Create one Firebase Authentication account per driver. citeturn482753search1
+1. Create **Realtime Database** and choose its region. Start in locked mode. Firebase provides the database URL after the database is created; this URL must be added locally as `VITE_FIREBASE_DATABASE_URL`. Firebase documents that the URL format depends on the database region.
+2. Enable **Authentication → Sign-in method → Email/Password**. Create one Firebase Authentication account per driver.
 3. After creating a driver account, copy its Auth UID and add a driver profile in Realtime Database:
 
 ```json
@@ -240,7 +240,7 @@ Or use the repository script, which also runs the Hosting predeploy build:
 npm run firebase:deploy
 ```
 
-Firebase Hosting serves static assets over HTTPS and provides project-hosted `web.app` and `firebaseapp.com` domains. citeturn482753search3turn482753search4
+Firebase Hosting serves static assets over HTTPS and provides project-hosted `web.app` and `firebaseapp.com` domains.
 
 After deployment, open the Hosting URL printed by the CLI. The public tracker is `/`; the internal driver page is `/drivers`.
 
