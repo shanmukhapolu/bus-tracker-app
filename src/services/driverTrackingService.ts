@@ -252,10 +252,10 @@ export async function startDriverTracking(
   };
 
   try {
-    // If the connection disappears, remove both the lock and live location.
-    // This avoids leaving stale coordinates publicly visible.
+    // If the connection disappears, the driver lock is removed immediately.
+    // The live bus record is registered for an inactive update only after
+    // the first successful live GPS write below.
     await runtime.onDisconnect(lockRef).remove();
-    await runtime.onDisconnect(liveRef).remove();
 
     watchId = navigator.geolocation.watchPosition(
       (position) => {
@@ -298,6 +298,12 @@ export async function startDriverTracking(
     await requestWakeLock();
     await publishLatest();
 
+    await runtime.onDisconnect(liveRef).update({
+      active: false,
+      endedAt: runtime.serverTimestamp(),
+      lastUpdated: runtime.serverTimestamp(),
+    });
+
     const stop = async () => {
       if (stopped) return;
 
@@ -323,7 +329,11 @@ export async function startDriverTracking(
       }
 
       try {
-        await runtime.remove(liveRef);
+        await runtime.update(liveRef, {
+          active: false,
+          endedAt: runtime.serverTimestamp(),
+          lastUpdated: runtime.serverTimestamp(),
+        });
       } finally {
         await runtime.remove(lockRef);
       }
