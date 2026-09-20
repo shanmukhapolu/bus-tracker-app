@@ -7,11 +7,14 @@ import type {
   DriverTrackingSession,
 } from "../services/driverTrackingService";
 import {
+  getLocationPermissionState,
+  getLocationSupportMessage,
   listenForDriverAuth,
   loadDriverProfile,
   signInDriver,
   signOutDriver,
   startDriverTracking,
+  type LocationPermissionState,
 } from "../services/driverTrackingService";
 import { firebaseConfigured } from "../config/firebase";
 import { createMockBuses } from "../data/mockBuses";
@@ -39,6 +42,12 @@ export function DriversPage() {
   const [position, setPosition] = useState<DriverLocation | null>(null);
   const [error, setError] = useState("");
   const [starting, setStarting] = useState(false);
+  const [locationPermission, setLocationPermission] =
+    useState<LocationPermissionState>("unknown");
+
+  useEffect(() => {
+    void getLocationPermissionState().then(setLocationPermission);
+  }, []);
 
   useEffect(() => {
     if (!firebaseConfigured) {
@@ -144,6 +153,12 @@ export function DriversPage() {
 
   const startTracking = async () => {
     if (!selectedBus) return;
+
+    const supportMessage = getLocationSupportMessage();
+    if (supportMessage) {
+      setError(supportMessage);
+      return;
+    }
 
     setStarting(true);
     setError("");
@@ -351,6 +366,15 @@ export function DriversPage() {
         {allowedBuses.length === 0 && (
           <div className="drivers-error" role="alert">
             Your account is enabled, but no buses are assigned to it yet.
+          </div>
+        )}
+
+        {locationPermission === "denied" && !session && (
+          <div className="drivers-error" role="alert">
+            Location access is currently blocked by this browser or device.
+            Change the site and browser location permission to Allow, then
+            reload this page. If you are viewing this inside another app,
+            open the HTTPS URL directly in Safari, Chrome, or Edge.
           </div>
         )}
 
