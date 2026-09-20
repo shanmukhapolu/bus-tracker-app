@@ -83,3 +83,82 @@ Android bus phone → Google Cloud Run → Firebase Realtime Database
 5. Configure Firebase public read rules and authenticated tracker writes, then test with the Firebase Emulator Suite before connecting real vehicles. Public website access does not mean public write access.
 
 Firebase, Cloud Run, authentication, and a backend are intentionally not installed in version 1.
+
+
+## Firebase live tracking setup
+
+The prototype can switch from the built-in simulation to a Firebase Realtime Database-backed live provider when all `VITE_FIREBASE_*` variables are present. The public map subscribes to `liveBuses`; the hidden `/drivers` page signs drivers in and publishes phone GPS while tracking is active.
+
+Firebase's web SDK is loaded from the official modular CDN at runtime, so this prototype does not add a large Firebase dependency to the npm lockfile. The public Firebase web configuration is not a secret; database rules and Firebase Authentication are what protect writes.
+
+### 1. Create/register the Firebase web app
+
+Create or select a Firebase project, create a Web app, and enable Realtime Database. Copy the web-app configuration values into a local `.env` based on `.env.example`. Set `VITE_FIREBASE_DATABASE_URL` to the Realtime Database URL from the Firebase console.
+
+### 2. Enable driver authentication
+
+Enable Firebase Authentication with Email/Password. Create one account per driver. The driver page does not create accounts itself.
+
+### 3. Add the database rules
+
+Publish `firebase.database.rules.json` as the Realtime Database rules. Public users can read live bus locations, but only enabled driver accounts can claim an assigned bus and write its live record.
+
+### 4. Add a driver profile
+
+After creating a driver account, copy its Firebase Auth UID into the Realtime Database under:
+
+```text
+drivers/
+  DRIVER_UID/
+    enabled: true
+    displayName: "Driver Name"
+    allowedBuses:
+      "218": true
+```
+
+Add more bus IDs to `allowedBuses` when that driver is permitted to operate them. The client can display the list, but the same assignment is enforced again by the database rules.
+
+### 5. Run the app
+
+```bash
+npm install
+npm run dev
+```
+
+Open `/drivers` on the driver's phone. Sign in, select an assigned bus, and press **Start tracking**. The browser requests high-accuracy location permission and publishes the newest GPS fix approximately once per second while the page is active.
+
+The public map listens to Firebase and only renders buses whose `liveBuses/<busId>.active` value is true. When tracking stops, the record becomes inactive. Firebase's `onDisconnect` mechanism also marks the bus inactive and releases the bus lock when the tracking connection drops.
+
+### Driver-phone limitations
+
+Browser geolocation requires a secure context such as HTTPS, and the user must grant permission. `watchPosition()` is preferable to repeatedly calling `getCurrentPosition()` because the browser can deliver updated position fixes as they become available. The implementation requests high accuracy, allows at most about one second of cached position age, and publishes at most once per second.
+
+Mobile browsers can throttle or suspend background tabs. The page therefore asks for a Screen Wake Lock when supported, but a web page cannot guarantee continuous background GPS tracking across all phones. For reliable all-day fleet tracking, the eventual production version should use a dedicated native Android/iOS driver app or a managed device mode rather than depending on a foreground browser tab.
+
+### Cost/scaling note
+
+A one-second write cadence is intentionally aggressive for the prototype. It is suitable for a small number of active buses, but it is not the most efficient fleet design. A production implementation should usually combine movement thresholds, adaptive intervals, and heartbeat writes—for example, publish immediately when the bus moves several meters, otherwise send a periodic heartbeat. Firebase Realtime Database is designed for realtime listeners, but usage is billed primarily on stored data and outbound traffic, so scaling should be measured rather than assuming a free large-scale fleet.
+
+### Security note
+
+`/drivers` is hidden from the public navigation, but hiding a URL is not an access-control mechanism. Firebase Authentication and Realtime Database Rules are the real controls. Do not replace the rules with a shared secret embedded in frontend code.
+
+### Suggested production evolution
+
+For a real district deployment, keep the current `BusService` abstraction but replace browser-driver publishing with:
+
+```text
+Driver phone app
+   ↓
+Authenticated tracking session
+   ↓
+Cloud Run / trusted ingestion API
+   ↓
+Firebase Realtime Database
+   ↓
+Public bus listener
+   ↓
+Map UI
+```
+
+That trusted ingestion layer can validate driver assignments server-side, enforce rate limits, reject impossible GPS jumps, keep driver identity private from public clients, and maintain route/ETA computation separately from raw GPS.
