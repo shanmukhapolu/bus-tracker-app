@@ -43,14 +43,18 @@ export function Header({
       </a>
       <div className="header-right">
         <span className="region">Carmel, Indiana</span>
-        <span className={`live-indicator ${!connected ? "disconnected" : ""}`}>
+        <span
+          className={`live-indicator ${!connected ? "disconnected" : ""}`}
+          title={
+            connectionError
+              ? `Firebase sync error: ${connectionError}`
+              : lastSyncAt
+                ? `Firebase synced at ${lastSyncAt.toLocaleTimeString()}`
+                : "Connecting to Firebase Realtime Database"
+          }
+        >
           <i />
-          {!connected
-            ? "OFFLINE"
-            : demo
-              ? "LIVE DEMO"
-              : "LIVE"}
-
+          {!connected ? "OFFLINE" : demo ? "LIVE DEMO" : "LIVE"}
         </span>
       </div>
     </header>
