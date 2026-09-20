@@ -252,10 +252,18 @@ export async function startDriverTracking(
   };
 
   try {
-    // If the connection disappears, the driver lock is removed immediately.
-    // The live bus record is registered for an inactive update only after
-    // the first successful live GPS write below.
+    // Keep the driver lock alive only while the Firebase connection exists.
     await runtime.onDisconnect(lockRef).remove();
+
+    // The first write is mandatory. We do not mark tracking live until
+    // Firebase has actually accepted the GPS coordinates.
+    await publishPosition(runtime, liveRef, options, firstLocation);
+
+    await runtime.onDisconnect(liveRef).update({
+      active: false,
+      endedAt: runtime.serverTimestamp(),
+      lastUpdated: runtime.serverTimestamp(),
+    });
 
     watchId = navigator.geolocation.watchPosition(
       (position) => {
@@ -296,13 +304,7 @@ export async function startDriverTracking(
     };
 
     await requestWakeLock();
-    await publishLatest();
-
-    await runtime.onDisconnect(liveRef).update({
-      active: false,
-      endedAt: runtime.serverTimestamp(),
-      lastUpdated: runtime.serverTimestamp(),
-    });
+    void publishLatest();
 
     const stop = async () => {
       if (stopped) return;
