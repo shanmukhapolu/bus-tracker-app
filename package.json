@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
-    "format": "prettier --write src index.html vite.config.ts tsconfig.json package.json README.md"
+    "format": "prettier --write src index.html vite.config.ts tsconfig.json package.json README.md",
+    "firebase:deploy": "firebase deploy --only hosting,database",
+    "firebase:serve": "firebase serve --only hosting"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
