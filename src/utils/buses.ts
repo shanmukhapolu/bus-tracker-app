@@ -9,7 +9,8 @@ export function filterBuses(buses: Bus[], query: string) {
 }
 
 export function statusLabel(bus: Bus) {
-  if (bus.status === "offline") return "Offline";
+  if (bus.trackingActive) return "Live now";
+  if (bus.status === "offline") return "Not tracking";
   if (bus.status === "late")
     return bus.delayMinutes ? `${bus.delayMinutes} min late` : "Delayed";
   return "On time";
