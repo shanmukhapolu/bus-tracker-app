@@ -6,3 +6,5 @@ dist/
 !.env.example
 *.tsbuildinfo
 test-results/
+.firebase/
+firebase-debug.log
