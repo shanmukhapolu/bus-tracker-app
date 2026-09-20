@@ -67,6 +67,9 @@ async function publishPosition(
   options: StartOptions,
   position: DriverLocation,
 ) {
+  const user = runtime.auth.currentUser;
+  if (!user) throw new Error("Driver authentication is no longer active.");
+
   await runtime.update(liveRef, {
     busNumber: options.busNumber,
     route: options.route,
@@ -76,6 +79,7 @@ async function publishPosition(
     speedMps: position.speedMps,
     headingDeg: position.headingDeg,
     active: true,
+    driverUid: user.uid,
     lastUpdated: runtime.serverTimestamp(),
   });
 }
