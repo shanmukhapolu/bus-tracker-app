@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import { LogOut, MapPin, Radio, ShieldCheck, Smartphone } from "lucide-react";
 import type {
   DriverLocation,
@@ -121,7 +122,7 @@ export function DriversPage() {
 
   const selectedBus = buses.find((bus) => bus.id === selectedBusId);
 
-  const login = async (event: React.FormEvent<HTMLFormElement>) => {
+  const login = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
     try {
