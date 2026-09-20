@@ -1,6 +1,7 @@
 {
   "rules": {
     "liveBuses": {
+      ".read": true,
       "$busId": {
         ".read": true,
         ".write": "auth != null && root.child('drivers').child(auth.uid).child('enabled').val() === true && root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true && ((!data.exists() && root.child('activeDrivers').child($busId).val() === auth.uid) || (data.exists() && data.child('driverUid').val() === auth.uid))",
