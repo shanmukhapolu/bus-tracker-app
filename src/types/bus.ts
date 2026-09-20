@@ -11,6 +11,8 @@ export interface Bus {
   etaMinutes?: number;
   nextStop?: string;
   currentLocation?: string;
+  trackingActive?: boolean;
+  locationAccuracyMeters?: number;
   lastUpdated: Date;
 }
 
