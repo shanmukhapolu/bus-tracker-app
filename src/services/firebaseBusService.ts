@@ -7,7 +7,7 @@ import {
 import type { BusService } from "./busService";
 
 const LIVE_UPDATE_INTERVAL_MS = 1000;
-const BASE_BUSES = createMockBuses(new Date("2026-09-20T00:00:00Z"));
+const BASE_BUSES = createMockBuses();
 
 interface LiveBusRecord {
   busNumber?: string;
@@ -38,6 +38,10 @@ function mergeLiveBuses(
       isFiniteNumber(live.longitude);
 
     if (!active) {
+      const endedAt = isFiniteNumber(live?.endedAt)
+        ? live.endedAt
+        : undefined;
+
       return {
         ...base,
         trackingActive: false,
@@ -46,6 +50,7 @@ function mergeLiveBuses(
         speed: undefined,
         heading: undefined,
         currentLocation: "Not tracking",
+        lastUpdated: endedAt ? new Date(endedAt) : new Date(),
       };
     }
 
