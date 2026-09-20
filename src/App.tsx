@@ -9,10 +9,13 @@ import { useBusTools } from "./hooks/useBusTools";
 import { DriversPage } from "./pages/DriversPage";
 
 export default function App() {
-  if (window.location.pathname.replace(/\/+$/, "") === "/drivers") {
-    return <DriversPage />;
-  }
+  const isDriversPage =
+    window.location.pathname.replace(/\/+$/, "") === "/drivers";
 
+  return isDriversPage ? <DriversPage /> : <PublicTracker />;
+}
+
+function PublicTracker() {
   const { buses, mode, connected, updateIntervalMs } = useBuses();
   const [selectedId, setSelectedId] = useState("218");
   const [menuOpen, setMenuOpen] = useState(false);
