@@ -162,3 +162,106 @@ Map UI
 ```
 
 That trusted ingestion layer can validate driver assignments server-side, enforce rate limits, reject impossible GPS jumps, keep driver identity private from public clients, and maintain route/ETA computation separately from raw GPS.
+
+
+## Firebase Hosting deployment
+
+The repository is now wired for Firebase Hosting and Realtime Database deployment. The Firebase project ID in the supplied web configuration is **chsbustracker2** (the Firebase project display name can be different).
+
+### One-time Firebase console setup
+
+In Firebase Console for `chsbustracker2`:
+
+1. Create **Realtime Database** and choose its region. Start in locked mode. Firebase provides the database URL after the database is created; this URL must be added locally as `VITE_FIREBASE_DATABASE_URL`. Firebase documents that the URL format depends on the database region. citeturn482753search2
+2. Enable **Authentication → Sign-in method → Email/Password**. Create one Firebase Authentication account per driver. citeturn482753search1
+3. After creating a driver account, copy its Auth UID and add a driver profile in Realtime Database:
+
+```json
+{
+  "drivers": {
+    "DRIVER_UID": {
+      "enabled": true,
+      "displayName": "Driver Name",
+      "allowedBuses": {
+        "218": true
+      }
+    }
+  }
+}
+```
+
+The database rules in `database.rules.json` enforce the same bus assignment server-side.
+
+### Local setup on Windows PowerShell
+
+Clone the exact prototype branch:
+
+```powershell
+git clone --branch prototype --single-branch https://github.com/shanmukhapolu/bus-tracker-app.git
+cd bus-tracker-app
+npm ci
+```
+
+Create the local environment file:
+
+```powershell
+Copy-Item .env.example .env.local
+notepad .env.local
+```
+
+Set:
+
+```text
+VITE_FIREBASE_DATABASE_URL=https://YOUR_DATABASE_URL
+```
+
+You normally only need to add the database URL because the supplied `chsbustracker2` web configuration is already included in `src/config/firebase.ts`. `.env.local` is ignored by Git.
+
+Install/login to the Firebase CLI. The current Firebase CLI requires Node.js 18+ and Firebase recommends the npm installation path for Node users. citeturn482753search0
+
+```powershell
+npm install -g firebase-tools
+firebase login
+firebase projects:list
+```
+
+The repository already contains `.firebaserc`, so it points at `chsbustracker2`. The deployment files are `firebase.json` and `database.rules.json`.
+
+Build and deploy:
+
+```powershell
+npm run build
+firebase deploy --only hosting,database
+```
+
+Or use the repository script, which also runs the Hosting predeploy build:
+
+```powershell
+npm run firebase:deploy
+```
+
+Firebase Hosting serves static assets over HTTPS and provides project-hosted `web.app` and `firebaseapp.com` domains. citeturn482753search3turn482753search4
+
+After deployment, open the Hosting URL printed by the CLI. The public tracker is `/`; the internal driver page is `/drivers`.
+
+### Local testing
+
+For normal development:
+
+```powershell
+npm run dev
+```
+
+For Firebase Hosting-style local serving:
+
+```powershell
+npm run firebase:serve
+```
+
+For a phone GPS test, use the deployed HTTPS site or another HTTPS development environment. Browser geolocation requires a secure context and user permission.
+
+### Important production limitation
+
+A browser tab is not a fleet-management-grade tracking client. Mobile operating systems can throttle or suspend background tabs, so the driver should keep the tracking page active. The implementation requests Wake Lock where supported, but it cannot guarantee background GPS.
+
+For a real district deployment, the next production layer should add a trusted ingestion service that validates driver/bus assignments, rejects impossible GPS jumps, rate-limits writes, and keeps internal driver identity out of public live-bus records.
