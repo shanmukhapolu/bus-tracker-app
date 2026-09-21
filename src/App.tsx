@@ -7,12 +7,15 @@ import { BusInfoCard } from "./components/BusInfoCard";
 import { useBuses } from "./hooks/useBuses";
 import { useBusTools } from "./hooks/useBusTools";
 import { DriversPage } from "./pages/DriversPage";
+import { AdminPage } from "./pages/AdminPage";
 
 export default function App() {
-  const isDriversPage =
-    window.location.pathname.replace(/\/+$/, "") === "/drivers";
+  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
 
-  return isDriversPage ? <DriversPage /> : <PublicTracker />;
+  if (pathname === "/drivers") return <DriversPage />;
+  if (pathname === "/admin") return <AdminPage />;
+
+  return <PublicTracker />;
 }
 
 function PublicTracker() {
