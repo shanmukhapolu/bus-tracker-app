@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import { LogIn, LogOut, ShieldCheck } from "lucide-react";
 import { getFirebaseRuntime, type FirebaseRuntime } from "../config/firebase";
 
@@ -166,7 +167,7 @@ export function AdminPage() {
   );
 }
 
-const pageStyle: React.CSSProperties = {
+const pageStyle: CSSProperties = {
   minHeight: "100dvh",
   display: "grid",
   placeItems: "center",
@@ -175,7 +176,7 @@ const pageStyle: React.CSSProperties = {
   color: "#142f50",
 };
 
-const cardStyle: React.CSSProperties = {
+const cardStyle: CSSProperties = {
   width: "min(520px, 100%)",
   padding: 32,
   border: "1px solid #dfe6e4",
@@ -184,7 +185,7 @@ const cardStyle: React.CSSProperties = {
   boxShadow: "0 18px 60px #142f5014",
 };
 
-const iconStyle: React.CSSProperties = {
+const iconStyle: CSSProperties = {
   width: 46,
   height: 46,
   display: "grid",
@@ -195,7 +196,7 @@ const iconStyle: React.CSSProperties = {
   color: "#2464b8",
 };
 
-const eyebrowStyle: React.CSSProperties = {
+const eyebrowStyle: CSSProperties = {
   margin: "0 0 8px",
   color: "#2464b8",
   fontSize: 11,
@@ -203,27 +204,27 @@ const eyebrowStyle: React.CSSProperties = {
   letterSpacing: "0.12em",
 };
 
-const titleStyle: React.CSSProperties = {
+const titleStyle: CSSProperties = {
   margin: 0,
   fontFamily: "Manrope, sans-serif",
   fontSize: 31,
   letterSpacing: "-0.8px",
 };
 
-const descriptionStyle: React.CSSProperties = {
+const descriptionStyle: CSSProperties = {
   margin: "12px 0 24px",
   color: "#6c7c8a",
   fontSize: 14,
   lineHeight: 1.65,
 };
 
-const formStyle: React.CSSProperties = {
+const formStyle: CSSProperties = {
   display: "grid",
   gap: 14,
   marginBottom: 14,
 };
 
-const labelStyle: React.CSSProperties = {
+const labelStyle: CSSProperties = {
   display: "grid",
   gap: 7,
   color: "#536878",
@@ -231,7 +232,7 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 700,
 };
 
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   width: "100%",
   height: 48,
   padding: "0 13px",
@@ -243,7 +244,7 @@ const inputStyle: React.CSSProperties = {
   font: "inherit",
 };
 
-const buttonStyle: React.CSSProperties = {
+const buttonStyle: CSSProperties = {
   width: "100%",
   minHeight: 50,
   display: "flex",
@@ -259,7 +260,7 @@ const buttonStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
-const errorStyle: React.CSSProperties = {
+const errorStyle: CSSProperties = {
   marginBottom: 14,
   padding: 12,
   border: "1px solid #eed7d2",
@@ -270,7 +271,7 @@ const errorStyle: React.CSSProperties = {
   lineHeight: 1.5,
 };
 
-const portalStyle: React.CSSProperties = {
+const portalStyle: CSSProperties = {
   display: "grid",
   gap: 6,
   marginBottom: 18,
@@ -283,7 +284,7 @@ const portalStyle: React.CSSProperties = {
   lineHeight: 1.5,
 };
 
-const backStyle: React.CSSProperties = {
+const backStyle: CSSProperties = {
   display: "block",
   marginTop: 16,
   textAlign: "center",
