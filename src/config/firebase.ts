@@ -62,7 +62,9 @@ export interface FirebaseRuntime {
   ) => () => void;
   onDisconnect: (reference: any) => any;
   update: (reference: any, values: object) => Promise<void>;
+  set: (reference: any, value: unknown) => Promise<void>;
   remove: (reference: any) => Promise<void>;
+  push: (reference: any) => any;
   runTransaction: (
     reference: any,
     transactionUpdate: (currentData: any) => any,
@@ -114,7 +116,9 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
         onValue: databaseModule.onValue,
         onDisconnect: databaseModule.onDisconnect,
         update: databaseModule.update,
+        set: databaseModule.set,
         remove: databaseModule.remove,
+        push: databaseModule.push,
         runTransaction: databaseModule.runTransaction,
         serverTimestamp: databaseModule.serverTimestamp,
       };

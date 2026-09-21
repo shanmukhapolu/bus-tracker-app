@@ -8,6 +8,7 @@ import { Crosshair, Layers, Radio, RotateCw } from "lucide-react";
 import type { Bus } from "../types/bus";
 import { CARMEL_CENTER, MAP_STYLE_URL } from "../config/map";
 import { BusMarker } from "./BusMarker";
+import { validCoordinate } from "../services/fleet";
 
 interface Props {
   buses: Bus[];
@@ -97,7 +98,7 @@ export function BusMap({
   useEffect(() => {
     if (!map) return;
     const bus = busesRef.current.find((item) => item.id === selectedId);
-    if (!bus) return;
+    if (!bus || !validCoordinate(bus.latitude, bus.longitude)) return;
     const compact = window.matchMedia("(max-width: 899px)").matches;
     const shortLandscape =
       compact && window.matchMedia("(max-height: 500px)").matches;
@@ -124,7 +125,7 @@ export function BusMap({
     const selected = busesRef.current.find((item) => item.id === selectedId);
     const isLive = selected?.trackingActive === true;
 
-    if (isLive && !previouslyLiveRef.current && selected) {
+    if (isLive && !previouslyLiveRef.current && selected && validCoordinate(selected.latitude, selected.longitude)) {
       const compact = window.matchMedia("(max-width: 899px)").matches;
       map.easeTo({
         center: [selected.longitude, selected.latitude],
