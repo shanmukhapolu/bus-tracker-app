@@ -4,6 +4,7 @@ import { Marker, type Map as LibreMap } from "maplibre-gl";
 import type { Bus, Coordinate } from "../types/bus";
 import { interpolatePosition } from "../utils/buses";
 import { BusIcon } from "./BusIcon";
+import { validCoordinate } from "../services/fleet";
 
 interface Props {
   map: LibreMap;
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function BusMarker({ map, bus, selected, onSelect, intervalMs }: Props) {
+  if (!validCoordinate(bus.latitude, bus.longitude)) return null;
   const [element] = useState(() => document.createElement("div"));
   const marker = useRef<Marker | null>(null);
   const initial = useRef<Coordinate>([bus.longitude, bus.latitude]);

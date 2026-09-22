@@ -1,24 +1,87 @@
 {
   "rules": {
-    "liveBuses": {
+    ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() !== false",
+    ".write": false,
+    "publicBuses": {
       ".read": true,
       "$busId": {
-        ".read": true,
-        ".write": "auth != null && root.child('drivers').child(auth.uid).child('enabled').val() === true && root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true && ((!data.exists() && root.child('activeDrivers').child($busId).val() === auth.uid) || (data.exists() && data.child('driverUid').val() === auth.uid))",
-        ".validate": "newData.hasChildren(['busNumber', 'route', 'latitude', 'longitude', 'active', 'lastUpdated', 'driverUid']) && newData.child('busNumber').isString() && newData.child('route').isString() && newData.child('latitude').isNumber() && newData.child('longitude').isNumber() && newData.child('latitude').val() >= -90 && newData.child('latitude').val() <= 90 && newData.child('longitude').val() >= -180 && newData.child('longitude').val() <= 180 && newData.child('active').isBoolean() && newData.child('lastUpdated').isNumber() && newData.child('driverUid').val() === auth.uid"
+        ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() !== false",
+        ".validate": "newData.hasChildren(['busNumber','route','enabled']) && newData.child('busNumber').isString() && newData.child('route').isString() && newData.child('enabled').isBoolean()"
+      }
+    },
+    "publicLiveBuses": {
+      ".read": true,
+      "$busId": {
+        ".write": "auth != null && ((root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() !== false) || (root.child('drivers').child(auth.uid).child('enabled').val() !== false && (root.child('assignments').child(auth.uid).child('busId').val() === $busId || root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true) && (root.child('activeDrivers').child($busId).child('uid').val() === auth.uid || root.child('activeDrivers').child($busId).val() === auth.uid)))",
+        ".validate": "newData.hasChildren(['latitude','longitude','active','lastUpdated']) && newData.child('latitude').isNumber() && newData.child('latitude').val() >= -90 && newData.child('latitude').val() <= 90 && newData.child('longitude').isNumber() && newData.child('longitude').val() >= -180 && newData.child('longitude').val() <= 180 && newData.child('active').isBoolean() && newData.child('lastUpdated').isNumber()"
+      }
+    },
+    "liveBusMeta": {
+      "$busId": {
+        ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() !== false",
+        ".write": "auth != null && ((root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() !== false) || (root.child('drivers').child(auth.uid).child('enabled').val() !== false && (root.child('assignments').child(auth.uid).child('busId').val() === $busId || root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true) && (root.child('activeDrivers').child($busId).child('uid').val() === auth.uid || root.child('activeDrivers').child($busId).val() === auth.uid)))",
+        ".validate": "newData.child('driverUid').val() === auth.uid && newData.child('active').isBoolean() && newData.child('lastUpdated').isNumber()"
       }
     },
     "activeDrivers": {
       "$busId": {
-        ".read": "auth != null && root.child('drivers').child(auth.uid).child('enabled').val() === true",
-        ".write": "auth != null && root.child('drivers').child(auth.uid).child('enabled').val() === true && root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true && ((!data.exists() && newData.val() === auth.uid) || (data.val() === auth.uid && !newData.exists()) || (data.val() === auth.uid && newData.val() === auth.uid))",
-        ".validate": "newData.val() === auth.uid"
+        ".read": "auth != null && (root.child('admins').child(auth.uid).child('role').val() === 'admin' || (root.child('assignments').child(auth.uid).child('busId').val() === $busId || root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true))",
+        ".write": "auth != null && ((root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() !== false) || (root.child('drivers').child(auth.uid).child('enabled').val() !== false && (root.child('assignments').child(auth.uid).child('busId').val() === $busId || root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true) && ((!data.exists() && newData.child('uid').val() === auth.uid) || (data.val() === auth.uid && newData.child('uid').val() === auth.uid) || (data.child('uid').val() === auth.uid && (!newData.exists() || newData.child('uid').val() === auth.uid)) || (data.child('startedAt').val() < now - 120000 && newData.child('uid').val() === auth.uid))))",
+        ".validate": "!newData.exists() || (newData.child('uid').val() === auth.uid && newData.child('startedAt').isNumber())"
       }
     },
     "drivers": {
       "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || (root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() !== false))",
+        ".write": "auth != null && ((auth.uid === $uid && newData.child('enabled').val() === data.child('enabled').val()) || (root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() !== false))",
+        ".validate": "newData.child('displayName').isString() && newData.child('displayName').val().length >= 2 && newData.child('displayName').val().length <= 100 && (!newData.child('enabled').exists() || newData.child('enabled').isBoolean())"
+      }
+    },
+    "admins": {
+      "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": false
+        ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() !== false"
+      }
+    },
+    "buses": {
+      "$busId": {
+        ".read": "auth != null && (root.child('admins').child(auth.uid).child('role').val() === 'admin' || root.child('assignments').child(auth.uid).child('busId').val() === $busId)",
+        ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() !== false"
+      }
+    },
+    "assignments": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).child('role').val() === 'admin')",
+        ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() !== false",
+        ".validate": "!newData.exists() || (newData.child('busId').isString() && root.child('buses').child(newData.child('busId').val()).child('enabled').val() !== false)"
+      }
+    },
+    "fleetConfig": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin'",
+      ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() !== false"
+    },
+    "geofences": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() !== false"
+    },
+    "geofenceState": {
+      "$busId": {
+        "$fenceId": {
+          ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin'",
+          ".write": "auth != null && root.child('assignments').child(auth.uid).child('busId').val() === $busId"
+        }
+      }
+    },
+    "geofenceEvents": {
+      "$eventId": {
+        ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin'",
+        ".write": "auth != null && root.child('assignments').child(auth.uid).child('busId').val() === newData.child('busId').val() && newData.child('geofenceId').isString() && root.child('geofences').child(newData.child('geofenceId').val()).exists()"
+      }
+    },
+    "publicNotifications": {
+      ".read": true,
+      "$id": {
+        ".write": "auth != null && root.child('assignments').child(auth.uid).child('busId').val() === newData.child('busId').val() && newData.child('geofenceId').isString() && root.child('geofences').child(newData.child('geofenceId').val()).child('publicNotification').val() === true"
       }
     }
   }
