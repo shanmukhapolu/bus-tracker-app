@@ -1,14 +1,17 @@
 import { useMemo, useRef, useState } from "react";
-import { LogIn, MapPin, Radio, ShieldCheck } from "lucide-react";
+import { LogIn, MapPin, Radio, ShieldCheck, UserPlus } from "lucide-react";
 import { createMockBuses } from "../data/mockBuses";
 import {
-  getLocationSupportMessage,
   loadDriverProfile,
   signInDriver,
   signOutDriver,
+  signUpDriver,
+  type DriverProfile,
+} from "../services/driverAuthService";
+import {
+  getLocationSupportMessage,
   startDriverTracking,
   type DriverLocation,
-  type DriverProfile,
   type DriverTrackingSession,
 } from "../services/driverTrackingService";
 
@@ -18,16 +21,29 @@ function formatAccuracy(value: number | null) {
   return value === null ? "—" : `±${Math.round(value)} m`;
 }
 
+function getDriverBusIds(profile: DriverProfile | null) {
+  const assignedBus = profile?.assignedBus?.trim();
+  const legacyBusIds = Object.entries(profile?.allowedBuses ?? {})
+    .filter(([, allowed]) => allowed)
+    .map(([busId]) => busId);
+
+  return Array.from(
+    new Set([...(assignedBus ? [assignedBus] : []), ...legacyBusIds]),
+  );
+}
+
 export function DriversPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [profile, setProfile] = useState<DriverProfile | null>(null);
   const [signedIn, setSignedIn] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [selectedBusId, setSelectedBusId] = useState("");
   const [session, setSession] = useState<DriverTrackingSession | null>(null);
   const [position, setPosition] = useState<DriverLocation | null>(null);
   const [status, setStatus] = useState<
-    "idle" | "signing-in" | "requesting" | "tracking" | "error"
+    "idle" | "signing-in" | "signing-up" | "requesting" | "tracking" | "error"
   >("idle");
   const [message, setMessage] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -35,10 +51,7 @@ export function DriversPage() {
   const emailInputRef = useRef<HTMLInputElement>(null);
 
   const allowedBusIds = useMemo(
-    () =>
-      Object.entries(profile?.allowedBuses ?? {})
-        .filter(([, allowed]) => allowed)
-        .map(([busId]) => busId),
+    () => getDriverBusIds(profile),
     [profile],
   );
 
@@ -48,6 +61,16 @@ export function DriversPage() {
   );
 
   const selectedBus = buses.find((bus) => bus.id === selectedBusId);
+
+  const switchAuthMode = (mode: "login" | "signup") => {
+    setAuthMode(mode);
+    setEmail("");
+    setPassword("");
+    setDisplayName("");
+    setLoginError("");
+    setMessage("");
+    setStatus("idle");
+  };
 
   const login = async () => {
     setLoginError("");
@@ -60,23 +83,28 @@ export function DriversPage() {
 
       if (!nextProfile?.enabled) {
         await signOutDriver();
-        throw new Error("This Firebase driver account is not enabled.");
+        throw new Error(
+          "This driver account is waiting for administrator approval.",
+        );
       }
 
-      const nextAllowedBusIds = Object.entries(nextProfile.allowedBuses ?? {})
-        .filter(([, allowed]) => allowed)
-        .map(([busId]) => busId);
+      const nextBusIds = getDriverBusIds(nextProfile);
+      const configuredBusIds = nextBusIds.filter((busId) =>
+        buses.some((bus) => bus.id === busId),
+      );
 
-      if (nextAllowedBusIds.length === 0) {
+      if (configuredBusIds.length === 0) {
         await signOutDriver();
-        throw new Error("This driver account has no assigned buses.");
+        throw new Error(
+          "Your driver account is enabled, but no configured bus is assigned yet.",
+        );
       }
 
       setProfile(nextProfile);
       setSelectedBusId((current) =>
-        current && nextAllowedBusIds.includes(current)
+        current && configuredBusIds.includes(current)
           ? current
-          : nextAllowedBusIds[0],
+          : configuredBusIds[0],
       );
       setSignedIn(true);
       setPassword("");
@@ -87,6 +115,60 @@ export function DriversPage() {
         error instanceof Error
           ? error.message
           : "Could not sign in as a driver.",
+      );
+    }
+  };
+
+  const signup = async () => {
+    const name = displayName.trim();
+    const normalizedEmail = email.trim();
+
+    setLoginError("");
+    setMessage("");
+
+    if (name.length < 2) {
+      setStatus("error");
+      setLoginError("Enter your name.");
+      return;
+    }
+
+    if (!normalizedEmail) {
+      setStatus("error");
+      setLoginError("Enter your email address.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setStatus("error");
+      setLoginError("Password must be at least 6 characters.");
+      return;
+    }
+
+    setStatus("signing-up");
+
+    try {
+      await signUpDriver(name, normalizedEmail, password);
+      await signOutDriver();
+
+      setDisplayName("");
+      setPassword("");
+      setAuthMode("login");
+      setStatus("idle");
+      setMessage(
+        "Account created. An administrator must enable your account and assign a bus before you can sign in.",
+      );
+    } catch (error) {
+      try {
+        await signOutDriver();
+      } catch {
+        // Best-effort cleanup if Firebase signup already created a session.
+      }
+
+      setStatus("error");
+      setLoginError(
+        error instanceof Error
+          ? error.message
+          : "Could not create your driver account.",
       );
     }
   };
@@ -117,8 +199,6 @@ export function DriversPage() {
     setStatus("requesting");
 
     try {
-      // startDriverTracking deliberately requests native GPS permission
-      // before it performs any Firebase/database operation.
       const nextSession = await startDriverTracking({
         busId: selectedBus.id,
         busNumber: selectedBus.busNumber,
@@ -153,6 +233,7 @@ export function DriversPage() {
     setSelectedBusId("");
     setEmail("");
     setPassword("");
+    setDisplayName("");
     setStatus("idle");
     setMessage("");
     setLoginError("");
@@ -162,14 +243,44 @@ export function DriversPage() {
     return (
       <main className="simple-driver-page">
         <section className="simple-driver-card">
+          <div className="simple-driver-auth-switch" aria-label="Driver account">
+            <button
+              className={authMode === "login" ? "active" : ""}
+              type="button"
+              onClick={() => switchAuthMode("login")}
+            >
+              Log in
+            </button>
+            <button
+              className={authMode === "signup" ? "active" : ""}
+              type="button"
+              onClick={() => switchAuthMode("signup")}
+            >
+              Sign up
+            </button>
+          </div>
+
           <p className="simple-driver-eyebrow">DRIVER CONTROL</p>
-          <h1>Driver sign in</h1>
+          <h1>{authMode === "login" ? "Driver sign in" : "Create driver account"}</h1>
           <p className="simple-driver-description">
-            Sign in first. Pressing Start Tracking then uses the exact browser
-            GPS flow from the working location test page.
+            {authMode === "login"
+              ? "Sign in with your approved driver account."
+              : "Create your driver account. An administrator must approve the account and assign a bus before you can sign in."}
           </p>
 
           <div className="simple-driver-form">
+            {authMode === "signup" && (
+              <label>
+                Name
+                <input
+                  type="text"
+                  autoComplete="name"
+                  value={displayName}
+                  onChange={(event) => setDisplayName(event.target.value)}
+                />
+              </label>
+            )}
+
             <label>
               Driver email
               <input
@@ -185,7 +296,9 @@ export function DriversPage() {
               Password
               <input
                 type="password"
-                autoComplete="current-password"
+                autoComplete={
+                  authMode === "signup" ? "new-password" : "current-password"
+                }
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
@@ -199,14 +312,39 @@ export function DriversPage() {
             </div>
           )}
 
+          {message && !loginError && (
+            <div className="simple-driver-status">
+              <span className="status-dot" />
+              {message}
+            </div>
+          )}
+
           <button
             className="simple-driver-button"
             type="button"
-            disabled={!email.trim() || !password || status === "signing-in"}
-            onClick={() => void login()}
+            disabled={
+              !email.trim() ||
+              !password ||
+              (authMode === "signup" && !displayName.trim()) ||
+              status === "signing-in" ||
+              status === "signing-up"
+            }
+            onClick={() =>
+              void (authMode === "login" ? login() : signup())
+            }
           >
-            <LogIn size={18} />
-            {status === "signing-in" ? "Signing in…" : "Sign in"}
+            {authMode === "login" ? (
+              <LogIn size={18} />
+            ) : (
+              <UserPlus size={18} />
+            )}
+            {status === "signing-in"
+              ? "Signing in…"
+              : status === "signing-up"
+                ? "Creating account…"
+                : authMode === "login"
+                  ? "Sign in"
+                  : "Create account"}
           </button>
 
           <div className="simple-driver-note">
