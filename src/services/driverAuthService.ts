@@ -3,13 +3,28 @@ import { getFirebaseRuntime } from "../config/firebase";
 export interface DriverProfile {
   enabled?: boolean;
   displayName?: string;
-  assignedBus?: string;
+  assignedBus?: string | number | null;
   allowedBuses?: Record<string, boolean>;
 }
 
 export async function signInDriver(email: string, password: string) {
   const runtime = await getFirebaseRuntime();
-  return runtime.signInWithEmailAndPassword(runtime.auth, email, password);
+  const normalizedEmail = String(email ?? "").trim();
+  const normalizedPassword = String(password ?? "");
+
+  if (!normalizedEmail) {
+    throw new Error("Enter your email address.");
+  }
+
+  if (!normalizedPassword) {
+    throw new Error("Enter your password.");
+  }
+
+  return runtime.signInWithEmailAndPassword(
+    runtime.auth,
+    normalizedEmail,
+    normalizedPassword,
+  );
 }
 
 export async function signUpDriver(
@@ -18,14 +33,18 @@ export async function signUpDriver(
   password: string,
 ) {
   const runtime = await getFirebaseRuntime();
+  const normalizedName = String(displayName ?? "").trim();
+  const normalizedEmail = String(email ?? "").trim();
+  const normalizedPassword = String(password ?? "");
+
   const result = await runtime.createUserWithEmailAndPassword(
     runtime.auth,
-    email,
-    password,
+    normalizedEmail,
+    normalizedPassword,
   );
 
   await runtime.update(runtime.ref(runtime.db, `drivers/${result.user.uid}`), {
-    displayName,
+    displayName: normalizedName,
     enabled: false,
     assignedBus: "",
   });
