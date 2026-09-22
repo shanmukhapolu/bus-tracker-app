@@ -265,3 +265,18 @@ For a phone GPS test, use the deployed HTTPS site or another HTTPS development e
 A browser tab is not a fleet-management-grade tracking client. Mobile operating systems can throttle or suspend background tabs, so the driver should keep the tracking page active. The implementation requests Wake Lock where supported, but it cannot guarantee background GPS.
 
 For a real district deployment, the next production layer should add a trusted ingestion service that validates driver/bus assignments, rejects impossible GPS jumps, rate-limits writes, and keeps internal driver identity out of public live-bus records.
+
+## Spark-compatible production data model
+
+The current implementation uses no Cloud Functions, Cloud Run, or other Blaze-only services. Realtime Database paths are deliberately separated: `publicBuses` and `publicLiveBuses` are the only unauthenticated reads; `drivers`, `assignments`, `buses`, `liveBusMeta`, `activeDrivers`, and administrative records are private. Administrators are records at `admins/{uid}` with `role: "admin"`; an absent `enabled` property remains enabled for existing accounts.
+
+Driver GPS is assigned-only: `assignments/{uid}.busId` identifies the single bus a driver can lock and publish. Browser `watchPosition` runs only after the Start Tracking click, and `onDisconnect` releases the lock and marks the public location inactive. Geofence transition processing, when enabled for a fleet, must remain client-side on Spark; it is not server-authoritative.
+
+Deploy the SPA rewrite and Database rules with:
+
+```bash
+npm install
+npm run build
+npm test
+firebase deploy --only hosting,database
+```
