@@ -18,7 +18,7 @@
     "drivers": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.child('enabled').val() === false && newData.child('displayName').isString() && newData.child('assignedBus').val() === ''"
+        ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.child('enabled').val() === false && newData.child('displayName').isString() && newData.child('assignedBus').val() === '' && !newData.child('allowedBuses').exists()"
       }
     }
   }
