@@ -22,7 +22,12 @@ function formatAccuracy(value: number | null) {
 }
 
 function getDriverBusIds(profile: DriverProfile | null) {
-  const assignedBus = profile?.assignedBus?.trim();
+  const rawAssignedBus = profile?.assignedBus;
+  const assignedBus =
+    rawAssignedBus === null || rawAssignedBus === undefined
+      ? ""
+      : String(rawAssignedBus).trim();
+
   const legacyBusIds = Object.entries(profile?.allowedBuses ?? {})
     .filter(([, allowed]) => allowed)
     .map(([busId]) => busId);
@@ -50,10 +55,7 @@ export function DriversPage() {
 
   const emailInputRef = useRef<HTMLInputElement>(null);
 
-  const allowedBusIds = useMemo(
-    () => getDriverBusIds(profile),
-    [profile],
-  );
+  const allowedBusIds = useMemo(() => getDriverBusIds(profile), [profile]);
 
   const allowedBuses = useMemo(
     () => buses.filter((bus) => allowedBusIds.includes(bus.id)),
@@ -78,7 +80,7 @@ export function DriversPage() {
     setStatus("signing-in");
 
     try {
-      const result = await signInDriver(email.trim(), password);
+      const result = await signInDriver(email, password);
       const nextProfile = await loadDriverProfile(result.user.uid);
 
       if (!nextProfile?.enabled) {
@@ -93,22 +95,23 @@ export function DriversPage() {
         buses.some((bus) => bus.id === busId),
       );
 
-      if (configuredBusIds.length === 0) {
-        await signOutDriver();
-        throw new Error(
-          "Your driver account is enabled, but no configured bus is assigned yet.",
-        );
-      }
-
       setProfile(nextProfile);
       setSelectedBusId((current) =>
         current && configuredBusIds.includes(current)
           ? current
-          : configuredBusIds[0],
+          : configuredBusIds[0] ?? "",
       );
       setSignedIn(true);
       setPassword("");
       setStatus("idle");
+
+      if (configuredBusIds.length === 0) {
+        setMessage(
+          "Signed in. No bus is assigned to your account yet. Contact the administrator before starting tracking.",
+        );
+      } else {
+        setMessage("");
+      }
     } catch (error) {
       setStatus("error");
       setLoginError(
@@ -155,7 +158,7 @@ export function DriversPage() {
       setAuthMode("login");
       setStatus("idle");
       setMessage(
-        "Account created. An administrator must enable your account and assign a bus before you can sign in.",
+        "Account created. An administrator must enable your account and assign a bus before you can start tracking.",
       );
     } catch (error) {
       try {
@@ -261,11 +264,13 @@ export function DriversPage() {
           </div>
 
           <p className="simple-driver-eyebrow">DRIVER CONTROL</p>
-          <h1>{authMode === "login" ? "Driver sign in" : "Create driver account"}</h1>
+          <h1>
+            {authMode === "login" ? "Driver sign in" : "Create driver account"}
+          </h1>
           <p className="simple-driver-description">
             {authMode === "login"
               ? "Sign in with your approved driver account."
-              : "Create your driver account. An administrator must approve the account and assign a bus before you can sign in."}
+              : "Create your driver account. An administrator must approve the account before you can sign in."}
           </p>
 
           <div className="simple-driver-form">
@@ -382,14 +387,18 @@ export function DriversPage() {
           Bus
           <select
             value={selectedBusId}
-            disabled={Boolean(session)}
+            disabled={Boolean(session) || allowedBuses.length === 0}
             onChange={(event) => setSelectedBusId(event.target.value)}
           >
-            {allowedBuses.map((bus) => (
-              <option key={bus.id} value={bus.id}>
-                Bus {bus.busNumber} · Route {bus.route}
-              </option>
-            ))}
+            {allowedBuses.length === 0 ? (
+              <option value="">No bus assigned</option>
+            ) : (
+              allowedBuses.map((bus) => (
+                <option key={bus.id} value={bus.id}>
+                  Bus {bus.busNumber} · Route {bus.route}
+                </option>
+              ))
+            )}
           </select>
         </label>
 
@@ -435,7 +444,12 @@ export function DriversPage() {
           {status === "idle" && "Ready to request location"}
           {status === "requesting" && "Requesting your location…"}
           {status === "tracking" && (message || "Live tracking is active")}
-          {status === "error" && message}
+          {status === "error" && loginError
+            ? loginError
+            : status === "error"
+              ? message
+              : ""}
+          {status === "idle" && message}
         </div>
 
         {session && position && (
@@ -461,8 +475,9 @@ export function DriversPage() {
 
         {!session && (
           <div className="simple-driver-empty">
-            Your coordinates are sent to Firebase only while tracking is active.
-            They are not shown on this page.
+            {allowedBuses.length === 0
+              ? "No bus is assigned to this account yet. You can sign in, but tracking will remain unavailable until an administrator assigns a bus."
+              : "Your coordinates are sent to Firebase only while tracking is active. They are not shown on this page."}
           </div>
         )}
 
