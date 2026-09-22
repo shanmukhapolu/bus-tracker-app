@@ -1406,6 +1406,32 @@ h1 {
 
 
 
+
+.simple-driver-auth-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 26px;
+  padding: 4px;
+  border: 1px solid #dfe6e4;
+  border-radius: 11px;
+  background: #f4f7f6;
+}
+
+.simple-driver-auth-switch button {
+  min-height: 38px;
+  border-radius: 8px;
+  color: #687986;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.simple-driver-auth-switch button.active {
+  background: #fff;
+  color: #142f50;
+  box-shadow: 0 1px 4px #142f5012;
+}
+
 .simple-driver-page {
   min-height: 100dvh;
   display: grid;
