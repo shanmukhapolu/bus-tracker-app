@@ -3,6 +3,7 @@ import { LogIn, ShieldCheck, UserPlus } from "lucide-react";
 import {
   loadAdminProfile,
   signInAdmin,
+  signOutAdmin,
   signUpAdmin,
   type AdminProfile,
 } from "../services/adminAuthService";
@@ -39,9 +40,8 @@ export function AdminPage() {
         nextProfile.role !== "admin" ||
         nextProfile.enabled !== true
       ) {
-        throw new Error(
-          "This admin account is waiting for approval.",
-        );
+        await signOutAdmin();
+        throw new Error("This admin account is waiting for approval.");
       }
 
       setProfile(nextProfile);
@@ -84,11 +84,8 @@ export function AdminPage() {
     setMessage("");
 
     try {
-      const result = await signUpAdmin(name, normalizedEmail, password);
-
-      // The new account starts disabled. Keep the session signed out until
-      // the administrator explicitly enables it in Realtime Database.
-      const { signOutAdmin } = await import("../services/adminAuthService");
+      await signUpAdmin(name, normalizedEmail, password);
+      // The new account starts disabled, so keep it signed out until it is approved.
       await signOutAdmin();
 
       // Avoid keeping the newly created credential in the form.
@@ -99,10 +96,8 @@ export function AdminPage() {
       setMessage(
         "Account created. An administrator must enable this account before you can log in.",
       );
-      void result;
     } catch (error) {
       try {
-        const { signOutAdmin } = await import("../services/adminAuthService");
         await signOutAdmin();
       } catch {
         // Best-effort cleanup if Firebase signup already created a session.
