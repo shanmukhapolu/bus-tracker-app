@@ -3,8 +3,6 @@ export const FIREBASE_SDK_VERSION = "12.19.0";
 const env = import.meta.env;
 
 export const firebaseConfig = {
-  // Firebase web configuration values are non-secret project identifiers.
-  // Environment variables can override them for another project/environment.
   apiKey:
     (env.VITE_FIREBASE_API_KEY as string | undefined) ??
     "AIzaSyCmAOZY6xyCtXDh8nu8qdG4YcAd4_hiz0k",
@@ -48,6 +46,11 @@ export interface FirebaseRuntime {
     callback: (user: any) => void,
   ) => () => void;
   signInWithEmailAndPassword: (
+    auth: any,
+    email: string,
+    password: string,
+  ) => Promise<{ user: any }>;
+  createUserWithEmailAndPassword: (
     auth: any,
     email: string,
     password: string,
@@ -108,6 +111,8 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
         getDatabase: databaseModule.getDatabase,
         onAuthStateChanged: authModule.onAuthStateChanged,
         signInWithEmailAndPassword: authModule.signInWithEmailAndPassword,
+        createUserWithEmailAndPassword:
+          authModule.createUserWithEmailAndPassword,
         signOut: authModule.signOut,
         get: databaseModule.get,
         ref: databaseModule.ref,
