@@ -1,5 +1,4 @@
 import { getFirebaseRuntime } from "../config/firebase";
-import { createMockBuses } from "../data/mockBuses";
 
 export interface FleetBus {
   id: string;
@@ -16,21 +15,8 @@ export interface FleetDriver {
   assignedBus: string;
 }
 
-const DEFAULT_FLEET_BUSES: FleetBus[] = createMockBuses().map((bus) => ({
-  id: bus.id,
-  busNumber: bus.busNumber,
-  route: bus.route,
-  enabled: true,
-}));
-
 export function mergeFleetBuses(buses: FleetBus[]) {
-  const merged = new Map(DEFAULT_FLEET_BUSES.map((bus) => [bus.id, bus]));
-
-  buses.forEach((bus) => {
-    merged.set(bus.id, bus);
-  });
-
-  return Array.from(merged.values());
+  return buses;
 }
 
 export function normalizeBus(
@@ -119,9 +105,7 @@ export async function addFleetBus(
   const id = normalizedBusNumber;
   const busRef = runtime.ref(runtime.db, `buses/${id}`);
   const existing = await runtime.get(busRef);
-  const isDefaultBus = DEFAULT_FLEET_BUSES.some((bus) => bus.id === id);
-
-  if (existing.exists() || isDefaultBus) {
+  if (existing.exists()) {
     throw new Error(`Bus ${normalizedBusNumber} already exists.`);
   }
 
@@ -156,17 +140,51 @@ export async function assignDriverToBus(
   const busSnapshot = await runtime.get(
     runtime.ref(runtime.db, `buses/${normalizedBusNumber}`),
   );
-  const isDefaultBus = DEFAULT_FLEET_BUSES.some(
-    (bus) => bus.id === normalizedBusNumber,
-  );
-
-  if (!busSnapshot.exists() && !isDefaultBus) {
+  if (!busSnapshot.exists()) {
     throw new Error("That bus does not exist.");
   }
 
   await runtime.update(runtime.ref(runtime.db, `drivers/${driverUid}`), {
     assignedBus: normalizedBusNumber,
   });
+}
+
+export async function deleteFleetBus(busNumber: string): Promise<void> {
+  const runtime = await getFirebaseRuntime();
+  const normalizedBusNumber = String(busNumber ?? "").trim();
+
+  if (!normalizedBusNumber) {
+    throw new Error("Bus number is required.");
+  }
+
+  const busRef = runtime.ref(runtime.db, `buses/${normalizedBusNumber}`);
+  const liveRef = runtime.ref(
+    runtime.db,
+    `liveBuses/${normalizedBusNumber}`,
+  );
+  const liveSnapshot = await runtime.get(liveRef);
+
+  if (liveSnapshot.exists()) {
+    const liveValue = liveSnapshot.val() as Record<string, unknown>;
+    if (liveValue.active === true) {
+      throw new Error("Stop tracking on this bus before deleting it.");
+    }
+  }
+
+  const updates: Record<string, unknown> = {
+    [`buses/${normalizedBusNumber}`]: null,
+  };
+
+  const driversSnapshot = await runtime.get(runtime.ref(runtime.db, "drivers"));
+  const drivers = normalizeFleetDrivers(driversSnapshot.val());
+
+  drivers.forEach((driver) => {
+    if (driver.assignedBus === normalizedBusNumber) {
+      updates[`drivers/${driver.uid}/assignedBus`] = "";
+    }
+  });
+
+  await runtime.update(runtime.db, updates);
 }
 
 export function subscribeFleet(
