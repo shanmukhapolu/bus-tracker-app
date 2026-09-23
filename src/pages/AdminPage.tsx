@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { LogIn, LogOut, Plus, ShieldCheck, UserPlus } from "lucide-react";
+import {
+  LogIn,
+  LogOut,
+  Plus,
+  ShieldCheck,
+  Trash2,
+  UserPlus,
+} from "lucide-react";
 import {
   loadAdminProfile,
   signInAdmin,
@@ -10,6 +17,7 @@ import {
 import {
   addFleetBus,
   assignDriverToBus,
+  deleteFleetBus,
   subscribeFleet,
   type FleetBus,
   type FleetDriver,
@@ -31,6 +39,7 @@ export function AdminPage() {
   const [fleetMessage, setFleetMessage] = useState("");
   const [fleetError, setFleetError] = useState("");
   const [savingBus, setSavingBus] = useState(false);
+  const [deletingBusId, setDeletingBusId] = useState("");
 
   useEffect(() => {
     if (!signedIn) return;
@@ -160,6 +169,31 @@ export function AdminPage() {
       );
     } finally {
       setSavingBus(false);
+    }
+  };
+
+  const deleteBus = async (bus: FleetBus) => {
+    const confirmed = window.confirm(
+      `Delete Bus ${bus.busNumber} on Route ${bus.route}? Any driver assigned to it will be unassigned.`,
+    );
+
+    if (!confirmed) return;
+
+    setDeletingBusId(bus.id);
+    setFleetError("");
+    setFleetMessage("");
+
+    try {
+      await deleteFleetBus(bus.busNumber);
+      setFleetMessage(`Bus ${bus.busNumber} deleted.`);
+    } catch (error) {
+      setFleetError(
+        error instanceof Error
+          ? error.message
+          : "Could not delete the bus.",
+      );
+    } finally {
+      setDeletingBusId("");
     }
   };
 
@@ -380,9 +414,22 @@ export function AdminPage() {
                       <strong>Bus {bus.busNumber}</strong>
                       <span>Route {bus.route}</span>
                     </div>
-                    <span className="admin-status-pill">
-                      {bus.enabled ? "Enabled" : "Disabled"}
-                    </span>
+                    <div className="admin-bus-actions">
+                      <span className="admin-status-pill">
+                        {bus.enabled ? "Enabled" : "Disabled"}
+                      </span>
+                      <button
+                        className="admin-delete-button"
+                        type="button"
+                        onClick={() => void deleteBus(bus)}
+                        disabled={Boolean(deletingBusId)}
+                        aria-label={`Delete bus ${bus.busNumber}`}
+                        title="Delete bus"
+                      >
+                        <Trash2 size={15} />
+                        {deletingBusId === bus.id ? "Deleting…" : "Delete"}
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
