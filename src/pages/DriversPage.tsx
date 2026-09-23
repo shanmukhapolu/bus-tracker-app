@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LogIn, MapPin, Radio, ShieldCheck, UserPlus } from "lucide-react";
-import { createMockBuses } from "../data/mockBuses";
 import {
   loadDriverProfile,
   signInDriver,
@@ -20,7 +19,6 @@ import {
   type FleetBus,
 } from "../services/fleetService";
 
-const buses = createMockBuses();
 
 function formatAccuracy(value: number | null) {
   return value === null ? "—" : `±${Math.round(value)} m`;
@@ -63,28 +61,17 @@ export function DriversPage() {
 
   const emailInputRef = useRef<HTMLInputElement>(null);
 
-  const driverBuses = useMemo(() => {
-    const merged = new Map(
-      buses.map((bus) => [
-        bus.id,
-        { id: bus.id, busNumber: bus.busNumber, route: bus.route },
-      ]),
-    );
-
-    fleetBuses.forEach((bus) => {
-      if (bus.enabled) {
-        merged.set(bus.id, {
+  const driverBuses = useMemo(
+    () =>
+      fleetBuses
+        .filter((bus) => bus.enabled)
+        .map((bus) => ({
           id: bus.id,
           busNumber: bus.busNumber,
           route: bus.route,
-        });
-      } else {
-        merged.delete(bus.id);
-      }
-    });
-
-    return Array.from(merged.values());
-  }, [fleetBuses]);
+        })),
+    [fleetBuses],
+  );
 
   const allowedBusIds = useMemo(() => getDriverBusIds(profile), [profile]);
 
