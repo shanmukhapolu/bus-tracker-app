@@ -16,6 +16,7 @@
       }
     },
     "drivers": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || (root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true))",
         ".write": "auth != null && ((auth.uid === $uid && !data.exists() && newData.child('enabled').val() === false && newData.child('displayName').isString() && newData.child('assignedBus').val() === '' && !newData.child('allowedBuses').exists()) || (root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true))"
