@@ -1,12 +1,10 @@
 import { CARMEL_CENTER } from "../config/map";
 import { firebaseConfigured, getFirebaseRuntime } from "../config/firebase";
-import { createMockBuses } from "../data/mockBuses";
 import { normalizeFleetBuses } from "./fleetService";
 import type { Bus, BusSnapshot } from "../types/bus";
 import type { BusService } from "./busService";
 
 const LIVE_UPDATE_INTERVAL_MS = 1000;
-const BASE_BUSES = createMockBuses();
 
 interface LiveBusRecord {
   busNumber?: string;
@@ -58,24 +56,8 @@ function mergeLiveBuses(
   const fleetById = new Map(fleetBuses.map((bus) => [bus.id, bus]));
   const merged = new Map<string, Bus>();
 
-  for (const base of BASE_BUSES) {
-    const fleet = fleetById.get(base.id);
-
-    if (fleet?.enabled === false) continue;
-
-    merged.set(base.id, {
-      ...base,
-      ...(fleet
-        ? {
-            busNumber: fleet.busNumber,
-            route: fleet.route,
-          }
-        : {}),
-    });
-  }
-
   for (const fleet of fleetBuses) {
-    if (!fleet.enabled || merged.has(fleet.id)) continue;
+    if (!fleet.enabled) continue;
 
     merged.set(
       fleet.id,
@@ -83,22 +65,7 @@ function mergeLiveBuses(
     );
   }
 
-  for (const [busId, live] of Object.entries(data ?? {})) {
-    if (merged.has(busId)) continue;
-
-    const fleet = fleetById.get(busId);
-    if (fleet?.enabled === false) continue;
-
-    merged.set(
-      busId,
-      createOfflineFleetBus(
-        busId,
-        live.busNumber ?? fleet?.busNumber ?? busId,
-        live.route ?? fleet?.route ?? "",
-      ),
-    );
-  }
-
+  // Live GPS records are merged only for buses currently registered in the fleet.
   return Array.from(merged.values()).map((base) => {
     const live = data?.[base.id];
 
