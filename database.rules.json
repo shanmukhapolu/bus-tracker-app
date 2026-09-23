@@ -17,14 +17,21 @@
     },
     "drivers": {
       "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.child('enabled').val() === false && newData.child('displayName').isString() && newData.child('assignedBus').val() === '' && !newData.child('allowedBuses').exists()"
+        ".read": "auth != null && (auth.uid === $uid || (root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true))",
+        ".write": "auth != null && ((auth.uid === $uid && !data.exists() && newData.child('enabled').val() === false && newData.child('displayName').isString() && newData.child('assignedBus').val() === '' && !newData.child('allowedBuses').exists()) || (root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true))"
       }
     },
     "admins": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.child('role').val() === 'admin' && newData.child('enabled').val() === false && newData.child('displayName').isString() && newData.child('displayName').val().length >= 2 && newData.child('displayName').val().length <= 100"
+      }
+    },
+    "buses": {
+      ".read": true,
+      "$busId": {
+        ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
+        ".validate": "newData.child('busNumber').isString() && newData.child('route').isString() && newData.child('enabled').isBoolean()"
       }
     }
   }
