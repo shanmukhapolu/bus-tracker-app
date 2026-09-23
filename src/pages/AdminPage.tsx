@@ -417,7 +417,7 @@ export function AdminPage() {
                         onChange={(event) =>
                           void assignBus(driver.uid, event.target.value)
                         }
-                        disabled={!driver.enabled || buses.length === 0}
+                        disabled={buses.length === 0}
                       >
                         <option value="">No bus assigned</option>
                         {buses.map((bus) => (
