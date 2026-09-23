@@ -1,12 +1,9 @@
-import { createMockBuses } from "../data/mockBuses";
-import type { Bus, BusSnapshot } from "../types/bus";
-import {
-  firebaseConfigured,
-  getFirebaseRuntime,
-} from "../config/firebase";
-import type { BusService } from "./busService";
-import { normalizeFleetBuses } from "./fleetService";
 import { CARMEL_CENTER } from "../config/map";
+import { firebaseConfigured, getFirebaseRuntime } from "../config/firebase";
+import { createMockBuses } from "../data/mockBuses";
+import { normalizeFleetBuses } from "./fleetService";
+import type { Bus, BusSnapshot } from "../types/bus";
+import type { BusService } from "./busService";
 
 const LIVE_UPDATE_INTERVAL_MS = 1000;
 const BASE_BUSES = createMockBuses();
@@ -25,14 +22,32 @@ interface LiveBusRecord {
   endedAt?: number | null;
 }
 
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value);
-}
-
 interface FleetBusRecord {
   busNumber?: string;
   route?: string;
   enabled?: boolean;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function createOfflineFleetBus(
+  id: string,
+  busNumber: string,
+  route: string,
+): Bus {
+  return {
+    id,
+    busNumber,
+    route,
+    latitude: CARMEL_CENTER[1],
+    longitude: CARMEL_CENTER[0],
+    status: "offline",
+    trackingActive: false,
+    currentLocation: "Not tracking",
+    lastUpdated: new Date(),
+  };
 }
 
 function mergeLiveBuses(
@@ -46,9 +61,7 @@ function mergeLiveBuses(
   for (const base of BASE_BUSES) {
     const fleet = fleetById.get(base.id);
 
-    if (fleet?.enabled === false) {
-      continue;
-    }
+    if (fleet?.enabled === false) continue;
 
     merged.set(base.id, {
       ...base,
@@ -62,108 +75,31 @@ function mergeLiveBuses(
   }
 
   for (const fleet of fleetBuses) {
-    if (fleetById.get(fleet.id)?.enabled !== true || merged.has(fleet.id)) {
-      continue;
-    }
+    if (!fleet.enabled || merged.has(fleet.id)) continue;
 
-    merged.set(fleet.id, {
-      id: fleet.id,
-      busNumber: fleet.busNumber,
-      route: fleet.route,
-      latitude: CARMEL_CENTER[1],
-      longitude: CARMEL_CENTER[0],
-      status: "offline",
-      currentLocation: "Not tracking",
-      trackingActive: false,
-      lastUpdated: new Date(),
-    });
+    merged.set(
+      fleet.id,
+      createOfflineFleetBus(fleet.id, fleet.busNumber, fleet.route),
+    );
   }
 
   for (const [busId, live] of Object.entries(data ?? {})) {
-    const base = merged.get(busId);
+    if (merged.has(busId)) continue;
 
-    if (!base) {
-      const fleet = fleetById.get(busId);
-      if (fleet?.enabled === false) continue;
+    const fleet = fleetById.get(busId);
+    if (fleet?.enabled === false) continue;
 
-      merged.set(busId, {
-        id: busId,
-        busNumber: live.busNumber ?? fleet?.busNumber ?? busId,
-        route: live.route ?? fleet?.route ?? "",
-        latitude: live.latitude ?? CARMEL_CENTER[1],
-        longitude: live.longitude ?? CARMEL_CENTER[0],
-        status: "offline",
-        currentLocation: "Not tracking",
-        trackingActive: false,
-        lastUpdated: new Date(),
-      });
-    }
+    merged.set(
+      busId,
+      createOfflineFleetBus(
+        busId,
+        live.busNumber ?? fleet?.busNumber ?? busId,
+        live.route ?? fleet?.route ?? "",
+      ),
+    );
   }
 
   return Array.from(merged.values()).map((base) => {
-    const live = data?.[base.id];
-
-    if (!live) {
-      return {
-        ...base,
-        trackingActive: false,
-        status: "offline",
-        etaMinutes: undefined,
-        speed: undefined,
-        heading: undefined,
-        currentLocation: "Not tracking",
-        lastUpdated: base.lastUpdated,
-      };
-    }
-
-    const active =
-      live.active === true &&
-      isFiniteNumber(live.latitude) &&
-      isFiniteNumber(live.longitude);
-
-    const firebaseLastUpdated = isFiniteNumber(live.lastUpdated)
-      ? new Date(live.lastUpdated)
-      : isFiniteNumber(live.endedAt)
-        ? new Date(live.endedAt)
-        : base.lastUpdated;
-
-    if (!active) {
-      return {
-        ...base,
-        busNumber: live.busNumber ?? base.busNumber,
-        route: live.route ?? base.route,
-        trackingActive: false,
-        status: "offline",
-        etaMinutes: undefined,
-        speed: undefined,
-        heading: undefined,
-        currentLocation: "Not tracking",
-        lastUpdated: firebaseLastUpdated,
-      };
-    }
-
-    return {
-      ...base,
-      busNumber: live.busNumber ?? base.busNumber,
-      route: live.route ?? base.route,
-      latitude: live.latitude!,
-      longitude: live.longitude!,
-      speed: isFiniteNumber(live.speedMps) ? live.speedMps! * 3.6 : undefined,
-      heading: isFiniteNumber(live.headingDeg) ? live.headingDeg! : undefined,
-      trackingActive: true,
-      status: "on-time",
-      delayMinutes: undefined,
-      etaMinutes: undefined,
-      nextStop: undefined,
-      currentLocation: "Live GPS",
-      locationAccuracyMeters: isFiniteNumber(live.accuracyMeters)
-        ? live.accuracyMeters
-        : undefined,
-      lastUpdated: firebaseLastUpdated,
-    };
-  });
-}
-  return BASE_BUSES.map((base) => {
     const live = data?.[base.id];
 
     if (!live) {
@@ -239,9 +175,9 @@ export function createFirebaseBusService(): BusService {
   let started = false;
   let stopLiveListener: (() => void) | undefined;
   let stopFleetListener: (() => void) | undefined;
-  let fleetData: Record<string, FleetBusRecord> | null = null;
-  let liveData: Record<string, LiveBusRecord> | null = null;
   let stopConnectionListener: (() => void) | undefined;
+  let liveData: Record<string, LiveBusRecord> | null = null;
+  let fleetData: Record<string, FleetBusRecord> | null = null;
 
   const notify = () => {
     listeners.forEach((listener) => listener());
@@ -261,7 +197,6 @@ export function createFirebaseBusService(): BusService {
         liveBusesRef,
         (dataSnapshot) => {
           const value = dataSnapshot.val();
-
           liveData =
             value && typeof value === "object"
               ? (value as Record<string, LiveBusRecord>)
@@ -273,7 +208,6 @@ export function createFirebaseBusService(): BusService {
             connectionError: undefined,
             lastSyncAt: new Date(),
           };
-
           notify();
         },
         (error) => {
@@ -303,7 +237,6 @@ export function createFirebaseBusService(): BusService {
             buses: mergeLiveBuses(liveData, fleetData),
             lastSyncAt: new Date(),
           };
-
           notify();
         },
         (error) => {
