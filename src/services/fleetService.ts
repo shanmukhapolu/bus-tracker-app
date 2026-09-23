@@ -1,4 +1,5 @@
 import { getFirebaseRuntime } from "../config/firebase";
+import { createMockBuses } from "../data/mockBuses";
 
 export interface FleetBus {
   id: string;
@@ -13,6 +14,23 @@ export interface FleetDriver {
   email?: string;
   enabled: boolean;
   assignedBus: string;
+}
+
+const DEFAULT_FLEET_BUSES: FleetBus[] = createMockBuses().map((bus) => ({
+  id: bus.id,
+  busNumber: bus.busNumber,
+  route: bus.route,
+  enabled: true,
+}));
+
+export function mergeFleetBuses(buses: FleetBus[]) {
+  const merged = new Map(DEFAULT_FLEET_BUSES.map((bus) => [bus.id, bus]));
+
+  buses.forEach((bus) => {
+    merged.set(bus.id, bus);
+  });
+
+  return Array.from(merged.values());
 }
 
 export function normalizeBus(
@@ -77,7 +95,7 @@ export function normalizeFleetDrivers(value: unknown): FleetDriver[] {
 export async function loadFleetBuses(): Promise<FleetBus[]> {
   const runtime = await getFirebaseRuntime();
   const snapshot = await runtime.get(runtime.ref(runtime.db, "buses"));
-  return normalizeFleetBuses(snapshot.val());
+  return mergeFleetBuses(normalizeFleetBuses(snapshot.val()));
 }
 
 export async function loadFleetDrivers(): Promise<FleetDriver[]> {
@@ -101,8 +119,9 @@ export async function addFleetBus(
   const id = normalizedBusNumber;
   const busRef = runtime.ref(runtime.db, `buses/${id}`);
   const existing = await runtime.get(busRef);
+  const isDefaultBus = DEFAULT_FLEET_BUSES.some((bus) => bus.id === id);
 
-  if (existing.exists()) {
+  if (existing.exists() || isDefaultBus) {
     throw new Error(`Bus ${normalizedBusNumber} already exists.`);
   }
 
@@ -137,14 +156,15 @@ export async function assignDriverToBus(
   const busSnapshot = await runtime.get(
     runtime.ref(runtime.db, `buses/${normalizedBusNumber}`),
   );
+  const isDefaultBus = DEFAULT_FLEET_BUSES.some(
+    (bus) => bus.id === normalizedBusNumber,
+  );
 
-  if (!busSnapshot.exists()) {
+  if (!busSnapshot.exists() && !isDefaultBus) {
     throw new Error("That bus does not exist.");
   }
 
   await runtime.update(runtime.ref(runtime.db, `drivers/${driverUid}`), {
-    // assignedBus must remain a string because the driver tracking rules
-    // compare this field directly with the bus path key.
     assignedBus: normalizedBusNumber,
   });
 }
@@ -176,7 +196,8 @@ export function subscribeFleet(
 
       stopBuses = runtime.onValue(
         runtime.ref(runtime.db, "buses"),
-        (snapshot) => onBuses(normalizeFleetBuses(snapshot.val())),
+        (snapshot) =>
+          onBuses(mergeFleetBuses(normalizeFleetBuses(snapshot.val()))),
         (error) => {
           onError(
             error instanceof Error
@@ -216,7 +237,8 @@ export function subscribeFleetBuses(
 
       stop = runtime.onValue(
         runtime.ref(runtime.db, "buses"),
-        (snapshot) => onBuses(normalizeFleetBuses(snapshot.val())),
+        (snapshot) =>
+          onBuses(mergeFleetBuses(normalizeFleetBuses(snapshot.val()))),
         (error) => {
           onError(
             error instanceof Error
@@ -257,15 +279,13 @@ export function subscribeDriverProfile(
       stop = runtime.onValue(
         runtime.ref(runtime.db, `drivers/${uid}`),
         (snapshot) => {
-          const value = snapshot.val();
-
           if (!snapshot.exists()) {
             onProfile(null);
             return;
           }
 
           const normalized = normalizeFleetDrivers({
-            [uid]: value,
+            [uid]: snapshot.val(),
           });
           onProfile(normalized[0] ?? null);
         },
