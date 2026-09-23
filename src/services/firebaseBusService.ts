@@ -53,7 +53,6 @@ function mergeLiveBuses(
   fleetData: Record<string, FleetBusRecord> | null,
 ): Bus[] {
   const fleetBuses = normalizeFleetBuses(fleetData);
-  const fleetById = new Map(fleetBuses.map((bus) => [bus.id, bus]));
   const merged = new Map<string, Bus>();
 
   for (const fleet of fleetBuses) {
