@@ -50,7 +50,7 @@ export function DriversPage() {
   const [signedIn, setSignedIn] = useState(false);
   const [driverUid, setDriverUid] = useState("");
   const [fleetBuses, setFleetBuses] = useState<FleetBus[]>([]);
-  const [fleetError, setFleetError] = useState("");
+  const [, setFleetError] = useState("");
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [selectedBusId, setSelectedBusId] = useState("");
   const [session, setSession] = useState<DriverTrackingSession | null>(null);
