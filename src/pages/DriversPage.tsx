@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LogIn, MapPin, Radio, ShieldCheck, UserPlus } from "lucide-react";
 import { createMockBuses } from "../data/mockBuses";
 import {
@@ -99,13 +99,13 @@ export function DriversPage() {
       setSelectedBusId((current) =>
         current && configuredBusIds.includes(current)
           ? current
-          : configuredBusIds[0] ?? "",
+          : nextBusIds[0] ?? "",
       );
       setSignedIn(true);
       setPassword("");
       setStatus("idle");
 
-      if (configuredBusIds.length === 0) {
+      if (nextBusIds.length === 0) {
         setMessage(
           "Signed in. No bus is assigned to your account yet. Contact the administrator before starting tracking.",
         );
