@@ -15,7 +15,10 @@ export interface FleetDriver {
   assignedBus: string;
 }
 
-function normalizeBus(value: unknown, id: string): FleetBus | null {
+export function normalizeBus(
+  value: unknown,
+  id: string,
+): FleetBus | null {
   if (!value || typeof value !== "object") return null;
 
   const record = value as Record<string, unknown>;
@@ -32,7 +35,18 @@ function normalizeBus(value: unknown, id: string): FleetBus | null {
   };
 }
 
-function normalizeDrivers(value: unknown): FleetDriver[] {
+export function normalizeFleetBuses(value: unknown): FleetBus[] {
+  if (!value || typeof value !== "object") return [];
+
+  return Object.entries(value as Record<string, unknown>).flatMap(
+    ([id, raw]) => {
+      const bus = normalizeBus(raw, id);
+      return bus ? [bus] : [];
+    },
+  );
+}
+
+export function normalizeFleetDrivers(value: unknown): FleetDriver[] {
   if (!value || typeof value !== "object") return [];
 
   return Object.entries(value as Record<string, unknown>).flatMap(
@@ -63,22 +77,13 @@ function normalizeDrivers(value: unknown): FleetDriver[] {
 export async function loadFleetBuses(): Promise<FleetBus[]> {
   const runtime = await getFirebaseRuntime();
   const snapshot = await runtime.get(runtime.ref(runtime.db, "buses"));
-  const value = snapshot.val();
-
-  if (!value || typeof value !== "object") return [];
-
-  return Object.entries(value as Record<string, unknown>).flatMap(
-    ([id, raw]) => {
-      const bus = normalizeBus(raw, id);
-      return bus ? [bus] : [];
-    },
-  );
+  return normalizeFleetBuses(snapshot.val());
 }
 
 export async function loadFleetDrivers(): Promise<FleetDriver[]> {
   const runtime = await getFirebaseRuntime();
   const snapshot = await runtime.get(runtime.ref(runtime.db, "drivers"));
-  return normalizeDrivers(snapshot.val());
+  return normalizeFleetDrivers(snapshot.val());
 }
 
 export async function addFleetBus(
@@ -123,7 +128,10 @@ export async function assignDriverToBus(
   const normalizedBusNumber = String(busNumber ?? "").trim();
 
   if (!normalizedBusNumber) {
-    throw new Error("Choose a bus before assigning it.");
+    await runtime.update(runtime.ref(runtime.db, `drivers/${driverUid}`), {
+      assignedBus: "",
+    });
+    return;
   }
 
   const busSnapshot = await runtime.get(
@@ -135,6 +143,8 @@ export async function assignDriverToBus(
   }
 
   await runtime.update(runtime.ref(runtime.db, `drivers/${driverUid}`), {
+    // assignedBus must remain a string because the driver tracking rules
+    // compare this field directly with the bus path key.
     assignedBus: normalizedBusNumber,
   });
 }
@@ -154,7 +164,7 @@ export function subscribeFleet(
 
       stopDrivers = runtime.onValue(
         runtime.ref(runtime.db, "drivers"),
-        (snapshot) => onDrivers(normalizeDrivers(snapshot.val())),
+        (snapshot) => onDrivers(normalizeFleetDrivers(snapshot.val())),
         (error) => {
           onError(
             error instanceof Error
@@ -166,19 +176,7 @@ export function subscribeFleet(
 
       stopBuses = runtime.onValue(
         runtime.ref(runtime.db, "buses"),
-        (snapshot) => {
-          const value = snapshot.val();
-          const buses =
-            value && typeof value === "object"
-              ? Object.entries(value as Record<string, unknown>).flatMap(
-                  ([id, raw]) => {
-                    const bus = normalizeBus(raw, id);
-                    return bus ? [bus] : [];
-                  },
-                )
-              : [];
-          onBuses(buses);
-        },
+        (snapshot) => onBuses(normalizeFleetBuses(snapshot.val())),
         (error) => {
           onError(
             error instanceof Error
@@ -202,5 +200,96 @@ export function subscribeFleet(
     cancelled = true;
     stopDrivers?.();
     stopBuses?.();
+  };
+}
+
+export function subscribeFleetBuses(
+  onBuses: (buses: FleetBus[]) => void,
+  onError: (message: string) => void,
+) {
+  let cancelled = false;
+  let stop: (() => void) | undefined;
+
+  void getFirebaseRuntime()
+    .then((runtime) => {
+      if (cancelled) return;
+
+      stop = runtime.onValue(
+        runtime.ref(runtime.db, "buses"),
+        (snapshot) => onBuses(normalizeFleetBuses(snapshot.val())),
+        (error) => {
+          onError(
+            error instanceof Error
+              ? error.message
+              : "Could not load bus records.",
+          );
+        },
+      );
+    })
+    .catch((error) => {
+      if (!cancelled) {
+        onError(
+          error instanceof Error
+            ? error.message
+            : "Could not connect to Firebase.",
+        );
+      }
+    });
+
+  return () => {
+    cancelled = true;
+    stop?.();
+  };
+}
+
+export function subscribeDriverProfile(
+  uid: string,
+  onProfile: (profile: FleetDriver | null) => void,
+  onError: (message: string) => void,
+) {
+  let cancelled = false;
+  let stop: (() => void) | undefined;
+
+  void getFirebaseRuntime()
+    .then((runtime) => {
+      if (cancelled) return;
+
+      stop = runtime.onValue(
+        runtime.ref(runtime.db, `drivers/${uid}`),
+        (snapshot) => {
+          const value = snapshot.val();
+
+          if (!snapshot.exists()) {
+            onProfile(null);
+            return;
+          }
+
+          const normalized = normalizeFleetDrivers({
+            [uid]: value,
+          });
+          onProfile(normalized[0] ?? null);
+        },
+        (error) => {
+          onError(
+            error instanceof Error
+              ? error.message
+              : "Could not load your driver assignment.",
+          );
+        },
+      );
+    })
+    .catch((error) => {
+      if (!cancelled) {
+        onError(
+          error instanceof Error
+            ? error.message
+            : "Could not connect to Firebase.",
+        );
+      }
+    });
+
+  return () => {
+    cancelled = true;
+    stop?.();
   };
 }
