@@ -14,6 +14,11 @@ import {
   type DriverLocation,
   type DriverTrackingSession,
 } from "../services/driverTrackingService";
+import {
+  subscribeDriverProfile,
+  subscribeFleetBuses,
+  type FleetBus,
+} from "../services/fleetService";
 
 const buses = createMockBuses();
 
@@ -43,6 +48,9 @@ export function DriversPage() {
   const [displayName, setDisplayName] = useState("");
   const [profile, setProfile] = useState<DriverProfile | null>(null);
   const [signedIn, setSignedIn] = useState(false);
+  const [driverUid, setDriverUid] = useState("");
+  const [fleetBuses, setFleetBuses] = useState<FleetBus[]>([]);
+  const [fleetError, setFleetError] = useState("");
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [selectedBusId, setSelectedBusId] = useState("");
   const [session, setSession] = useState<DriverTrackingSession | null>(null);
@@ -55,14 +63,66 @@ export function DriversPage() {
 
   const emailInputRef = useRef<HTMLInputElement>(null);
 
+  const driverBuses = useMemo(() => {
+    const merged = new Map(
+      buses.map((bus) => [
+        bus.id,
+        { id: bus.id, busNumber: bus.busNumber, route: bus.route },
+      ]),
+    );
+
+    fleetBuses.forEach((bus) => {
+      if (bus.enabled) {
+        merged.set(bus.id, {
+          id: bus.id,
+          busNumber: bus.busNumber,
+          route: bus.route,
+        });
+      } else {
+        merged.delete(bus.id);
+      }
+    });
+
+    return Array.from(merged.values());
+  }, [fleetBuses]);
+
   const allowedBusIds = useMemo(() => getDriverBusIds(profile), [profile]);
 
   const allowedBuses = useMemo(
-    () => buses.filter((bus) => allowedBusIds.includes(bus.id)),
-    [allowedBusIds],
+    () => driverBuses.filter((bus) => allowedBusIds.includes(bus.id)),
+    [allowedBusIds, driverBuses],
   );
 
-  const selectedBus = buses.find((bus) => bus.id === selectedBusId);
+  const selectedBus = driverBuses.find((bus) => bus.id === selectedBusId);
+
+  useEffect(() => {
+    if (!signedIn || !driverUid) return;
+
+    const stopBuses = subscribeFleetBuses(setFleetBuses, setFleetError);
+    const stopProfile = subscribeDriverProfile(
+      driverUid,
+      (nextProfile) => {
+        if (!nextProfile) return;
+
+        setProfile((current) => ({
+          ...(current ?? {}),
+          displayName: nextProfile.displayName,
+          enabled: nextProfile.enabled,
+          assignedBus: nextProfile.assignedBus,
+        }));
+
+        if (!session) {
+          setSelectedBusId(nextProfile.assignedBus || "");
+        }
+      },
+      setFleetError,
+    );
+
+    return () => {
+      stopBuses();
+      stopProfile();
+    };
+  }, [signedIn, driverUid, session]);
 
   const switchAuthMode = (mode: "login" | "signup") => {
     setAuthMode(mode);
@@ -91,13 +151,11 @@ export function DriversPage() {
       }
 
       const nextBusIds = getDriverBusIds(nextProfile);
-      const configuredBusIds = nextBusIds.filter((busId) =>
-        buses.some((bus) => bus.id === busId),
-      );
 
       setProfile(nextProfile);
+      setDriverUid(result.user.uid);
       setSelectedBusId((current) =>
-        current && configuredBusIds.includes(current)
+        current && nextBusIds.includes(current)
           ? current
           : nextBusIds[0] ?? "",
       );
@@ -234,6 +292,9 @@ export function DriversPage() {
     setSignedIn(false);
     setProfile(null);
     setSelectedBusId("");
+    setDriverUid("");
+    setFleetBuses([]);
+    setFleetError("");
     setEmail("");
     setPassword("");
     setDisplayName("");
