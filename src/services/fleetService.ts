@@ -157,7 +157,6 @@ export async function deleteFleetBus(busNumber: string): Promise<void> {
     throw new Error("Bus number is required.");
   }
 
-  const busRef = runtime.ref(runtime.db, `buses/${normalizedBusNumber}`);
   const liveRef = runtime.ref(
     runtime.db,
     `liveBuses/${normalizedBusNumber}`,
