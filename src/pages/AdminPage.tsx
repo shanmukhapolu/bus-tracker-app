@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { LogIn, ShieldCheck, UserPlus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { LogIn, LogOut, Plus, ShieldCheck, UserPlus } from "lucide-react";
 import {
   loadAdminProfile,
   signInAdmin,
@@ -7,6 +7,13 @@ import {
   signUpAdmin,
   type AdminProfile,
 } from "../services/adminAuthService";
+import {
+  addFleetBus,
+  assignDriverToBus,
+  subscribeFleet,
+  type FleetBus,
+  type FleetDriver,
+} from "../services/fleetService";
 
 export function AdminPage() {
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
@@ -17,6 +24,25 @@ export function AdminPage() {
   const [signedIn, setSignedIn] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [buses, setBuses] = useState<FleetBus[]>([]);
+  const [drivers, setDrivers] = useState<FleetDriver[]>([]);
+  const [busNumber, setBusNumber] = useState("");
+  const [route, setRoute] = useState("");
+  const [fleetMessage, setFleetMessage] = useState("");
+  const [fleetError, setFleetError] = useState("");
+  const [savingBus, setSavingBus] = useState(false);
+
+  useEffect(() => {
+    if (!signedIn) return;
+
+    const stop = subscribeFleet(
+      setDrivers,
+      setBuses,
+      setFleetError,
+    );
+
+    return stop;
+  }, [signedIn]);
 
   const switchMode = (mode: "login" | "signup") => {
     setAuthMode(mode);
@@ -85,10 +111,7 @@ export function AdminPage() {
 
     try {
       await signUpAdmin(name, normalizedEmail, password);
-      // The new account starts disabled, so keep it signed out until it is approved.
       await signOutAdmin();
-
-      // Avoid keeping the newly created credential in the form.
       setDisplayName("");
       setPassword("");
       setAuthMode("login");
@@ -112,128 +135,322 @@ export function AdminPage() {
     }
   };
 
-  if (signedIn) {
+  const addBus = async () => {
+    const normalizedBusNumber = busNumber.trim();
+    const normalizedRoute = route.trim();
+
+    if (!normalizedBusNumber || !normalizedRoute) {
+      setFleetError("Enter a bus number and route.");
+      setFleetMessage("");
+      return;
+    }
+
+    setSavingBus(true);
+    setFleetError("");
+    setFleetMessage("");
+
+    try {
+      await addFleetBus(normalizedBusNumber, normalizedRoute);
+      setBusNumber("");
+      setRoute("");
+      setFleetMessage(`Bus ${normalizedBusNumber} added.`);
+    } catch (error) {
+      setFleetError(
+        error instanceof Error ? error.message : "Could not add the bus.",
+      );
+    } finally {
+      setSavingBus(false);
+    }
+  };
+
+  const assignBus = async (driverUid: string, value: string) => {
+    setFleetError("");
+    setFleetMessage("");
+
+    if (!value) {
+      setFleetError("Select a bus to assign.");
+      return;
+    }
+
+    try {
+      await assignDriverToBus(driverUid, value);
+      const driver = drivers.find((item) => item.uid === driverUid);
+      setFleetMessage(
+        `Bus ${value} assigned to ${driver?.displayName ?? "driver"}.`,
+      );
+    } catch (error) {
+      setFleetError(
+        error instanceof Error
+          ? error.message
+          : "Could not assign the bus.",
+      );
+    }
+  };
+
+  const logout = async () => {
+    await signOutAdmin();
+    setSignedIn(false);
+    setProfile(null);
+    setBuses([]);
+    setDrivers([]);
+    setFleetMessage("");
+    setFleetError("");
+  };
+
+  if (!signedIn) {
     return (
       <main className="admin-auth-page">
-        <section className="admin-auth-card admin-welcome-card">
+        <section className="admin-auth-card">
+          <div className="simple-driver-auth-switch" aria-label="Admin account">
+            <button
+              className={authMode === "login" ? "active" : ""}
+              type="button"
+              onClick={() => switchMode("login")}
+            >
+              Log in
+            </button>
+            <button
+              className={authMode === "signup" ? "active" : ""}
+              type="button"
+              onClick={() => switchMode("signup")}
+            >
+              Sign up
+            </button>
+          </div>
+
           <p className="admin-auth-eyebrow">ADMIN PORTAL</p>
-          <h1>Welcome {profile?.displayName ?? "Admin"}</h1>
+          <h1>
+            {authMode === "login" ? "Admin sign in" : "Create admin account"}
+          </h1>
+          <p className="admin-auth-description">
+            {authMode === "login"
+              ? "Sign in with an approved administrator account."
+              : "Create an administrator account. It must be manually enabled before login is allowed."}
+          </p>
+
+          <div className="admin-auth-form">
+            {authMode === "signup" && (
+              <label>
+                Name
+                <input
+                  type="text"
+                  autoComplete="name"
+                  value={displayName}
+                  onChange={(event) => setDisplayName(event.target.value)}
+                />
+              </label>
+            )}
+
+            <label>
+              Email
+              <input
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </label>
+
+            <label>
+              Password
+              <input
+                type="password"
+                autoComplete={
+                  authMode === "signup" ? "new-password" : "current-password"
+                }
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </label>
+          </div>
+
+          {message && (
+            <div
+              className={
+                status === "error"
+                  ? "simple-driver-status error"
+                  : "simple-driver-status"
+              }
+              role={status === "error" ? "alert" : "status"}
+            >
+              <span
+                className={
+                  status === "error" ? "status-dot error" : "status-dot"
+                }
+              />
+              {message}
+            </div>
+          )}
+
+          <button
+            className="simple-driver-button"
+            type="button"
+            disabled={
+              !email.trim() ||
+              !password ||
+              (authMode === "signup" && !displayName.trim()) ||
+              status === "loading"
+            }
+            onClick={() =>
+              void (authMode === "login" ? login() : signup())
+            }
+          >
+            {authMode === "login" ? (
+              <LogIn size={18} />
+            ) : (
+              <UserPlus size={18} />
+            )}
+            {status === "loading"
+              ? authMode === "login"
+                ? "Signing in…"
+                : "Creating account…"
+              : authMode === "login"
+                ? "Sign in"
+                : "Create account"}
+          </button>
+
+          <div className="simple-driver-note">
+            <ShieldCheck size={15} />
+            Administrator access is controlled by Firebase.
+          </div>
         </section>
       </main>
     );
   }
 
   return (
-    <main className="admin-auth-page">
-      <section className="admin-auth-card">
-        <div className="simple-driver-auth-switch" aria-label="Admin account">
+    <main className="admin-dashboard-page">
+      <section className="admin-dashboard">
+        <header className="admin-dashboard-header">
+          <div>
+            <p className="admin-auth-eyebrow">ADMIN PORTAL</p>
+            <h1>Welcome {profile?.displayName ?? "Admin"}</h1>
+          </div>
           <button
-            className={authMode === "login" ? "active" : ""}
+            className="admin-logout-button"
             type="button"
-            onClick={() => switchMode("login")}
+            onClick={() => void logout()}
           >
-            Log in
+            <LogOut size={16} />
+            Sign out
           </button>
-          <button
-            className={authMode === "signup" ? "active" : ""}
-            type="button"
-            onClick={() => switchMode("signup")}
-          >
-            Sign up
-          </button>
-        </div>
+        </header>
 
-        <p className="admin-auth-eyebrow">ADMIN PORTAL</p>
-        <h1>{authMode === "login" ? "Admin sign in" : "Create admin account"}</h1>
-        <p className="admin-auth-description">
-          {authMode === "login"
-            ? "Sign in with an approved administrator account."
-            : "Create an administrator account. It must be manually enabled before login is allowed."}
-        </p>
+        <div className="admin-dashboard-grid">
+          <section className="admin-panel">
+            <div className="admin-panel-heading">
+              <div>
+                <span className="admin-panel-label">FLEET</span>
+                <h2>Bus list</h2>
+              </div>
+              <span className="admin-panel-count">{buses.length}</span>
+            </div>
 
-        <div className="admin-auth-form">
-          {authMode === "signup" && (
-            <label>
-              Name
+            <div className="admin-add-bus-form">
               <input
                 type="text"
-                autoComplete="name"
-                value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
+                inputMode="numeric"
+                placeholder="Bus number"
+                value={busNumber}
+                onChange={(event) => setBusNumber(event.target.value)}
               />
-            </label>
-          )}
+              <input
+                type="text"
+                placeholder="Route"
+                value={route}
+                onChange={(event) => setRoute(event.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => void addBus()}
+                disabled={savingBus}
+              >
+                <Plus size={16} />
+                {savingBus ? "Adding…" : "Add bus"}
+              </button>
+            </div>
 
-          <label>
-            Email
-            <input
-              type="email"
-              autoComplete="username"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </label>
+            <div className="admin-list">
+              {buses.length === 0 ? (
+                <div className="admin-empty">No buses have been created yet.</div>
+              ) : (
+                buses.map((bus) => (
+                  <div className="admin-list-row" key={bus.id}>
+                    <div>
+                      <strong>Bus {bus.busNumber}</strong>
+                      <span>Route {bus.route}</span>
+                    </div>
+                    <span className="admin-status-pill">
+                      {bus.enabled ? "Enabled" : "Disabled"}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
 
-          <label>
-            Password
-            <input
-              type="password"
-              autoComplete={
-                authMode === "signup" ? "new-password" : "current-password"
-              }
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </label>
+          <section className="admin-panel">
+            <div className="admin-panel-heading">
+              <div>
+                <span className="admin-panel-label">DRIVERS</span>
+                <h2>Bus drivers</h2>
+              </div>
+              <span className="admin-panel-count">{drivers.length}</span>
+            </div>
+
+            <div className="admin-list">
+              {drivers.length === 0 ? (
+                <div className="admin-empty">
+                  No driver accounts have been created yet.
+                </div>
+              ) : (
+                drivers.map((driver) => (
+                  <div className="admin-driver-row" key={driver.uid}>
+                    <div className="admin-driver-copy">
+                      <strong>{driver.displayName}</strong>
+                      <span>{driver.enabled ? "Enabled" : "Awaiting approval"}</span>
+                    </div>
+                    <div className="admin-driver-assignment">
+                      <span>Assigned bus</span>
+                      <select
+                        value={driver.assignedBus}
+                        onChange={(event) =>
+                          void assignBus(driver.uid, event.target.value)
+                        }
+                        disabled={!driver.enabled || buses.length === 0}
+                      >
+                        <option value="">No bus assigned</option>
+                        {buses.map((bus) => (
+                          <option key={bus.id} value={bus.busNumber}>
+                            Bus {bus.busNumber} · Route {bus.route}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
         </div>
 
-        {message && (
+        {(fleetMessage || fleetError) && (
           <div
             className={
-              status === "error"
+              fleetError
                 ? "simple-driver-status error"
                 : "simple-driver-status"
             }
-            role={status === "error" ? "alert" : "status"}
+            role={fleetError ? "alert" : "status"}
           >
             <span
               className={
-                status === "error" ? "status-dot error" : "status-dot"
+                fleetError ? "status-dot error" : "status-dot"
               }
             />
-            {message}
+            {fleetError || fleetMessage}
           </div>
         )}
-
-        <button
-          className="simple-driver-button"
-          type="button"
-          disabled={
-            !email.trim() ||
-            !password ||
-            (authMode === "signup" && !displayName.trim()) ||
-            status === "loading"
-          }
-          onClick={() => void (authMode === "login" ? login() : signup())}
-        >
-          {authMode === "login" ? (
-            <LogIn size={18} />
-          ) : (
-            <UserPlus size={18} />
-          )}
-          {status === "loading"
-            ? authMode === "login"
-              ? "Signing in…"
-              : "Creating account…"
-            : authMode === "login"
-              ? "Sign in"
-              : "Create account"}
-        </button>
-
-        <div className="simple-driver-note">
-          <ShieldCheck size={15} />
-          Administrator access is controlled by Firebase.
-        </div>
       </section>
     </main>
   );
