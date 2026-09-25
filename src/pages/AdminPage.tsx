@@ -7,6 +7,7 @@ import {
   Trash2,
   UserPlus,
 } from "lucide-react";
+import { SchoolLogo } from "../components/SchoolLogo";
 import {
   loadAdminProfile,
   signInAdmin,
