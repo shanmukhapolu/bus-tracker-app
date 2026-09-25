@@ -2021,3 +2021,688 @@ h1 {
   }
 }
 
+
+
+/* Carmel High School visual refresh — presentation only */
+:root {
+  --ccs-blue: #123b67;
+  --ccs-blue-deep: #0c2d4f;
+  --ccs-blue-soft: #eaf2fa;
+  --ccs-gold: #f5c84b;
+}
+
+html {
+  min-height: 100%;
+  background: #eef2f5;
+}
+
+body {
+  min-width: 0;
+  overscroll-behavior: none;
+  background: #eef2f5;
+}
+
+.app-shell {
+  background: #eef2f5;
+}
+
+.header {
+  height: 72px;
+  padding: 0 22px;
+  gap: 12px;
+  border-bottom-color: #dce3e9;
+}
+
+.brand {
+  gap: 11px;
+}
+
+.brand-logo {
+  width: 43px;
+  height: 43px;
+  display: block;
+  flex: 0 0 43px;
+  object-fit: contain;
+}
+
+.brand-mark {
+  display: none;
+}
+
+.brand-copy {
+  gap: 2px;
+}
+
+.brand-copy strong {
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
+
+.brand-copy > span {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+}
+
+.header-right {
+  gap: 12px;
+}
+
+.live-indicator {
+  min-height: 32px;
+  padding: 7px 10px;
+  border-radius: 999px;
+}
+
+.side-menu {
+  width: 296px;
+  border-right-color: #dce3e9;
+  box-shadow: 2px 0 18px #123b6708;
+}
+
+.menu-heading {
+  padding: 23px 18px 15px;
+}
+
+.menu-heading .eyebrow {
+  display: none;
+}
+
+.menu-heading h1 {
+  margin-top: 0;
+  font-size: 23px;
+  letter-spacing: -0.7px;
+}
+
+.search-field {
+  height: 44px;
+  margin: 0 16px;
+  border-radius: 12px;
+}
+
+.list-heading {
+  margin: 17px 16px 9px;
+  font-size: 10px;
+}
+
+.bus-list {
+  padding: 0 8px 12px;
+}
+
+.bus-row {
+  min-height: 68px;
+  gap: 10px;
+  padding: 10px 9px;
+  margin-bottom: 3px;
+  border-radius: 11px;
+}
+
+.bus-row.selected {
+  background: var(--ccs-blue-soft);
+  border-color: #d4e2f0;
+}
+
+.bus-row.selected:before {
+  left: -1px;
+  top: 17px;
+  bottom: 17px;
+  width: 3px;
+  background: var(--ccs-blue);
+}
+
+.bus-icon.small {
+  width: 37px;
+  height: 39px;
+  border-radius: 10px;
+}
+
+.bus-icon.small svg {
+  width: 24px;
+  height: 24px;
+}
+
+.bus-row-copy {
+  gap: 3px;
+}
+
+.bus-row-copy strong {
+  font-size: 14px;
+}
+
+.bus-row-copy > span {
+  font-size: 11px;
+}
+
+.menu-footer {
+  padding: 13px 16px 16px;
+}
+
+.demo-note {
+  padding: 10px 11px;
+  border-radius: 10px;
+}
+
+.demo-note strong,
+.demo-note p {
+  font-size: 11px;
+}
+
+.menu-footer > a {
+  margin-top: 13px;
+  font-size: 11px;
+}
+
+.prototype-note {
+  display: none;
+}
+
+.tracking-surface {
+  background: #e8edf0;
+}
+
+.map-top-label {
+  top: 14px;
+  left: 14px;
+  padding: 9px 11px;
+  border-radius: 999px;
+  font-size: 11px;
+  gap: 7px;
+  box-shadow: 0 5px 18px #15334b12;
+}
+
+.map-demo-pill,
+.map-key,
+.map-caption {
+  display: none;
+}
+
+.maplibregl-ctrl-top-right {
+  top: 63px;
+  right: 12px;
+}
+
+.maplibregl-ctrl-group {
+  border-radius: 12px;
+  box-shadow: 0 5px 18px #15334b18 !important;
+}
+
+.maplibregl-ctrl-group button {
+  width: 40px;
+  height: 40px;
+}
+
+.map-recenter {
+  top: 116px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.info-position {
+  width: min(390px, calc(100% - 36px));
+  right: 18px;
+  bottom: calc(17px + env(safe-area-inset-bottom));
+}
+
+.info-card {
+  border-radius: 17px;
+  border-color: #dfe6eb;
+  box-shadow: 0 16px 46px #13345124;
+  padding: 13px 16px 12px;
+}
+
+.details-toolbar {
+  margin: -5px -4px 2px;
+}
+
+.hide-details-button {
+  min-height: 32px;
+  padding: 4px 7px;
+  font-size: 11px;
+}
+
+.card-heading {
+  gap: 10px;
+}
+
+.card-heading h2 {
+  font-size: 20px;
+  margin-bottom: 2px;
+  letter-spacing: -0.5px;
+}
+
+.card-heading > div > span {
+  font-size: 11px;
+}
+
+.card-heading .bus-icon {
+  width: 43px;
+  height: 43px;
+  border-radius: 11px;
+}
+
+.status-pill {
+  padding: 6px 8px;
+  font-size: 10px;
+  border-radius: 999px;
+}
+
+.arrival-section {
+  padding: 17px 0 15px;
+  gap: 12px;
+}
+
+.eta {
+  font-size: 48px;
+  letter-spacing: -2px;
+}
+
+.eta > span {
+  font-size: 15px;
+}
+
+.destination {
+  padding-left: 13px;
+  gap: 6px;
+}
+
+.destination > span {
+  font-size: 10px;
+}
+
+.destination strong {
+  font-size: 12px;
+}
+
+.location-line {
+  padding: 11px 0;
+  gap: 9px;
+}
+
+.location-icon {
+  width: 33px;
+  height: 33px;
+}
+
+.location-line > div {
+  gap: 2px;
+}
+
+.location-line > div > span {
+  font-size: 10px;
+}
+
+.location-line strong {
+  font-size: 12px;
+}
+
+.card-footer {
+  padding-top: 10px;
+}
+
+.card-footer > span {
+  font-size: 10px;
+}
+
+.center-button {
+  min-height: 38px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: var(--ccs-blue-deep);
+  font-size: 10px;
+}
+
+.info-card.is-live .arrival-section {
+  display: none;
+}
+
+.info-card.is-live .location-line {
+  margin-top: 5px;
+}
+
+.show-details-button {
+  min-height: 42px;
+  border-radius: 12px;
+  box-shadow: 0 7px 22px #15334b20;
+  font-size: 12px;
+}
+
+.map-message {
+  top: 68px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px #15334b18;
+  font-size: 12px;
+}
+
+.portal-logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 17px;
+}
+
+.portal-logo {
+  width: 74px;
+  height: 74px;
+  display: block;
+  object-fit: contain;
+}
+
+.portal-identity {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.portal-logo.compact {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+}
+
+.admin-bus-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-delete-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 9px;
+  border: 1px solid #ead9d5;
+  border-radius: 8px;
+  background: #fffafa;
+  color: #9a4e43;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-delete-button:disabled {
+  opacity: 0.55;
+}
+
+@media (max-width: 899px) {
+  .header {
+    height: 64px;
+    padding: env(safe-area-inset-top) 12px 0 8px;
+  }
+
+  .menu-toggle {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+  }
+
+  .brand {
+    gap: 8px;
+  }
+
+  .brand-logo {
+    width: 37px;
+    height: 37px;
+    flex-basis: 37px;
+  }
+
+  .brand-copy strong {
+    font-size: 11px;
+    letter-spacing: 0;
+  }
+
+  .brand-copy > span {
+    font-size: 8px;
+    letter-spacing: 0.18em;
+  }
+
+  .live-indicator {
+    min-height: 30px;
+    padding: 6px 9px;
+    font-size: 9px;
+    border-radius: 999px;
+  }
+
+  .side-menu {
+    width: min(330px, 91vw);
+    border-radius: 0 18px 18px 0;
+    box-shadow: 12px 0 42px #0e2c4c24;
+  }
+
+  .menu-heading {
+    padding: 17px 16px 12px;
+  }
+
+  .menu-heading h1 {
+    font-size: 22px;
+  }
+
+  .search-field {
+    height: 48px;
+    margin: 0 14px;
+    border-radius: 13px;
+  }
+
+  .list-heading {
+    margin: 15px 14px 8px;
+  }
+
+  .bus-row {
+    min-height: 68px;
+    padding: 10px 8px;
+  }
+
+  .menu-footer {
+    padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
+  }
+
+  .map-top-label {
+    top: 10px;
+    left: 10px;
+    max-width: calc(100% - 76px);
+    padding: 8px 10px;
+    font-size: 10px;
+  }
+
+  .maplibregl-ctrl-top-right {
+    top: 55px;
+    right: 8px;
+  }
+
+  .map-recenter {
+    top: 106px;
+    right: 8px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .info-position {
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-width: none;
+    bottom: calc(9px + env(safe-area-inset-bottom));
+  }
+
+  .info-card {
+    max-height: calc(100dvh - 84px);
+    overflow: auto;
+    border-radius: 18px;
+    padding: 7px 14px 11px;
+  }
+
+  .card-heading .bus-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .card-heading h2 {
+    font-size: 19px;
+  }
+
+  .status-pill {
+    padding: 6px 8px;
+    font-size: 9px;
+  }
+
+  .arrival-section {
+    padding: 14px 0 12px;
+  }
+
+  .eta {
+    font-size: 43px;
+  }
+
+  .location-line {
+    padding: 10px 0;
+  }
+
+  .center-button {
+    min-height: 40px;
+    padding: 8px 10px;
+  }
+
+  .map-message {
+    top: 54px;
+    left: 10px;
+    max-width: calc(100% - 68px);
+    transform: none;
+    border-radius: 11px;
+  }
+
+  .portal-logo {
+    width: 66px;
+    height: 66px;
+  }
+
+  .portal-logo.compact {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+  }
+}
+
+@media (max-width: 520px) {
+  .brand-copy > span {
+    display: none;
+  }
+
+  .brand-copy strong {
+    font-size: 10px;
+  }
+
+  .header-right {
+    margin-left: auto;
+  }
+
+  .live-indicator {
+    font-size: 8px;
+    padding: 6px 8px;
+  }
+
+  .info-card {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .card-heading h2 {
+    font-size: 18px;
+  }
+
+  .location-line strong {
+    font-size: 11px;
+  }
+
+  .card-footer > span {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 600px) {
+  .simple-driver-page,
+  .admin-auth-page {
+    padding: 12px;
+  }
+
+  .simple-driver-card,
+  .admin-auth-card {
+    width: 100%;
+    padding: 20px 16px;
+    border-radius: 17px;
+    box-shadow: 0 14px 42px #142f5012;
+  }
+
+  .portal-logo-wrap {
+    margin-bottom: 14px;
+  }
+
+  .simple-driver-card h1,
+  .admin-auth-card h1 {
+    font-size: 25px;
+  }
+
+  .admin-dashboard-page {
+    padding: 12px;
+  }
+
+  .admin-dashboard-header {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .admin-dashboard-header h1 {
+    font-size: 24px;
+  }
+
+  .portal-identity {
+    gap: 9px;
+  }
+
+  .admin-logout-button {
+    min-height: 38px;
+    padding: 0 11px;
+  }
+
+  .admin-panel {
+    padding: 16px;
+    border-radius: 15px;
+  }
+
+  .admin-panel-heading h2 {
+    font-size: 19px;
+  }
+
+  .admin-list-row {
+    align-items: flex-start;
+  }
+
+  .admin-bus-actions {
+    align-items: flex-end;
+    flex-direction: column;
+  }
+
+  .admin-driver-row {
+    gap: 11px;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 380px) {
+  .header {
+    padding-right: 8px;
+  }
+
+  .brand-copy {
+    display: none;
+  }
+
+  .live-indicator {
+    font-size: 8px;
+  }
+
+  .info-position {
+    left: 7px;
+    right: 7px;
+  }
+}
