@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LogIn, MapPin, Radio, ShieldCheck, UserPlus } from "lucide-react";
+import { SchoolLogo } from "../components/SchoolLogo";
 import {
   loadDriverProfile,
   signInDriver,
@@ -294,6 +295,9 @@ export function DriversPage() {
     return (
       <main className="simple-driver-page">
         <section className="simple-driver-card">
+          <div className="portal-logo-wrap">
+            <SchoolLogo className="portal-logo" />
+          </div>
           <div className="simple-driver-auth-switch" aria-label="Driver account">
             <button
               className={authMode === "login" ? "active" : ""}
@@ -413,12 +417,15 @@ export function DriversPage() {
     <main className="simple-driver-page">
       <section className="simple-driver-card">
         <div className="simple-driver-header">
-          <div>
-            <p className="simple-driver-eyebrow">DRIVER CONTROL</p>
+          <div className="portal-identity">
+            <SchoolLogo className="portal-logo compact" />
+            <div>
+              <p className="simple-driver-eyebrow">DRIVER CONTROL</p>
             <h1>Live location</h1>
             <p className="simple-driver-description">
-              {profile?.displayName ?? email}
-            </p>
+                {profile?.displayName ?? email}
+              </p>
+            </div>
           </div>
 
           <button
