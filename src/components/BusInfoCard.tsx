@@ -32,7 +32,7 @@ export function BusInfoCard({
     (!demo && bus.trackingActive !== true);
 
   return (
-    <section className="info-card" aria-label={`Bus ${bus.busNumber} details`}>
+    <section className={`info-card ${demo ? "is-demo" : "is-live"}`} aria-label={`Bus ${bus.busNumber} details`}>
       <div className="details-toolbar">
         <button
           ref={hideButtonRef}
