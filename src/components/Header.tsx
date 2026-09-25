@@ -1,4 +1,5 @@
 import { Menu } from "lucide-react";
+import { SchoolLogo } from "./SchoolLogo";
 
 interface Props {
   onMenu: () => void;
@@ -33,9 +34,10 @@ export function Header({
         href="/"
         aria-label="Carmel Clay Schools Bus Tracker home"
       >
-        <span className="brand-mark" aria-hidden="true">
-          C
-        </span>
+        <SchoolLogo
+          className="brand-logo"
+          alt=""
+        />
         <span className="brand-copy">
           <strong>CARMEL CLAY SCHOOLS</strong>
           <span>BUS TRACKER</span>
