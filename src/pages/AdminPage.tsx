@@ -235,6 +235,9 @@ export function AdminPage() {
     return (
       <main className="admin-auth-page">
         <section className="admin-auth-card">
+          <div className="portal-logo-wrap">
+            <SchoolLogo className="portal-logo" />
+          </div>
           <div className="simple-driver-auth-switch" aria-label="Admin account">
             <button
               className={authMode === "login" ? "active" : ""}
@@ -356,9 +359,12 @@ export function AdminPage() {
     <main className="admin-dashboard-page">
       <section className="admin-dashboard">
         <header className="admin-dashboard-header">
-          <div>
-            <p className="admin-auth-eyebrow">ADMIN PORTAL</p>
-            <h1>Welcome {profile?.displayName ?? "Admin"}</h1>
+          <div className="portal-identity">
+            <SchoolLogo className="portal-logo compact" />
+            <div>
+              <p className="admin-auth-eyebrow">ADMIN PORTAL</p>
+              <h1>Welcome {profile?.displayName ?? "Admin"}</h1>
+            </div>
           </div>
           <button
             className="admin-logout-button"
