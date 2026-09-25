@@ -421,8 +421,8 @@ export function DriversPage() {
             <SchoolLogo className="portal-logo compact" />
             <div>
               <p className="simple-driver-eyebrow">DRIVER CONTROL</p>
-            <h1>Live location</h1>
-            <p className="simple-driver-description">
+              <h1>Live location</h1>
+              <p className="simple-driver-description">
                 {profile?.displayName ?? email}
               </p>
             </div>
