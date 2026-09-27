@@ -16,7 +16,11 @@ export default function App() {
     return <DriversPage />;
   }
 
-  if (path === "/admin" || path.startsWith("/admin/")) {
+  if (
+    path === "/admin" ||
+    path.startsWith("/admin/") ||
+    /^\/bus\/[^/]+$/.test(path)
+  ) {
     return <AdminPage />;
   }
 
