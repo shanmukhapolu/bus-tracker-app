@@ -42,12 +42,12 @@ export function BusMarker({ map, bus, selected, onSelect }: Props) {
 
   return createPortal(
     <button
-      className={\`map-bus \${selected ? "is-selected" : ""}\`}
+      className={`map-bus ${selected ? "is-selected" : ""}`}
       onClick={(event) => {
         event.stopPropagation();
         onSelect(bus.id);
       }}
-      aria-label={\`Select Bus \${bus.busNumber}\`}
+      aria-label={`Select Bus ${bus.busNumber}`}
       aria-pressed={selected}
     >
       <span className="marker-label">
