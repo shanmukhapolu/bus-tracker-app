@@ -116,6 +116,8 @@ export async function deleteGeofence(geofenceId: string) {
   const busesSnapshot = await runtime.get(runtime.ref(runtime.db, "buses"));
   const updates: Record<string, unknown> = {};
   updates["geofences/" + normalizedId] = null;
+  updates["geofenceAlerts/" + normalizedId] = null;
+  updates["geofenceBusOrder/" + normalizedId] = null;
 
   const buses = busesSnapshot.val();
   if (buses && typeof buses === "object") {
