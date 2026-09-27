@@ -258,7 +258,9 @@ export function AdminGeofenceDetail({
     };
 
     map.on("click", handleClick);
-    return () => map.off("click", handleClick);
+    return () => {
+      map.off("click", handleClick);
+    };
   }, [coordinates.length, drawing, editing, mapReady]);
 
   const assignedBuses = useMemo(
