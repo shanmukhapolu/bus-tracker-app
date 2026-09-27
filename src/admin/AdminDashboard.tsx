@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { ArrowUpDown, ArrowRight, BusFront, ChevronLeft, ChevronRight, Map as MapIcon, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowUpDown, ArrowRight, BusFront, ChevronLeft, ChevronRight, Map as MapIcon, Search, Trash2 } from "lucide-react";
 import type { Bus } from "../types/bus";
-import { deleteFleetBus, addFleetBus } from "../services/fleetService";
+import { deleteFleetBus } from "../services/fleetService";
 import { AdminFleetMap } from "./AdminFleetMap";
 import { Empty, ErrorState, Loading, PageHeading } from "./UI";
 import type { FleetDriver } from "../services/fleetService";
@@ -27,10 +27,6 @@ export function AdminDashboard({
   const [ascending, setAscending] = useState(true);
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState(buses[0]?.id ?? "");
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [adding, setAdding] = useState(false);
-  const [busNumber, setBusNumber] = useState("");
-  const [route, setRoute] = useState("");
   const [message, setMessage] = useState("");
   const [saveError, setSaveError] = useState("");
   const [deleting, setDeleting] = useState("");
@@ -88,28 +84,6 @@ export function AdminDashboard({
     if (index >= 0) setPage(Math.floor(index / 8));
   };
 
-  const addBus = async () => {
-    setSaveError("");
-    setMessage("");
-    const normalizedBus = busNumber.trim();
-    const normalizedRoute = route.trim();
-    if (!normalizedBus || !normalizedRoute) {
-      setSaveError("Enter a bus number and route.");
-      return;
-    }
-    setAdding(true);
-    try {
-      await addFleetBus(normalizedBus, normalizedRoute);
-      setBusNumber("");
-      setRoute("");
-      setMessage(`Bus ${normalizedBus} added.`);
-    } catch (caught) {
-      setSaveError(caught instanceof Error ? caught.message : "Could not add the bus.");
-    } finally {
-      setAdding(false);
-    }
-  };
-
   const removeBus = async (bus: Bus) => {
     if (!window.confirm(`Delete Bus ${bus.busNumber}? Any assigned driver will be unassigned.`)) return;
     setDeleting(bus.id);
@@ -143,10 +117,6 @@ export function AdminDashboard({
     <div className="overview-workspace">
       <PageHeading title="Fleet overview" description="Monitor fleet activity and manage the registered bus fleet.">
         <div className="admin-actions">
-          <button className="secondary" type="button" onClick={() => setShowAddForm((value) => !value)}>
-            <Plus size={16} />
-            {showAddForm ? "Close" : "Add bus"}
-          </button>
           <button className="secondary overview-map-link" type="button" onClick={() => onRefreshHint?.()}>
             <MapIcon size={16} />
             Live feed
@@ -159,33 +129,6 @@ export function AdminDashboard({
         <div className="summary-stat"><span><i className="status-dot green" />Online</span><strong>{online}</strong></div>
         <div className="summary-stat"><span><i className="status-dot muted" />Offline</span><strong>{offline}</strong></div>
       </div>
-
-      {showAddForm && (
-        <section className="panel">
-          <div className="panel-heading">
-            <div>
-              <h2>Add registered bus</h2>
-              <span>Only registered buses appear in the admin fleet.</span>
-            </div>
-          </div>
-          <div className="admin-bus-form">
-            <input
-              inputMode="numeric"
-              placeholder="Bus number"
-              value={busNumber}
-              onChange={(event) => setBusNumber(event.target.value)}
-            />
-            <input
-              placeholder="Route"
-              value={route}
-              onChange={(event) => setRoute(event.target.value)}
-            />
-            <button className="primary" type="button" disabled={adding} onClick={() => void addBus()}>
-              {adding ? "Adding…" : "Add bus"}
-            </button>
-          </div>
-        </section>
-      )}
 
       {(message || saveError) && (
         <div className={saveError ? "error-box" : "notice"} role={saveError ? "alert" : "status"}>
