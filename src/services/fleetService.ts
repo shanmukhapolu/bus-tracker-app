@@ -95,6 +95,7 @@ export async function loadFleetDrivers(): Promise<FleetDriver[]> {
 export async function addFleetBus(
   busNumber: string,
   route: string,
+  geofenceId = "",
 ): Promise<FleetBus> {
   const runtime = await getFirebaseRuntime();
   const normalizedBusNumber = String(busNumber ?? "").trim();
@@ -115,6 +116,7 @@ export async function addFleetBus(
     busNumber: normalizedBusNumber,
     route: normalizedRoute,
     enabled: true,
+    ...(geofenceId.trim() ? { geofenceId: geofenceId.trim() } : {}),
   });
 
   return {
@@ -122,7 +124,7 @@ export async function addFleetBus(
     busNumber: normalizedBusNumber,
     route: normalizedRoute,
     enabled: true,
-    geofenceId: "",
+    geofenceId: geofenceId.trim(),
   };
 }
 
