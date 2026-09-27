@@ -15,7 +15,6 @@ interface Props {
   onSelect: (id: string) => void;
   centerRequest: number;
   onCenter: () => void;
-  intervalMs: number;
   demo: boolean;
   obscured: boolean;
   connectionError?: string;
@@ -28,7 +27,6 @@ export function BusMap({
   onSelect,
   centerRequest,
   onCenter,
-  intervalMs,
   demo,
   obscured,
   connectionError,
@@ -154,7 +152,6 @@ export function BusMap({
             bus={bus}
             selected={bus.id === selectedId}
             onSelect={onSelect}
-            intervalMs={intervalMs}
           />
         ))}
       <div className="map-top-label">
