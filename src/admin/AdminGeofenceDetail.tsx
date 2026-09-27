@@ -45,6 +45,7 @@ export function AdminGeofenceDetail({
   geofence,
   buses,
   events,
+  order,
   connected,
   error,
   onBack,
@@ -53,6 +54,7 @@ export function AdminGeofenceDetail({
   geofence: Geofence | null;
   buses: Bus[];
   events: GeofenceEntryEvent[];
+  order: import("../services/geofenceService").GeofenceBusOrderEntry[];
   connected: boolean;
   error?: string;
   onBack: () => void;
@@ -281,34 +283,33 @@ export function AdminGeofenceDetail({
     [events, geofence],
   );
 
-  const firstEntryByBus = useMemo(() => {
-    const result = new Map<string, GeofenceEntryEvent>();
-
-    [...entryEvents]
-      .sort((a, b) => a.createdAt - b.createdAt)
-      .forEach((event) => {
-        if (!result.has(event.busId)) result.set(event.busId, event);
-      });
-
-    return result;
-  }, [entryEvents]);
+  const orderByBus = useMemo(
+    () => new Map(order.map((entry) => [entry.busId, entry])),
+    [order],
+  );
+  const entryByBus = useMemo(
+    () =>
+      new Map(
+        entryEvents.map((event) => [event.busId, event]),
+      ),
+    [entryEvents],
+  );
 
   const orderedBuses = useMemo(() => {
-    const withEntries = assignedBuses.filter((bus) =>
-      firstEntryByBus.has(bus.id),
-    );
-    const withoutEntries = assignedBuses.filter(
-      (bus) => !firstEntryByBus.has(bus.id),
-    );
+    const withEntries = assignedBuses
+      .filter((bus) => orderByBus.has(bus.id))
+      .sort(
+        (a, b) =>
+          orderByBus.get(a.id)!.firstEntryAt -
+          orderByBus.get(b.id)!.firstEntryAt,
+      );
 
-    withEntries.sort(
-      (a, b) =>
-        firstEntryByBus.get(a.id)!.createdAt -
-        firstEntryByBus.get(b.id)!.createdAt,
+    const withoutEntries = assignedBuses.filter(
+      (bus) => !orderByBus.has(bus.id),
     );
 
     return [...withEntries, ...withoutEntries];
-  }, [assignedBuses, firstEntryByBus]);
+  }, [assignedBuses, orderByBus]);
 
   const startEdit = () => {
     setEditing(true);
@@ -662,16 +663,12 @@ export function AdminGeofenceDetail({
           {orderedBuses.length ? (
             <div className="geofence-order-list">
               {orderedBuses.map((bus, index) => {
-                const entry = firstEntryByBus.get(bus.id);
+                const entry = entryByBus.get(bus.id);
 
                 return (
                   <div className="geofence-order-row" key={bus.id}>
                     <span className="geofence-order-rank">
-                      {entry
-                        ? String(
-                            [...firstEntryByBus.keys()].indexOf(bus.id) + 1,
-                          )
-                        : "—"}
+                      {entry ? String(order.findIndex((item) => item.busId === bus.id) + 1) : "—"}
                     </span>
                     <div>
                       <strong>Bus {bus.busNumber}</strong>
