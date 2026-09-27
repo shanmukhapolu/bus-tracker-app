@@ -189,6 +189,7 @@ export async function startDriverTracking(
 
   let latestPosition: DriverLocation | null = firstLocation;
   let publishing = false;
+  let activePublish: Promise<void> | null = null;
   let stopped = false;
   let publishTimer: ReturnType<typeof setInterval> | undefined;
   let wakeLock: any = null;
@@ -226,22 +227,28 @@ export async function startDriverTracking(
     }
   };
 
-  const publishLatest = async () => {
-    if (stopped || publishing || !latestPosition) return;
+  const publishLatest = () => {
+    if (stopped || !latestPosition) return Promise.resolve();
+    if (activePublish) return activePublish;
 
     publishing = true;
+    activePublish = (async () => {
+      try {
+        await publishPosition(runtime, liveRef, options, latestPosition!);
+      } catch (error) {
+        options.onError(
+          error instanceof Error
+            ? `Firebase write failed: ${error.message}`
+            : "Firebase could not save the latest GPS position.",
+        );
+      } finally {
+        publishing = false;
+      }
+    })();
 
-    try {
-      await publishPosition(runtime, liveRef, options, latestPosition);
-    } catch (error) {
-      options.onError(
-        error instanceof Error
-          ? `Firebase write failed: ${error.message}`
-          : "Firebase could not save the latest GPS position.",
-      );
-    } finally {
-      publishing = false;
-    }
+    return activePublish.finally(() => {
+      activePublish = null;
+    });
   };
 
   const handleVisibilityChange = () => {
@@ -262,7 +269,6 @@ export async function startDriverTracking(
     await runtime.onDisconnect(liveRef).update({
       active: false,
       endedAt: runtime.serverTimestamp(),
-      lastUpdated: runtime.serverTimestamp(),
     });
 
     watchId = navigator.geolocation.watchPosition(
@@ -331,10 +337,13 @@ export async function startDriverTracking(
       }
 
       try {
+        // Finish any GPS write already in flight so the stored coordinate is
+        // the most recent position received immediately before stopping.
+        await activePublish;
+
         await runtime.update(liveRef, {
           active: false,
           endedAt: runtime.serverTimestamp(),
-          lastUpdated: runtime.serverTimestamp(),
         });
       } finally {
         await runtime.remove(lockRef);
