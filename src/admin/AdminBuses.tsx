@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { ArrowUpDown, BusFront, ChevronLeft, ChevronRight, Search, Trash2 } from "lucide-react";
+import { ArrowUpDown, BusFront, ChevronLeft, ChevronRight, Plus, Search, Trash2 } from "lucide-react";
 import type { Bus } from "../types/bus";
 import type { FleetDriver } from "../services/fleetService";
-import { deleteFleetBus } from "../services/fleetService";
+import { addFleetBus, deleteFleetBus } from "../services/fleetService";
 import { assignBusGeofence } from "../services/geofenceService";
 import type { Geofence } from "../types/geofence";
 import { Badge, Empty, ErrorState, Loading, PageHeading } from "./UI";
@@ -31,7 +31,10 @@ export function AdminBuses({
   const [page, setPage] = useState(0);
   const [deleting, setDeleting] = useState("");
   const [assigning, setAssigning] = useState("");
-  
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [busNumber, setBusNumber] = useState("");
+  const [route, setRoute] = useState("");
   const [message, setMessage] = useState("");
   const [saveError, setSaveError] = useState("");
 
@@ -66,6 +69,33 @@ export function AdminBuses({
   const currentPage = Math.min(page, pages - 1);
   const visibleRows = rows.slice(currentPage * 8, currentPage * 8 + 8);
   const online = buses.filter((bus) => bus.trackingActive).length;
+
+  const addBus = async () => {
+    const normalizedBus = busNumber.trim();
+    const normalizedRoute = route.trim();
+    setMessage("");
+    setSaveError("");
+
+    if (!normalizedBus || !normalizedRoute) {
+      setSaveError("Enter a bus number and route.");
+      return;
+    }
+
+    setAdding(true);
+    try {
+      await addFleetBus(normalizedBus, normalizedRoute);
+      setBusNumber("");
+      setRoute("");
+      setShowAddForm(false);
+      setMessage("Bus " + normalizedBus + " added.");
+    } catch (caught) {
+      setSaveError(
+        caught instanceof Error ? caught.message : "Could not add the bus.",
+      );
+    } finally {
+      setAdding(false);
+    }
+  };
 
   const sortBy = (key: typeof sort) => {
     setSort(key);
@@ -112,14 +142,55 @@ export function AdminBuses({
     <div className="buses-page">
       <PageHeading
         title="Buses"
-        description="Monitor every registered bus and open its live details."
-      />
+        description="Monitor every registered bus and manage geofence assignments."
+      >
+        <button
+          className="primary"
+          type="button"
+          onClick={() => setShowAddForm((value) => !value)}
+        >
+          <Plus size={16} />
+          {showAddForm ? "Close" : "Add bus"}
+        </button>
+      </PageHeading>
 
       <div className="overview-metrics">
         <div className="summary-stat"><span>Total buses</span><strong>{buses.length}</strong></div>
         <div className="summary-stat"><span><i className="status-dot green" />Online</span><strong>{online}</strong></div>
         <div className="summary-stat"><span><i className="status-dot muted" />Offline</span><strong>{buses.length - online}</strong></div>
       </div>
+
+      {showAddForm && (
+        <section className="panel buses-add-panel">
+          <div className="panel-heading">
+            <div>
+              <h2>Add registered bus</h2>
+              <span>Add a bus to the managed fleet.</span>
+            </div>
+          </div>
+          <div className="buses-add-form">
+            <input
+              inputMode="numeric"
+              placeholder="Bus number"
+              value={busNumber}
+              onChange={(event) => setBusNumber(event.target.value)}
+            />
+            <input
+              placeholder="Route"
+              value={route}
+              onChange={(event) => setRoute(event.target.value)}
+            />
+            <button
+              className="primary"
+              type="button"
+              disabled={adding}
+              onClick={() => void addBus()}
+            >
+              {adding ? "Adding…" : "Add bus"}
+            </button>
+          </div>
+        </section>
+      )}
 
       {(message || saveError || geofenceError) && (
         <div className={saveError || geofenceError ? "error-box" : "notice"} role={saveError || geofenceError ? "alert" : "status"}>
