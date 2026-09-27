@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import adminStyles from "../admin-reference.css?raw";
 import modernAdminStyles from "../../admin-modern.css?raw";
 import { AdminLogin } from "../admin/AdminLogin";
@@ -9,40 +9,96 @@ import { AdminBuses } from "../admin/AdminBuses";
 import { AdminDrivers } from "../admin/AdminDrivers";
 import { AdminBusDetails } from "../admin/AdminBusDetails";
 import { AdminGeofences } from "../admin/AdminGeofences";
-import { AdminGeofenceMonitor } from "../admin/AdminGeofenceMonitor";
+import { AdminGeofenceDetail } from "../admin/AdminGeofenceDetail";
+import {
+  AdminGeofenceMonitor,
+  type GeofenceEntryEvent,
+} from "../admin/AdminGeofenceMonitor";
 import { useAdminFleet } from "../admin/adminData";
 import { loadAdminProfile, signOutAdmin } from "../services/adminAuthService";
 import { getFirebaseRuntime } from "../config/firebase";
 import { subscribeGeofences } from "../services/geofenceService";
 import type { Geofence } from "../types/geofence";
 
+interface AdminRoute {
+  page: AdminPageKey;
+  busId: string;
+  geofenceId: string | null;
+}
+
 function busIdFromPath(pathname: string) {
   const match = pathname.match(/^\/bus\/([^/]+)$/);
   return match ? decodeURIComponent(match[1]) : "";
 }
 
-function routeFromPath(pathname: string) {
-  return { page: pageFromPath(pathname), busId: busIdFromPath(pathname) };
+function routeFromPath(pathname: string): AdminRoute {
+  const geofenceMatch = pathname.match(/^\/admin\/geofences\/([^/]+)$/);
+
+  return {
+    page: pageFromPath(pathname),
+    busId: busIdFromPath(pathname),
+    geofenceId: geofenceMatch
+      ? decodeURIComponent(geofenceMatch[1])
+      : null,
+  };
 }
 
 function pageFromPath(pathname: string): AdminPageKey {
   if (pathname === "/admin/map") return "map";
-  if (pathname === "/admin/buses" || pathname === "/admin/devices") return "buses";
+  if (pathname === "/admin/buses" || pathname === "/admin/devices") {
+    return "buses";
+  }
   if (pathname === "/admin/drivers") return "drivers";
-  if (pathname === "/admin/geofences") return "geofences";
+  if (
+    pathname === "/admin/geofences" ||
+    pathname.startsWith("/admin/geofences/")
+  ) {
+    return "geofences";
+  }
   return "dashboard";
 }
 
+const EVENT_STORAGE_KEY = "chsbustracker:geofence-entry-events";
+
+function readStoredEvents(): GeofenceEntryEvent[] {
+  try {
+    const parsed = JSON.parse(
+      window.localStorage.getItem(EVENT_STORAGE_KEY) ?? "[]",
+    );
+
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.filter(
+      (event): event is GeofenceEntryEvent =>
+        event &&
+        typeof event.id === "string" &&
+        typeof event.busId === "string" &&
+        typeof event.busNumber === "string" &&
+        typeof event.geofenceId === "string" &&
+        typeof event.geofenceName === "string" &&
+        typeof event.createdAt === "number",
+    );
+  } catch {
+    return [];
+  }
+}
+
 export function AdminPage() {
-  const [route, setRoute] = useState(() => routeFromPath(window.location.pathname));
-  const page = route.page;
+  const [route, setRoute] = useState<AdminRoute>(() =>
+    routeFromPath(window.location.pathname),
+  );
   const [authLoading, setAuthLoading] = useState(true);
   const [signedIn, setSignedIn] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [authError, setAuthError] = useState("");
   const [geofences, setGeofences] = useState<Geofence[]>([]);
   const [geofenceError, setGeofenceError] = useState("");
+  const [geofenceEvents, setGeofenceEvents] = useState<GeofenceEntryEvent[]>(
+    readStoredEvents,
+  );
+
   const fleet = useAdminFleet(signedIn);
+  const page = route.page;
 
   useEffect(() => {
     const style = document.createElement("style");
@@ -50,16 +106,36 @@ export function AdminPage() {
     style.textContent = adminStyles + "\n" + modernAdminStyles;
     document.getElementById(style.id)?.remove();
     document.head.appendChild(style);
+
     return () => document.getElementById(style.id)?.remove();
   }, []);
 
   useEffect(() => {
     const currentPath = window.location.pathname;
-    if (!currentPath.startsWith("/admin") && !/^\/bus\/[^/]+$/.test(currentPath)) return;
-    const onPopState = () => setRoute(routeFromPath(window.location.pathname));
+    if (
+      !currentPath.startsWith("/admin") &&
+      !/^\/bus\/[^/]+$/.test(currentPath)
+    ) {
+      return;
+    }
+
+    const onPopState = () =>
+      setRoute(routeFromPath(window.location.pathname));
+
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        EVENT_STORAGE_KEY,
+        JSON.stringify(geofenceEvents.slice(-300)),
+      );
+    } catch {
+      // Entry history is best-effort local storage.
+    }
+  }, [geofenceEvents]);
 
   useEffect(() => {
     if (!signedIn) {
@@ -84,48 +160,69 @@ export function AdminPage() {
     void getFirebaseRuntime()
       .then((runtime) => {
         if (stopped) return;
-        unsubscribe = runtime.onAuthStateChanged(runtime.auth, async (user) => {
-          if (!user) {
-            if (!stopped) {
-              setSignedIn(false);
-              setDisplayName("");
-              setAuthLoading(false);
-            }
-            return;
-          }
 
-          try {
-            const profile = await loadAdminProfile(user.uid);
-            if (!profile || profile.role !== "admin" || profile.enabled !== true) {
-              await signOutAdmin();
+        unsubscribe = runtime.onAuthStateChanged(
+          runtime.auth,
+          async (user) => {
+            if (!user) {
               if (!stopped) {
                 setSignedIn(false);
                 setDisplayName("");
-                setAuthError("This account is not an enabled administrator.");
+                setAuthLoading(false);
               }
               return;
             }
 
-            if (!stopped) {
-              setSignedIn(true);
-              setDisplayName(profile.displayName ?? user.email ?? "Admin");
-              setAuthError("");
+            try {
+              const profile = await loadAdminProfile(user.uid);
+
+              if (
+                !profile ||
+                profile.role !== "admin" ||
+                profile.enabled !== true
+              ) {
+                await signOutAdmin();
+                if (!stopped) {
+                  setSignedIn(false);
+                  setDisplayName("");
+                  setAuthError(
+                    "This account is not an enabled administrator.",
+                  );
+                }
+                return;
+              }
+
+              if (!stopped) {
+                setSignedIn(true);
+                setDisplayName(
+                  profile.displayName ?? user.email ?? "Admin",
+                );
+                setAuthError("");
+              }
+            } catch (caught) {
+              if (!stopped) {
+                setSignedIn(false);
+                setDisplayName("");
+                setAuthError(
+                  caught instanceof Error
+                    ? caught.message
+                    : "Could not verify administrator access.",
+                );
+              }
+            } finally {
+              if (!stopped) setAuthLoading(false);
             }
-          } catch (error) {
-            if (!stopped) {
-              setSignedIn(false);
-              setDisplayName("");
-              setAuthError(error instanceof Error ? error.message : "Could not verify administrator access.");
-            }
-          } finally {
-            if (!stopped) setAuthLoading(false);
-          }
-        });
+          },
+        );
       })
-      .catch((error) => {
+      .catch((caught) => {
         if (!stopped) {
           setAuthLoading(false);
-          setAuthError(error instanceof Error ? error.message : "Could not connect to Firebase.");
+          setAuthError(
+            caught instanceof Error
+              ? caught.message
+              : "Could not connect to Firebase.",
+          );
         }
       });
 
@@ -143,41 +240,85 @@ export function AdminPage() {
       geofences: "/admin/geofences",
       drivers: "/admin/drivers",
     };
+
     window.history.pushState({}, "", paths[next]);
-    setRoute({ page: next, busId: "" });
+    setRoute({
+      page: next,
+      busId: "",
+      geofenceId: null,
+    });
   };
+
+  const openBus = (busId: string) => {
+    window.history.pushState(
+      {},
+      "",
+      "/bus/" + encodeURIComponent(busId),
+    );
+    setRoute({
+      page: "buses",
+      busId,
+      geofenceId: null,
+    });
+  };
+
+  const openGeofence = (geofenceId: string) => {
+    window.history.pushState(
+      {},
+      "",
+      "/admin/geofences/" + encodeURIComponent(geofenceId),
+    );
+    setRoute({
+      page: "geofences",
+      busId: "",
+      geofenceId,
+    });
+  };
+
+  const handleGeofenceEntry = useCallback((event: GeofenceEntryEvent) => {
+    setGeofenceEvents((current) => {
+      const withoutDuplicate = current.filter(
+        (item) => item.id !== event.id,
+      );
+      return [...withoutDuplicate, event].slice(-300);
+    });
+  }, []);
 
   const handleSignedIn = (name: string) => {
     setSignedIn(true);
     setDisplayName(name);
     setAuthError("");
-    const requested = routeFromPath(window.location.pathname);
-    if (requested.busId) {
-      setRoute(requested);
-      return;
-    }
-    navigate(requested.page);
-  };
-
-  const openBus = (busId: string) => {
-    window.history.pushState({}, "", "/bus/" + encodeURIComponent(busId));
-    setRoute({ page: "buses", busId });
+    setRoute(routeFromPath(window.location.pathname));
   };
 
   const signOut = async () => {
     await signOutAdmin();
     setSignedIn(false);
     setDisplayName("");
-    setRoute({ page: "dashboard", busId: "" });
+    setRoute({
+      page: "dashboard",
+      busId: "",
+      geofenceId: null,
+    });
     window.history.replaceState({}, "", "/admin");
   };
 
-  if (authLoading) return <div className="empty">Checking administrator access…</div>;
+  const selectedGeofence =
+    route.geofenceId && route.geofenceId !== "new"
+      ? geofences.find((item) => item.id === route.geofenceId) ?? null
+      : null;
+
+  if (authLoading) {
+    return <div className="empty">Checking administrator access…</div>;
+  }
 
   if (!signedIn) {
     return (
       <div className="admin-ui">
-        <AdminLogin onSignedIn={handleSignedIn} sessionMessage={authError} />
+        <AdminLogin
+          onSignedIn={handleSignedIn}
+          sessionMessage={authError}
+        />
       </div>
     );
   }
@@ -210,7 +351,12 @@ export function AdminPage() {
             onOpenBus={openBus}
           />
         ) : page === "map" ? (
-          <AdminLiveMap buses={fleet.buses} drivers={fleet.drivers} connected={fleet.connected} error={fleet.connectionError} />
+          <AdminLiveMap
+            buses={fleet.buses}
+            drivers={fleet.drivers}
+            connected={fleet.connected}
+            error={fleet.connectionError}
+          />
         ) : page === "buses" ? (
           <AdminBuses
             buses={fleet.buses}
@@ -222,12 +368,26 @@ export function AdminPage() {
             onOpenBus={openBus}
           />
         ) : page === "geofences" ? (
-          <AdminGeofences
-            geofences={geofences}
-            buses={fleet.buses}
-            connected={fleet.connected}
-            error={geofenceError}
-          />
+          route.geofenceId ? (
+            <AdminGeofenceDetail
+              geofence={selectedGeofence}
+              buses={fleet.buses}
+              events={geofenceEvents.filter(
+                (event) =>
+                  route.geofenceId === "new" ||
+                  event.geofenceId === route.geofenceId,
+              )}
+              connected={fleet.connected}
+              error={geofenceError}
+              onBack={() => navigate("geofences")}
+            />
+          ) : (
+            <AdminGeofences
+              geofences={geofences}
+              buses={fleet.buses}
+              onOpenGeofence={openGeofence}
+            />
+          )
         ) : (
           <AdminDrivers
             drivers={fleet.drivers}
@@ -241,7 +401,12 @@ export function AdminPage() {
           />
         )}
       </AdminLayout>
-      <AdminGeofenceMonitor buses={fleet.buses} geofences={geofences} />
+
+      <AdminGeofenceMonitor
+        buses={fleet.buses}
+        geofences={geofences}
+        onEntry={handleGeofenceEntry}
+      />
     </div>
   );
 }
