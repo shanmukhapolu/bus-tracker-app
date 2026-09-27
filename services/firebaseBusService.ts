@@ -1,0 +1,265 @@
+import { CARMEL_CENTER } from "../config/map";
+import { firebaseConfigured, getFirebaseRuntime } from "../config/firebase";
+import { normalizeFleetBuses } from "./fleetService";
+import type { Bus, BusSnapshot } from "../types/bus";
+import type { BusService } from "./busService";
+
+const LIVE_UPDATE_INTERVAL_MS = 1000;
+const LIVE_STALE_MS = 60_000;
+
+interface LiveBusRecord {
+  busNumber?: string;
+  route?: string;
+  latitude?: number;
+  longitude?: number;
+  accuracyMeters?: number;
+  speedMps?: number | null;
+  headingDeg?: number | null;
+  active?: boolean;
+  lastUpdated?: number | null;
+  startedAt?: number | null;
+  endedAt?: number | null;
+}
+
+interface FleetBusRecord {
+  busNumber?: string;
+  route?: string;
+  enabled?: boolean;
+  geofenceId?: string | null;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function createOfflineFleetBus(
+  id: string,
+  busNumber: string,
+  route: string,
+  geofenceId?: string,
+): Bus {
+  return {
+    id,
+    busNumber,
+    route,
+    latitude: CARMEL_CENTER[1],
+    longitude: CARMEL_CENTER[0],
+    status: "offline",
+    trackingActive: false,
+    currentLocation: "Not tracking",
+    geofenceId,
+    lastUpdated: new Date(),
+  };
+}
+
+function mergeLiveBuses(
+  data: Record<string, LiveBusRecord> | null,
+  fleetData: Record<string, FleetBusRecord> | null,
+): Bus[] {
+  const fleetBuses = normalizeFleetBuses(fleetData);
+  const merged = new Map<string, Bus>();
+
+  for (const fleet of fleetBuses) {
+    if (!fleet.enabled) continue;
+    merged.set(
+      fleet.id,
+      createOfflineFleetBus(fleet.id, fleet.busNumber, fleet.route, fleet.geofenceId),
+    );
+  }
+
+  return Array.from(merged.values()).map((base) => {
+    const live = data?.[base.id];
+
+    if (!live) {
+      return {
+        ...base,
+        trackingActive: false,
+        status: "offline",
+        etaMinutes: undefined,
+        speed: undefined,
+        heading: undefined,
+        currentLocation: "Not tracking",
+        lastUpdated: base.lastUpdated,
+      };
+    }
+
+    const hasFreshUpdate =
+      isFiniteNumber(live.lastUpdated) &&
+      Date.now() - live.lastUpdated <= LIVE_STALE_MS;
+
+    const active =
+      live.active === true &&
+      hasFreshUpdate &&
+      isFiniteNumber(live.latitude) &&
+      isFiniteNumber(live.longitude);
+
+    const firebaseLastUpdated = isFiniteNumber(live.lastUpdated)
+      ? new Date(live.lastUpdated)
+      : isFiniteNumber(live.endedAt)
+        ? new Date(live.endedAt)
+        : base.lastUpdated;
+
+    if (!active) {
+      return {
+        ...base,
+        busNumber: live.busNumber ?? base.busNumber,
+        route: live.route ?? base.route,
+        trackingActive: false,
+        status: "offline",
+        etaMinutes: undefined,
+        speed: undefined,
+        heading: undefined,
+        currentLocation: "Not tracking",
+        lastUpdated: firebaseLastUpdated,
+      };
+    }
+
+    return {
+      ...base,
+      busNumber: live.busNumber ?? base.busNumber,
+      route: live.route ?? base.route,
+      latitude: live.latitude!,
+      longitude: live.longitude!,
+      speed: isFiniteNumber(live.speedMps) ? live.speedMps! * 3.6 : undefined,
+      heading: isFiniteNumber(live.headingDeg) ? live.headingDeg! : undefined,
+      trackingActive: true,
+      status: "on-time",
+      delayMinutes: undefined,
+      etaMinutes: undefined,
+      nextStop: undefined,
+      currentLocation: "Live GPS",
+      locationAccuracyMeters: isFiniteNumber(live.accuracyMeters) ? live.accuracyMeters : undefined,
+      lastUpdated: firebaseLastUpdated,
+    };
+  });
+}
+
+export function createFirebaseBusService(): BusService {
+  let snapshot: BusSnapshot = {
+    buses: mergeLiveBuses(null, null),
+    mode: "live",
+    connected: false,
+    updateIntervalMs: LIVE_UPDATE_INTERVAL_MS,
+  };
+
+  const listeners = new Set<() => void>();
+  let started = false;
+  let stopLiveListener: (() => void) | undefined;
+  let stopFleetListener: (() => void) | undefined;
+  let stopConnectionListener: (() => void) | undefined;
+  let staleRefreshTimer: ReturnType<typeof setInterval> | undefined;
+  let liveData: Record<string, LiveBusRecord> | null = null;
+  let fleetData: Record<string, FleetBusRecord> | null = null;
+
+  const notify = () => listeners.forEach((listener) => listener());
+
+  const start = async () => {
+    if (started) return;
+    started = true;
+
+    try {
+      const runtime = await getFirebaseRuntime();
+      const liveBusesRef = runtime.ref(runtime.db, "liveBuses");
+      const fleetRef = runtime.ref(runtime.db, "buses");
+      const connectedRef = runtime.ref(runtime.db, ".info/connected");
+
+      stopLiveListener = runtime.onValue(
+        liveBusesRef,
+        (dataSnapshot) => {
+          const value = dataSnapshot.val();
+          liveData = value && typeof value === "object" ? (value as Record<string, LiveBusRecord>) : null;
+          snapshot = {
+            ...snapshot,
+            buses: mergeLiveBuses(liveData, fleetData),
+            connectionError: undefined,
+            lastSyncAt: new Date(),
+          };
+          notify();
+        },
+        (error) => {
+          snapshot = {
+            ...snapshot,
+            connected: false,
+            connectionError: error instanceof Error ? error.message : "Firebase denied access to live bus data.",
+          };
+          notify();
+        },
+      );
+
+      stopFleetListener = runtime.onValue(
+        fleetRef,
+        (dataSnapshot) => {
+          const value = dataSnapshot.val();
+          fleetData = value && typeof value === "object" ? (value as Record<string, FleetBusRecord>) : null;
+          snapshot = {
+            ...snapshot,
+            buses: mergeLiveBuses(liveData, fleetData),
+            lastSyncAt: new Date(),
+          };
+          notify();
+        },
+        (error) => {
+          snapshot = {
+            ...snapshot,
+            connectionError: error instanceof Error ? error.message : "Could not load bus fleet data.",
+          };
+          notify();
+        },
+      );
+
+      staleRefreshTimer = setInterval(() => {
+        snapshot = { ...snapshot, buses: mergeLiveBuses(liveData, fleetData) };
+        notify();
+      }, LIVE_UPDATE_INTERVAL_MS);
+
+      stopConnectionListener = runtime.onValue(
+        connectedRef,
+        (dataSnapshot) => {
+          snapshot = { ...snapshot, connected: dataSnapshot.val() === true };
+          notify();
+        },
+        (error) => {
+          snapshot = {
+            ...snapshot,
+            connected: false,
+            connectionError: error instanceof Error ? error.message : "Could not connect to Firebase Realtime Database.",
+          };
+          notify();
+        },
+      );
+    } catch (error) {
+      snapshot = {
+        ...snapshot,
+        connected: false,
+        connectionError: error instanceof Error ? error.message : "Could not initialize Firebase Realtime Database.",
+      };
+      notify();
+    }
+  };
+
+  const stop = () => {
+    stopLiveListener?.();
+    stopFleetListener?.();
+    stopConnectionListener?.();
+    if (staleRefreshTimer) clearInterval(staleRefreshTimer);
+    stopLiveListener = undefined;
+    stopFleetListener = undefined;
+    stopConnectionListener = undefined;
+    staleRefreshTimer = undefined;
+    started = false;
+  };
+
+  return {
+    getSnapshot: () => snapshot,
+    subscribe(listener) {
+      listeners.add(listener);
+      void start();
+      return () => {
+        listeners.delete(listener);
+        if (listeners.size === 0) stop();
+      };
+    },
+  };
+}
+
+export const firebaseBusService = firebaseConfigured ? createFirebaseBusService() : null;
