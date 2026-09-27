@@ -11,7 +11,7 @@ import { CARMEL_CENTER, MAP_STYLE_URL } from "../config/map";
 import type { Bus } from "../types/bus";
 import type { Geofence, GeofenceCoordinate } from "../types/geofence";
 import { deleteGeofence, saveGeofence } from "../services/geofenceService";
-import { Empty, ErrorState, PageHeading } from "./UI";
+import { Empty, PageHeading } from "./UI";
 
 interface Props {
   geofences: Geofence[];
