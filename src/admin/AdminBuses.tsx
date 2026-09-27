@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowUpDown, BusFront, ChevronLeft, ChevronRight, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowUpDown, ChevronLeft, ChevronRight, Plus, Search, Trash2 } from "lucide-react";
 import type { Bus } from "../types/bus";
 import type { FleetDriver } from "../services/fleetService";
 import { addFleetBus, deleteFleetBus } from "../services/fleetService";
@@ -274,7 +274,7 @@ export function AdminBuses({
                     <tr key={bus.id} onClick={() => onOpenBus(bus.id)} className="bus-click-row">
                       <td>
                         <button className="bus-link" type="button" onClick={(event) => { event.stopPropagation(); onOpenBus(bus.id); }}>
-                          <BusFront size={19} strokeWidth={1.8} /> Bus {bus.busNumber}
+                          Bus {bus.busNumber}
                         </button>
                       </td>
                       <td>{bus.route}</td>
