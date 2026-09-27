@@ -5,7 +5,7 @@ export interface FleetBus {
   busNumber: string;
   route: string;
   enabled: boolean;
-  geofenceId: string;
+  geofenceId?: string;
 }
 
 export interface FleetDriver {
