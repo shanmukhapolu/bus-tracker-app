@@ -17,7 +17,12 @@ import {
 import { useAdminFleet } from "../admin/adminData";
 import { loadAdminProfile, signOutAdmin } from "../services/adminAuthService";
 import { getFirebaseRuntime } from "../config/firebase";
-import { subscribeGeofences } from "../services/geofenceService";
+import {
+  subscribeGeofences,
+  subscribeGeofenceAlerts,
+  subscribeGeofenceBusOrder,
+  recordGeofenceEntry,
+} from "../services/geofenceService";
 import type { Geofence } from "../types/geofence";
 
 interface AdminRoute {
@@ -58,31 +63,6 @@ function pageFromPath(pathname: string): AdminPageKey {
   return "dashboard";
 }
 
-const EVENT_STORAGE_KEY = "chsbustracker:geofence-entry-events";
-
-function readStoredEvents(): GeofenceEntryEvent[] {
-  try {
-    const parsed = JSON.parse(
-      window.localStorage.getItem(EVENT_STORAGE_KEY) ?? "[]",
-    );
-
-    if (!Array.isArray(parsed)) return [];
-
-    return parsed.filter(
-      (event): event is GeofenceEntryEvent =>
-        event &&
-        typeof event.id === "string" &&
-        typeof event.busId === "string" &&
-        typeof event.busNumber === "string" &&
-        typeof event.geofenceId === "string" &&
-        typeof event.geofenceName === "string" &&
-        typeof event.createdAt === "number",
-    );
-  } catch {
-    return [];
-  }
-}
-
 export function AdminPage() {
   const [route, setRoute] = useState<AdminRoute>(() =>
     routeFromPath(window.location.pathname),
@@ -93,9 +73,9 @@ export function AdminPage() {
   const [authError, setAuthError] = useState("");
   const [geofences, setGeofences] = useState<Geofence[]>([]);
   const [geofenceError, setGeofenceError] = useState("");
-  const [geofenceEvents, setGeofenceEvents] = useState<GeofenceEntryEvent[]>(
-    readStoredEvents,
-  );
+  const [geofenceEvents, setGeofenceEvents] = useState<GeofenceEntryEvent[]>([]);
+  const [geofenceOrder, setGeofenceOrder] = useState<Record<string, import("../services/geofenceService").GeofenceBusOrderEntry[]>>({});
+  const [geofenceActivityError, setGeofenceActivityError] = useState("");
 
   const fleet = useAdminFleet(signedIn);
   const page = route.page;
@@ -126,16 +106,7 @@ export function AdminPage() {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        EVENT_STORAGE_KEY,
-        JSON.stringify(geofenceEvents.slice(-300)),
-      );
-    } catch {
-      // Entry history is best-effort local storage.
-    }
-  }, [geofenceEvents]);
+
 
   useEffect(() => {
     if (!signedIn) {
@@ -151,6 +122,44 @@ export function AdminPage() {
       },
       setGeofenceError,
     );
+  }, [signedIn]);
+
+  useEffect(() => {
+    if (!signedIn) {
+      setGeofenceEvents([]);
+      setGeofenceOrder({});
+      setGeofenceActivityError("");
+      return;
+    }
+
+    let alerts = [] as GeofenceEntryEvent[];
+    let order = {} as Record<
+      string,
+      import("../services/geofenceService").GeofenceBusOrderEntry[]
+    >;
+
+    const setError = (message: string) => setGeofenceActivityError(message);
+
+    const stopAlerts = subscribeGeofenceAlerts(
+      (next) => {
+        alerts = next;
+        setGeofenceEvents(next);
+      },
+      setError,
+    );
+
+    const stopOrder = subscribeGeofenceBusOrder(
+      (next) => {
+        order = next;
+        setGeofenceOrder(next);
+      },
+      setError,
+    );
+
+    return () => {
+      stopAlerts();
+      stopOrder();
+    };
   }, [signedIn]);
 
   useEffect(() => {
@@ -379,8 +388,13 @@ export function AdminPage() {
                       (event) => event.geofenceId === route.geofenceId,
                     )
               }
+              order={
+                route.geofenceId === "new"
+                  ? []
+                  : geofenceOrder[route.geofenceId] ?? []
+              }
               connected={fleet.connected}
-              error={geofenceError}
+              error={geofenceError || geofenceActivityError}
               onBack={() => navigate("geofences")}
               onOpenGeofence={openGeofence}
             />
