@@ -380,6 +380,7 @@ export function AdminPage() {
               connected={fleet.connected}
               error={geofenceError}
               onBack={() => navigate("geofences")}
+              onOpenGeofence={openGeofence}
             />
           ) : (
             <AdminGeofences
