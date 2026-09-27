@@ -262,9 +262,9 @@
 }
 
 .operations-shell .page {
-  width: min(1400px, 100%);
+  width: 100%;
   min-height: 100dvh;
-  margin: 0 auto;
+  margin: 0;
   padding: 28px 30px 40px;
   outline: none;
 }
