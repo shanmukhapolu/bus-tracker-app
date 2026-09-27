@@ -40,13 +40,15 @@ export function AdminLiveMap({
   const current = visible.find((bus) => bus.id === selected) ?? visible[0];
   const driver = drivers.find((item) => item.assignedBus === current?.id);
 
-  const positions = visible.map((bus) => ({
-    id: bus.id,
-    label: "Bus " + bus.busNumber,
-    latitude: bus.latitude,
-    longitude: bus.longitude,
-    offline: !bus.trackingActive,
-  }));
+  const positions = visible
+    .filter((bus) => bus.hasKnownLocation !== false)
+    .map((bus) => ({
+      id: bus.id,
+      label: "Bus " + bus.busNumber,
+      latitude: bus.latitude,
+      longitude: bus.longitude,
+      offline: !bus.trackingActive,
+    }));
 
   if (error && !buses.length) return <ErrorState message={error} />;
   if (!connected && !buses.length) return <Loading text="Waiting for live fleet data…" />;
@@ -67,7 +69,12 @@ export function AdminLiveMap({
           <option value="">All routes</option>
           {routes.map((item) => <option key={item}>{item}</option>)}
         </select>
-        <span>{visible.length} buses shown</span>
+        <span>
+          {positions.length} buses shown
+          {positions.length !== visible.length
+            ? ` · ${visible.length - positions.length} without a saved location`
+            : ""}
+        </span>
       </div>
 
       <div className="map-layout">
@@ -103,8 +110,18 @@ export function AdminLiveMap({
                     ["Speed", typeof current.speed === "number" ? Math.round(current.speed * 0.621371) + " mph" : "Not reported"],
                     ["Heading", typeof current.heading === "number" ? Math.round(current.heading) + "°" : "Not reported"],
                     ["GPS accuracy", current.locationAccuracyMeters !== undefined ? Math.round(current.locationAccuracyMeters) + " m" : "Not reported"],
-                    ["Last update", current.lastUpdated.toLocaleString()],
-                    ["Coordinates", current.latitude.toFixed(5) + ", " + current.longitude.toFixed(5)],
+                    [
+                      "Last update",
+                      current.hasKnownLocation
+                        ? current.lastUpdated.toLocaleString()
+                        : "No location recorded",
+                    ],
+                    [
+                      "Coordinates",
+                      current.hasKnownLocation
+                        ? current.latitude.toFixed(5) + ", " + current.longitude.toFixed(5)
+                        : "No location recorded",
+                    ],
                   ]}
                 />
               </div>
