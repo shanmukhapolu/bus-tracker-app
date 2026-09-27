@@ -2,22 +2,18 @@ import { useMemo, useState } from "react";
 import { ArrowUpDown, BusFront, ChevronLeft, ChevronRight, Search, Trash2 } from "lucide-react";
 import type { Bus } from "../types/bus";
 import type { FleetDriver } from "../services/fleetService";
-import type { Geofence } from "../services/geofenceService";
-import { assignGeofenceToBus } from "../services/geofenceService";
 import { deleteFleetBus } from "../services/fleetService";
 import { Badge, Empty, ErrorState, Loading, PageHeading } from "./UI";
 
 export function AdminBuses({
   buses,
   drivers,
-  geofences,
   connected,
   error,
   onOpenBus,
 }: {
   buses: Bus[];
   drivers: FleetDriver[];
-  geofences: Geofence[];
   connected: boolean;
   error?: string;
   onOpenBus: (busId: string) => void;
@@ -39,11 +35,6 @@ export function AdminBuses({
     });
     return map;
   }, [drivers]);
-
-  const geofenceById = useMemo(
-    () => new Map(geofences.map((geofence) => [geofence.id, geofence])),
-    [geofences],
-  );
 
   const rows = useMemo(() => {
     const result = buses.filter((bus) => {
@@ -75,20 +66,6 @@ export function AdminBuses({
     setPage(0);
   };
 
-  const updateGeofence = async (bus: Bus, geofenceId: string) => {
-    setSavingBus(bus.id);
-    setMessage("");
-    setSaveError("");
-    try {
-      await assignGeofenceToBus(bus.id, geofenceId);
-      setMessage(geofenceId ? `Bus ${bus.busNumber} assigned to ${geofenceById.get(geofenceId)?.name ?? "geofence"}.` : `Geofence removed from Bus ${bus.busNumber}.`);
-    } catch (caught) {
-      setSaveError(caught instanceof Error ? caught.message : "Could not update the bus geofence.");
-    } finally {
-      setSavingBus("");
-    }
-  };
-
   const removeBus = async (bus: Bus) => {
     if (!window.confirm(`Delete Bus ${bus.busNumber}? Any assigned driver will be unassigned.`)) return;
     setDeleting(bus.id);
@@ -109,14 +86,13 @@ export function AdminBuses({
     <div className="buses-page">
       <PageHeading
         title="Buses"
-        description="Monitor every registered bus, open its live details, and assign the geofence it should trigger."
+        description="Monitor every registered bus and open its live details."
       />
 
       <div className="overview-metrics">
         <div className="summary-stat"><span>Total buses</span><strong>{buses.length}</strong></div>
         <div className="summary-stat"><span><i className="status-dot green" />Online</span><strong>{online}</strong></div>
         <div className="summary-stat"><span><i className="status-dot muted" />Offline</span><strong>{buses.length - online}</strong></div>
-        <div className="summary-stat"><span><i className="status-dot blue" />Geofenced</span><strong>{buses.filter((bus) => bus.geofenceId && geofenceById.has(bus.geofenceId)).length}</strong></div>
       </div>
 
       {(message || saveError) && (
@@ -169,7 +145,6 @@ export function AdminBuses({
                     </th>
                   ))}
                   <th>Driver</th>
-                  <th>Geofence</th>
                   <th>Last update</th>
                   <th><span className="sr-only">Actions</span></th>
                 </tr>
