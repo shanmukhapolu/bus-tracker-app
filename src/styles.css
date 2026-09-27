@@ -2706,3 +2706,35 @@ body {
     right: 7px;
   }
 }
+
+
+/* Shared portal polish: keeps driver controls visually aligned with the public tracker. */
+.simple-driver-page {
+  padding: 28px;
+}
+.simple-driver-card {
+  position: relative;
+  overflow: hidden;
+}
+.simple-driver-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: #f6ca52;
+}
+.simple-driver-form input,
+.simple-driver-bus select {
+  min-height: 44px;
+  padding: 10px 12px;
+}
+.simple-driver-form label,
+.simple-driver-bus {
+  color: #52677d;
+  font-weight: 600;
+  font-size: 12px;
+}
+.simple-driver-card .simple-driver-header h1 {
+  font-size: 27px;
+  letter-spacing: -0.8px;
+}
