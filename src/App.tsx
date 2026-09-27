@@ -16,7 +16,7 @@ export default function App() {
     return <DriversPage />;
   }
 
-  if (path === "/admin") {
+  if (path === "/admin" || path.startsWith("/admin/")) {
     return <AdminPage />;
   }
 
