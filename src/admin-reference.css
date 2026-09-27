@@ -2847,3 +2847,70 @@ button.event-map-marker:focus-visible {
     flex-basis: 30px;
   }
 }
+
+/* Navigation buttons mirror the reference sidebar links without requiring full-page reloads. */
+.operations-shell .sidebar nav .admin-nav-button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px;
+  border: 0;
+  background: transparent;
+  color: #bbcad7;
+  border-radius: 8px;
+  font-weight: 500;
+  text-align: left;
+}
+.operations-shell .sidebar nav .admin-nav-button:hover {
+  text-decoration: none;
+  background: #203b57;
+}
+.operations-shell .sidebar nav .admin-nav-button.active {
+  background: #2a4561;
+  color: #fff;
+  box-shadow: inset 3px 0 #edc365;
+}
+.operations-shell .sidebar nav .admin-nav-button.active svg {
+  color: #f2cd74;
+}
+.operations-shell .sidebar nav .admin-nav-button .nav-count {
+  margin-left: auto;
+  color: white;
+  background: #d93045;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  line-height: 16px;
+}
+@media (max-width: 1250px) {
+  .operations-shell .sidebar nav .admin-nav-button {
+    padding-left: 18px;
+    padding-right: 18px;
+    gap: 10px;
+  }
+}
+@media (max-width: 950px) {
+  .operations-shell .sidebar nav .admin-nav-button {
+    font-size: 12px;
+    padding: 13px 10px;
+    gap: 9px;
+  }
+}
+@media (max-width: 700px) {
+  .operations-shell .sidebar nav .admin-nav-button {
+    width: auto;
+    white-space: nowrap;
+    padding: 10px 15px;
+    font-size: 12px;
+    min-height: 42px;
+    gap: 7px;
+    border-radius: 0;
+  }
+  .operations-shell .sidebar nav .admin-nav-button.active {
+    box-shadow: inset 0 -2px #2463eb;
+  }
+  .operations-shell .sidebar nav .admin-nav-button .nav-count {
+    display: none;
+  }
+}
