@@ -25,7 +25,6 @@ interface FleetBusRecord {
   busNumber?: string;
   route?: string;
   enabled?: boolean;
-  geofenceId?: string | null;
 }
 
 function isFiniteNumber(value: unknown): value is number {
@@ -47,7 +46,6 @@ function createOfflineFleetBus(
     status: "offline",
     trackingActive: false,
     currentLocation: "Not tracking",
-    geofenceId,
     lastUpdated: new Date(),
   };
 }
