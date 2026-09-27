@@ -5,6 +5,7 @@ import type { Bus, BusSnapshot } from "../types/bus";
 import type { BusService } from "./busService";
 
 const LIVE_UPDATE_INTERVAL_MS = 1000;
+const LIVE_STALE_MS = 60_000;
 
 interface LiveBusRecord {
   busNumber?: string;
@@ -81,8 +82,13 @@ function mergeLiveBuses(
       };
     }
 
+    const hasFreshUpdate =
+      isFiniteNumber(live.lastUpdated) &&
+      Date.now() - live.lastUpdated <= LIVE_STALE_MS;
+
     const active =
       live.active === true &&
+      hasFreshUpdate &&
       isFiniteNumber(live.latitude) &&
       isFiniteNumber(live.longitude);
 
@@ -142,6 +148,7 @@ export function createFirebaseBusService(): BusService {
   let stopLiveListener: (() => void) | undefined;
   let stopFleetListener: (() => void) | undefined;
   let stopConnectionListener: (() => void) | undefined;
+  let staleRefreshTimer: ReturnType<typeof setInterval> | undefined;
   let liveData: Record<string, LiveBusRecord> | null = null;
   let fleetData: Record<string, FleetBusRecord> | null = null;
 
@@ -217,6 +224,14 @@ export function createFirebaseBusService(): BusService {
         },
       );
 
+      staleRefreshTimer = setInterval(() => {
+        snapshot = {
+          ...snapshot,
+          buses: mergeLiveBuses(liveData, fleetData),
+        };
+        notify();
+      }, LIVE_UPDATE_INTERVAL_MS);
+
       stopConnectionListener = runtime.onValue(
         connectedRef,
         (dataSnapshot) => {
@@ -255,6 +270,10 @@ export function createFirebaseBusService(): BusService {
     stopLiveListener?.();
     stopFleetListener?.();
     stopConnectionListener?.();
+    if (staleRefreshTimer) {
+      clearInterval(staleRefreshTimer);
+      staleRefreshTimer = undefined;
+    }
     stopLiveListener = undefined;
     stopFleetListener = undefined;
     stopConnectionListener = undefined;
