@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import adminStyles from "../admin-reference.css?raw";
 import modernAdminStyles from "../../admin-modern.css?raw";
 import { AdminLogin } from "../admin/AdminLogin";
 import { AdminLayout, type AdminPageKey } from "../admin/AdminLayout";
@@ -83,7 +82,7 @@ export function AdminPage() {
   useEffect(() => {
     const style = document.createElement("style");
     style.id = "admin-reference-styles";
-    style.textContent = adminStyles + "\n" + modernAdminStyles;
+    style.textContent = modernAdminStyles;
     document.getElementById(style.id)?.remove();
     document.head.appendChild(style);
 
