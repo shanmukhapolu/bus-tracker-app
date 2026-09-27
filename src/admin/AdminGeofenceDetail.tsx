@@ -14,6 +14,7 @@ import {
   Map as LibreMap,
   NavigationControl,
   type GeoJSONSource,
+  type MapLayerMouseEvent,
   type MapMouseEvent,
 } from "maplibre-gl";
 import { CARMEL_CENTER, MAP_STYLE_URL } from "../config/map";
@@ -252,9 +253,7 @@ export function AdminGeofenceDetail({
 
     let draggingIndex: number | null = null;
 
-    const getVertexIndex = (event: {
-      features?: Array<{ properties?: Record<string, unknown> }>;
-    }) => {
+    const getVertexIndex = (event: MapLayerMouseEvent) => {
       const rawIndex = event.features?.[0]?.properties?.index;
       const index = Number(rawIndex);
       return Number.isInteger(index) &&
@@ -287,9 +286,7 @@ export function AdminGeofenceDetail({
       setMessage("");
     };
 
-    const handleMouseDown = (event: MapMouseEvent & {
-      features?: Array<{ properties?: Record<string, unknown> }>;
-    }) => {
+    const handleMouseDown = (event: MapLayerMouseEvent) => {
       if (!editing) return;
 
       const index = getVertexIndex(event);
