@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useBuses } from "../hooks/useBuses";
 import { getFirebaseRuntime } from "../config/firebase";
 import { normalizeFleetDrivers, type FleetDriver } from "../services/fleetService";
-import type { Bus } from "../types/bus";
 
 export interface AdminDevice {
   id: string;
