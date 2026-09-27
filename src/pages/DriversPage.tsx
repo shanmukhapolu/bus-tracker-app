@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LogIn, MapPin, Radio, ShieldCheck, UserPlus } from "lucide-react";
+import {
+  ArrowRight,
+  LogIn,
+  MapPin,
+  Navigation,
+  Radio,
+  ShieldCheck,
+  UserPlus,
+} from "lucide-react";
+import { DriverNavigationMap } from "../components/DriverNavigationMap";
 import { SchoolLogo } from "../components/SchoolLogo";
 import {
   loadDriverProfile,
@@ -19,10 +28,38 @@ import {
   subscribeFleetBuses,
   type FleetBus,
 } from "../services/fleetService";
-
+import { subscribeDriverRoutes } from "../services/routeService";
+import type { DriverRoute } from "../types/route";
 
 function formatAccuracy(value: number | null) {
   return value === null ? "—" : `±${Math.round(value)} m`;
+}
+
+function distanceMiles(
+  a: { latitude: number; longitude: number },
+  b: { latitude: number; longitude: number },
+) {
+  const radians = (degrees: number) => (degrees * Math.PI) / 180;
+  const latitudeDelta = radians(b.latitude - a.latitude);
+  const longitudeDelta = radians(b.longitude - a.longitude);
+  const startLatitude = radians(a.latitude);
+  const endLatitude = radians(b.latitude);
+  const value =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(startLatitude) *
+      Math.cos(endLatitude) *
+      Math.sin(longitudeDelta / 2) ** 2;
+  return 3958.8 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+}
+
+function fallbackRoute(routeId: string): DriverRoute {
+  return {
+    id: routeId,
+    name: `Route ${routeId}`,
+    school: "",
+    enabled: true,
+    stops: [],
+  };
 }
 
 function getDriverBusIds(profile: DriverProfile | null) {
@@ -49,11 +86,15 @@ export function DriversPage() {
   const [signedIn, setSignedIn] = useState(false);
   const [driverUid, setDriverUid] = useState("");
   const [fleetBuses, setFleetBuses] = useState<FleetBus[]>([]);
-  const [, setFleetError] = useState("");
+  const [fleetError, setFleetError] = useState("");
+  const [routes, setRoutes] = useState<DriverRoute[]>([]);
+  const [routeError, setRouteError] = useState("");
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [selectedBusId, setSelectedBusId] = useState("");
+  const [selectedRouteId, setSelectedRouteId] = useState("");
   const [session, setSession] = useState<DriverTrackingSession | null>(null);
   const [position, setPosition] = useState<DriverLocation | null>(null);
+  const [nextStopIndex, setNextStopIndex] = useState(0);
   const [status, setStatus] = useState<
     "idle" | "signing-in" | "signing-up" | "requesting" | "tracking" | "error"
   >("idle");
@@ -61,6 +102,7 @@ export function DriversPage() {
   const [loginError, setLoginError] = useState("");
 
   const emailInputRef = useRef<HTMLInputElement>(null);
+  const stopInitialized = useRef(false);
 
   const driverBuses = useMemo(
     () =>
@@ -82,11 +124,29 @@ export function DriversPage() {
   );
 
   const selectedBus = driverBuses.find((bus) => bus.id === selectedBusId);
+  const availableRoutes = useMemo(() => {
+    const map = new Map(routes.map((route) => [route.id, route]));
+    driverBuses.forEach((bus) => {
+      if (bus.route && !map.has(bus.route)) {
+        map.set(bus.route, fallbackRoute(bus.route));
+      }
+    });
+    return Array.from(map.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true }),
+    );
+  }, [driverBuses, routes]);
+  const selectedRoute = availableRoutes.find(
+    (route) => route.id === selectedRouteId,
+  );
+  const nextStop = selectedRoute?.stops[nextStopIndex] ?? null;
+  const nextStopDistance =
+    position && nextStop ? distanceMiles(position, nextStop) : null;
 
   useEffect(() => {
     if (!signedIn || !driverUid) return;
 
     const stopBuses = subscribeFleetBuses(setFleetBuses, setFleetError);
+    const stopRoutes = subscribeDriverRoutes(setRoutes, setRouteError);
     const stopProfile = subscribeDriverProfile(
       driverUid,
       (nextProfile) => {
@@ -109,8 +169,44 @@ export function DriversPage() {
     return () => {
       stopBuses();
       stopProfile();
+      stopRoutes();
     };
   }, [signedIn, driverUid, session]);
+
+  useEffect(() => {
+    if (session) return;
+    const bus = driverBuses.find((item) => item.id === selectedBusId);
+    if (bus?.route) setSelectedRouteId(bus.route);
+  }, [driverBuses, selectedBusId, session]);
+
+  useEffect(() => {
+    stopInitialized.current = false;
+    setNextStopIndex(0);
+  }, [selectedRouteId, session]);
+
+  useEffect(() => {
+    if (!session || !position || !selectedRoute?.stops.length) return;
+    if (!stopInitialized.current) {
+      const nearest = selectedRoute.stops.reduce(
+        (best, stop, index) => {
+          const distance = distanceMiles(position, stop);
+          return distance < best.distance ? { index, distance } : best;
+        },
+        { index: 0, distance: Number.POSITIVE_INFINITY },
+      );
+      setNextStopIndex(nearest.index);
+      stopInitialized.current = true;
+      return;
+    }
+    const current = selectedRoute.stops[nextStopIndex];
+    if (
+      current &&
+      distanceMiles(position, current) <= 0.05 &&
+      nextStopIndex < selectedRoute.stops.length - 1
+    ) {
+      setNextStopIndex((index) => index + 1);
+    }
+  }, [nextStopIndex, position, selectedRoute, session]);
 
   const switchAuthMode = (mode: "login" | "signup") => {
     setAuthMode(mode);
@@ -145,7 +241,7 @@ export function DriversPage() {
       setSelectedBusId((current) =>
         current && nextBusIds.includes(current)
           ? current
-          : nextBusIds[0] ?? "",
+          : (nextBusIds[0] ?? ""),
       );
       setSignedIn(true);
       setPassword("");
@@ -228,12 +324,13 @@ export function DriversPage() {
     await session.stop();
     setSession(null);
     setPosition(null);
+    setNextStopIndex(0);
     setStatus("idle");
     setMessage("Tracking stopped. The live bus location was removed.");
   };
 
   const startTracking = async () => {
-    if (!selectedBus) return;
+    if (!selectedBus || !selectedRoute) return;
 
     const supportMessage = getLocationSupportMessage();
     if (supportMessage) {
@@ -251,7 +348,7 @@ export function DriversPage() {
       const nextSession = await startDriverTracking({
         busId: selectedBus.id,
         busNumber: selectedBus.busNumber,
-        route: selectedBus.route,
+        route: selectedRoute.id,
         onPosition: setPosition,
         onError: setMessage,
       });
@@ -259,7 +356,7 @@ export function DriversPage() {
       setSession(nextSession);
       setStatus("tracking");
       setMessage(
-        `Bus ${selectedBus.busNumber} is live. Firebase is saving the latest GPS position every second.`,
+        `Bus ${selectedBus.busNumber} is live on ${selectedRoute.name}.`,
       );
     } catch (error) {
       setStatus("error");
@@ -280,8 +377,10 @@ export function DriversPage() {
     setSignedIn(false);
     setProfile(null);
     setSelectedBusId("");
+    setSelectedRouteId("");
     setDriverUid("");
     setFleetBuses([]);
+    setRoutes([]);
     setFleetError("");
     setEmail("");
     setPassword("");
@@ -298,7 +397,10 @@ export function DriversPage() {
           <div className="portal-logo-wrap">
             <SchoolLogo className="portal-logo" />
           </div>
-          <div className="simple-driver-auth-switch" aria-label="Driver account">
+          <div
+            className="simple-driver-auth-switch"
+            aria-label="Driver account"
+          >
             <button
               className={authMode === "login" ? "active" : ""}
               type="button"
@@ -386,9 +488,7 @@ export function DriversPage() {
               status === "signing-in" ||
               status === "signing-up"
             }
-            onClick={() =>
-              void (authMode === "login" ? login() : signup())
-            }
+            onClick={() => void (authMode === "login" ? login() : signup())}
           >
             {authMode === "login" ? (
               <LogIn size={18} />
@@ -408,6 +508,105 @@ export function DriversPage() {
             <ShieldCheck size={15} />
             Driver access is controlled by Firebase.
           </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (session && selectedBus && selectedRoute) {
+    const routeFinished =
+      selectedRoute.stops.length > 0 &&
+      nextStopIndex === selectedRoute.stops.length - 1 &&
+      nextStopDistance !== null &&
+      nextStopDistance <= 0.05;
+    return (
+      <main className="driver-navigation-page">
+        <DriverNavigationMap
+          busNumber={selectedBus.busNumber}
+          position={position}
+          route={selectedRoute}
+          nextStop={nextStop}
+        />
+        <header className="driver-navigation-header">
+          <div className="driver-navigation-brand">
+            <SchoolLogo className="portal-logo compact" />
+            <div>
+              <strong>Bus {selectedBus.busNumber}</strong>
+              <span>{selectedRoute.name}</span>
+            </div>
+          </div>
+          <div className="driver-navigation-live">
+            <i /> Tracking live
+          </div>
+        </header>
+
+        <section className="driver-next-stop-card" aria-live="polite">
+          <div className="driver-next-stop-label">
+            <Navigation size={16} />
+            {routeFinished ? "Route complete" : "Next stop"}
+          </div>
+          {nextStop ? (
+            <>
+              <div className="driver-next-stop-main">
+                <span className="driver-stop-sequence">
+                  {nextStopIndex + 1}
+                </span>
+                <div>
+                  <h1>
+                    {routeFinished ? "Final stop reached" : nextStop.name}
+                  </h1>
+                  <p>
+                    {nextStop.address ||
+                      selectedRoute.school ||
+                      selectedRoute.name}
+                  </p>
+                </div>
+                <strong className="driver-stop-distance">
+                  {nextStopDistance === null
+                    ? "Locating…"
+                    : nextStopDistance < 0.1
+                      ? `${Math.max(0, Math.round(nextStopDistance * 5280))} ft`
+                      : `${nextStopDistance.toFixed(1)} mi`}
+                </strong>
+              </div>
+              {!routeFinished &&
+                nextStopIndex < selectedRoute.stops.length - 1 && (
+                  <button
+                    className="driver-next-stop-button"
+                    type="button"
+                    onClick={() => setNextStopIndex((index) => index + 1)}
+                  >
+                    Mark stop complete <ArrowRight size={17} />
+                  </button>
+                )}
+            </>
+          ) : (
+            <div className="driver-route-unconfigured">
+              <strong>Stops have not been configured for this route.</strong>
+              <span>Your live bus position is still shown on the map.</span>
+            </div>
+          )}
+          <div className="driver-navigation-meta">
+            <span>
+              GPS {position ? "connected" : "locating"}
+              {position ? ` · ${formatAccuracy(position.accuracyMeters)}` : ""}
+            </span>
+            <span>
+              Stop {selectedRoute.stops.length ? nextStopIndex + 1 : 0} of{" "}
+              {selectedRoute.stops.length}
+            </span>
+          </div>
+          <div className="driver-screen-warning">
+            Keep this screen open while driving. A mobile browser cannot track
+            after the website is fully closed.
+          </div>
+          <button
+            className="driver-stop-tracking"
+            type="button"
+            onClick={() => void stopTracking()}
+          >
+            <Radio size={17} /> Stop tracking
+          </button>
         </section>
       </main>
     );
@@ -457,13 +656,38 @@ export function DriversPage() {
           </select>
         </label>
 
+        <label className="simple-driver-bus">
+          Route
+          <select
+            value={selectedRouteId}
+            disabled={Boolean(session) || availableRoutes.length === 0}
+            onChange={(event) => setSelectedRouteId(event.target.value)}
+          >
+            {availableRoutes.length === 0 ? (
+              <option value="">No route configured</option>
+            ) : (
+              availableRoutes.map((route) => (
+                <option key={route.id} value={route.id}>
+                  {route.name}
+                  {route.stops.length ? ` · ${route.stops.length} stops` : ""}
+                </option>
+              ))
+            )}
+          </select>
+        </label>
+
+        {(fleetError || routeError) && (
+          <div className="simple-driver-status error" role="alert">
+            <span className="status-dot error" />
+            {fleetError || routeError}
+          </div>
+        )}
+
         <button
           className="simple-driver-button"
           type="button"
-          onClick={() =>
-            session ? void stopTracking() : void startTracking()
-          }
-          disabled={!selectedBus || status === "requesting"}
+          onClick={() => (session ? void stopTracking() : void startTracking())}
+          disabled={!selectedBus || !selectedRoute || status === "requesting"}
         >
           {session ? (
             <>
@@ -532,7 +756,7 @@ export function DriversPage() {
           <div className="simple-driver-empty">
             {allowedBuses.length === 0
               ? "No bus is assigned to this account yet. You can sign in, but tracking will remain unavailable until an administrator assigns a bus."
-              : "Your coordinates are sent to Firebase only while tracking is active. They are not shown on this page."}
+              : "Choose the bus and route for this trip. The live map opens after tracking starts."}
           </div>
         )}
 

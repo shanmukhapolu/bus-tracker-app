@@ -84,7 +84,6 @@ Android bus phone → Google Cloud Run → Firebase Realtime Database
 
 Firebase, Cloud Run, authentication, and a backend are intentionally not installed in version 1.
 
-
 ## Firebase live tracking setup
 
 The prototype can switch from the built-in simulation to a Firebase Realtime Database-backed live provider when all `VITE_FIREBASE_*` variables are present. The public map subscribes to `liveBuses`; the hidden `/drivers` page signs drivers in and publishes phone GPS while tracking is active.
@@ -125,7 +124,9 @@ npm install
 npm run dev
 ```
 
-Open `/drivers` on the driver's phone. Sign in, select an assigned bus, and press **Start tracking**. The browser requests high-accuracy location permission and publishes the newest GPS fix approximately once per second while the page is active.
+Open `/drivers` on the driver's phone. Sign in, select an assigned bus and route, and press **Start tracking**. The browser requests high-accuracy location permission and opens a live driver map with the bus position, ordered route stops, the next stop, and remaining straight-line distance. The newest GPS fix is published approximately once per second while the page is active.
+
+Administrators create routes and place ordered stops from the separate `bus-safety-admin` app. Route records are stored under `routes/<routeId>` and are readable only by approved drivers and enabled administrators. Route lines in this first version connect the saved stops in sequence; they are operational guidance, not turn-by-turn road navigation.
 
 The public map listens to Firebase and only renders buses whose `liveBuses/<busId>.active` value is true. When tracking stops, the record becomes inactive. Firebase's `onDisconnect` mechanism also marks the bus inactive and releases the bus lock when the tracking connection drops.
 
@@ -162,7 +163,6 @@ Map UI
 ```
 
 That trusted ingestion layer can validate driver assignments server-side, enforce rate limits, reject impossible GPS jumps, keep driver identity private from public clients, and maintain route/ETA computation separately from raw GPS.
-
 
 ## Firebase Hosting deployment
 
