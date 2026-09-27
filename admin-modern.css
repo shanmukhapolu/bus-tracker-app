@@ -1,0 +1,273 @@
+/* Admin portal modernization and mobile app layout */
+.admin-ui {
+  min-height: 100dvh;
+  background: #f3f6f8;
+  color: #142f50;
+}
+
+.operations-shell {
+  min-height: 100dvh;
+  display: flex;
+  background: #f3f6f8;
+}
+
+.operations-shell .sidebar {
+  width: 244px;
+  min-width: 244px;
+  padding: 18px 12px 14px;
+  background: rgba(255,255,255,.96);
+  border-right: 1px solid #e3e9ee;
+  box-shadow: 8px 0 30px rgba(20,47,80,.04);
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+}
+
+.admin-brand-logo {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 9px 18px;
+  border-bottom: 1px solid #edf1f4;
+}
+.admin-school-logo { width: 39px; height: 39px; object-fit: contain; }
+.admin-brand-logo strong { display:block; font: 800 14px "Manrope", sans-serif; letter-spacing:-.2px; }
+.admin-brand-logo span { display:block; margin-top:3px; color:#82909d; font-size:10px; }
+
+.admin-nav {
+  display: grid;
+  gap: 4px;
+  margin-top: 17px;
+}
+.admin-nav-button {
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 12px;
+  border-radius: 11px;
+  color: #68798a;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 650;
+}
+.admin-nav-button:hover { background:#f4f7f9; color:#142f50; }
+.admin-nav-button.active {
+  background: #eaf2fa;
+  color: #123b67;
+  box-shadow: inset 3px 0 0 #2464b8;
+}
+.nav-count {
+  margin-left: auto;
+  min-width: 24px;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #fff;
+  color: #748494;
+  font-size: 10px;
+  text-align: center;
+}
+
+.operations-shell .sidebar-bottom {
+  margin-top: auto;
+  padding-top: 13px;
+  border-top: 1px solid #edf1f4;
+}
+.operations-shell .user {
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding: 7px 8px 11px;
+}
+.operations-shell .user > div { min-width:0; }
+.operations-shell .user strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; }
+.operations-shell .user span:not(.avatar) { display:block; margin-top:2px; color:#8995a0; font-size:9px; }
+.operations-shell .avatar {
+  width:32px; height:32px; display:grid; place-items:center; flex:0 0 32px;
+  border-radius:10px; background:#123b67; color:#fff; font-size:10px; font-weight:800;
+}
+.operations-shell .signout {
+  width:100%; min-height:40px; display:flex; align-items:center; gap:9px; padding:0 9px;
+  border-radius:9px; color:#7b8996; font-size:11px; font-weight:650;
+}
+.operations-shell .signout:hover { background:#fff4f2; color:#9a4e43; }
+
+.operations-shell .main-shell { flex:1; min-width:0; min-height:100dvh; overflow:auto; }
+.operations-shell .page { width:min(1440px,100%); margin:0 auto; padding:30px 34px 42px; min-height:100dvh; outline:none; }
+
+.page-heading {
+  display:flex; align-items:flex-end; justify-content:space-between; gap:22px;
+  margin-bottom:22px;
+}
+.page-heading h1 { margin:4px 0 5px; font-size:28px; letter-spacing:-1px; }
+.page-heading p { margin:0; max-width:700px; color:#738392; font-size:12px; line-height:1.6; }
+.page-heading .eyebrow { color:#71879b; font-size:9px; letter-spacing:.14em; font-weight:800; }
+
+.panel {
+  border:1px solid #e3e9ee;
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 12px 35px rgba(20,47,80,.055);
+}
+.panel-heading { min-height:58px; padding:17px 19px; }
+.panel-heading h2 { font-size:15px; letter-spacing:-.25px; }
+.panel-heading span { color:#87939e; font-size:10px; }
+
+.overview-metrics {
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:18px;
+}
+.summary-stat {
+  padding:15px 17px; border:1px solid #e3e9ee; border-radius:13px; background:#fff;
+  box-shadow:0 8px 24px rgba(20,47,80,.035);
+}
+.summary-stat span { display:flex; align-items:center; gap:7px; color:#7a8997; font-size:10px; font-weight:650; }
+.summary-stat strong { display:block; margin-top:7px; font:800 23px "Manrope",sans-serif; letter-spacing:-.7px; }
+
+.buses-panel { overflow:hidden; }
+.buses-search { width:min(300px,45vw); }
+.buses-search input { font-size:12px; }
+.buses-table tbody tr { cursor:pointer; transition:background .15s ease; }
+.buses-table tbody tr:hover { background:#f8fbfd; }
+.buses-table td, .buses-table th { vertical-align:middle; }
+.buses-table .bus-link { font-weight:750; }
+.bus-geofence-select {
+  width:min(190px,100%); min-height:36px; padding:0 9px;
+  border:1px solid #dce4e9; border-radius:8px; background:#fbfcfd; color:#334f67; font-size:11px;
+}
+.bus-geofence-select:focus { border-color:#6f98c3; outline:3px solid #2464b812; }
+.badge { white-space:nowrap; }
+
+.geofence-workspace {
+  display:grid; grid-template-columns:minmax(0,1.7fr) minmax(300px,.8fr); gap:18px; align-items:start;
+}
+.geofence-map-panel { overflow:hidden; min-height:620px; position:relative; }
+.geofence-map-toolbar {
+  min-height:68px; display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:13px 17px; border-bottom:1px solid #edf1f4; background:#fff;
+}
+.geofence-map-toolbar strong { display:block; font-size:12px; }
+.geofence-map-toolbar span { display:block; margin-top:3px; color:#8a97a2; font-size:10px; }
+.geofence-map { height:550px; min-height:420px; background:#e9eff2; }
+.geofence-draw-hint {
+  position:absolute; left:16px; bottom:16px; z-index:3;
+  display:flex; align-items:center; gap:7px; padding:9px 11px; border:1px solid #e1e8ed;
+  border-radius:10px; background:#fffffff2; box-shadow:0 8px 25px rgba(20,47,80,.1);
+  color:#526a7f; font-size:10px; font-weight:700;
+}
+.geofence-side { display:grid; gap:18px; }
+.geofence-editor { padding-bottom:17px; }
+.admin-field-label {
+  display:grid; gap:7px; padding:0 18px 14px; color:#617487; font-size:10px; font-weight:750;
+}
+.admin-field-label input {
+  width:100%; height:42px; padding:0 11px; border:1px solid #dce4e9; border-radius:9px;
+  background:#fbfcfd; color:#142f50; font-size:12px; outline:none;
+}
+.admin-field-label input:focus { border-color:#6f98c3; box-shadow:0 0 0 3px #2464b812; }
+.geofence-points { max-height:260px; overflow:auto; margin:0 18px 14px; display:grid; gap:6px; }
+.geofence-points > div {
+  display:flex; justify-content:space-between; gap:10px; padding:8px 9px;
+  border:1px solid #edf1f4; border-radius:8px; background:#fafcfd;
+}
+.geofence-points span { color:#788895; font-size:9px; font-weight:700; }
+.geofence-points code { color:#46647c; font-size:9px; }
+.geofence-editor-actions { display:flex; gap:8px; padding:0 18px; }
+.geofence-editor-actions button { flex:1; }
+.geofence-list { display:grid; gap:8px; padding:0 14px 14px; }
+.geofence-list-item {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:12px; border:1px solid #e5ebef; border-radius:11px; background:#fafcfd;
+}
+.geofence-list-copy { min-width:0; }
+.geofence-list-copy strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+.geofence-list-copy span { display:block; margin-top:4px; color:#8a96a1; font-size:9px; }
+.geofence-list-actions { display:flex; gap:4px; }
+.icon-action {
+  width:33px; height:33px; display:grid; place-items:center; border:1px solid #e1e7eb; border-radius:8px;
+  color:#63788a; background:#fff;
+}
+.icon-action:hover { background:#f1f5f8; }
+.icon-action.danger:hover { color:#9a4e43; background:#fff6f4; border-color:#eedbd7; }
+
+.geofence-toast-stack {
+  position:fixed; right:20px; bottom:20px; z-index:100;
+  display:grid; gap:10px; width:min(380px,calc(100vw - 32px)); pointer-events:none;
+}
+.geofence-toast-shell { pointer-events:auto; animation:geofence-toast-in .2s ease-out; }
+.geofence-toast {
+  display:grid; grid-template-columns:auto 1fr auto; align-items:start; gap:10px;
+  padding:13px; border:1px solid #dfe7ec; border-left:4px solid #2464b8; border-radius:13px;
+  background:#fff; box-shadow:0 16px 45px rgba(20,47,80,.16);
+}
+.geofence-toast-icon {
+  width:31px; height:31px; display:grid; place-items:center; border-radius:9px; background:#eaf2fa; color:#2464b8;
+  font-weight:900;
+}
+.geofence-toast-icon span { font-size:14px; }
+.geofence-toast-copy strong { display:block; font-size:11px; }
+.geofence-toast-copy p { margin:3px 0 4px; color:#566e82; font-size:10px; line-height:1.4; }
+.geofence-toast-copy span { color:#95a0a9; font-size:9px; }
+.geofence-toast > button { width:25px; height:25px; border-radius:7px; color:#8a98a4; font-size:17px; line-height:1; }
+.geofence-toast > button:hover { background:#f1f4f6; }
+@keyframes geofence-toast-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+.notice, .error-box {
+  margin:0 0 16px; border-radius:10px; padding:10px 12px; font-size:11px;
+}
+.notice { border:1px solid #dcecdf; background:#f1faf4; color:#2d7049; }
+.error-box { border:1px solid #eedbd7; background:#fff7f5; color:#914b40; }
+
+@media (max-width: 900px) {
+  .operations-shell .sidebar { width:210px; min-width:210px; }
+  .operations-shell .page { padding:24px 20px 36px; }
+  .geofence-workspace { grid-template-columns:1fr; }
+  .geofence-map-panel { min-height:520px; }
+  .geofence-map { height:470px; }
+  .geofence-side { grid-template-columns:1fr 1fr; }
+}
+@media (max-width: 760px) {
+  .operations-shell { display:block; }
+  .operations-shell .sidebar {
+    position:fixed; left:0; right:0; bottom:0; top:auto; width:100%; min-width:0; height:72px;
+    padding:7px 7px calc(7px + env(safe-area-inset-bottom)); border-right:0; border-top:1px solid #dfe6eb;
+    box-shadow:0 -8px 28px rgba(20,47,80,.09);
+  }
+  .admin-brand-logo, .operations-shell .sidebar-bottom { display:none; }
+  .admin-nav {
+    height:100%; margin:0; display:flex; align-items:stretch; gap:3px; overflow-x:auto; scrollbar-width:none;
+  }
+  .admin-nav::-webkit-scrollbar { display:none; }
+  .admin-nav-button {
+    flex:1 0 78px; min-height:58px; height:58px; padding:5px 7px; justify-content:center; flex-direction:column;
+    gap:4px; border-radius:9px; font-size:9px; white-space:nowrap;
+  }
+  .admin-nav-button.active { box-shadow:inset 0 3px 0 #2464b8; }
+  .nav-count { display:none; }
+  .operations-shell .main-shell { min-height:100dvh; padding-bottom:72px; }
+  .operations-shell .page { padding:18px 13px 28px; min-height:calc(100dvh - 72px); }
+  .page-heading { align-items:flex-start; flex-direction:column; gap:12px; margin-bottom:16px; }
+  .page-heading h1 { font-size:23px; }
+  .page-heading p { font-size:11px; }
+  .overview-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-bottom:12px; }
+  .summary-stat { padding:12px 13px; border-radius:11px; }
+  .summary-stat strong { font-size:20px; }
+  .panel { border-radius:13px; }
+  .panel-heading { padding:14px; }
+  .buses-search { width:100%; }
+  .buses-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .buses-table { min-width:820px; }
+  .geofence-side { grid-template-columns:1fr; }
+  .geofence-map-panel { min-height:0; }
+  .geofence-map { height:58vh; min-height:390px; }
+  .geofence-map-toolbar { padding:11px 13px; }
+  .geofence-editor-actions { flex-direction:column; }
+  .geofence-toast-stack { right:10px; bottom:82px; width:calc(100vw - 20px); }
+}
+@media (max-width: 430px) {
+  .overview-metrics { grid-template-columns:1fr 1fr; }
+  .summary-stat span { font-size:9px; }
+  .geofence-map { min-height:360px; }
+  .geofence-draw-hint { left:9px; right:9px; bottom:9px; }
+}
