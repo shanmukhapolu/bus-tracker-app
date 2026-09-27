@@ -864,8 +864,15 @@
   min-width: 0;
 }
 
-.operations-shell .map-host,
 .operations-shell .fleet-map {
+  position: relative;
+  width: 100%;
+  min-height: 420px;
+  overflow: hidden;
+  background: #eef5f9;
+}
+
+.operations-shell .map-host {
   position: absolute;
   inset: 0;
 }
@@ -1531,9 +1538,31 @@
   color: var(--ui-text);
 }
 
-.operations-shell .map-tag,
-.operations-shell .map-center {
+.operations-shell .map-tag {
   pointer-events: none;
+}
+
+.operations-shell .map-center {
+  pointer-events: auto;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  inset: auto 12px auto auto;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #d5e0e7;
+  border-radius: 7px;
+  background: rgba(255,255,255,.96);
+  color: #4e687b;
+  box-shadow: 0 2px 8px rgba(24,57,78,.10);
+}
+
+.operations-shell .map-center:hover {
+  background: #fff;
+  color: var(--ui-accent);
 }
 
 .admin-ui .login {
@@ -2090,5 +2119,302 @@
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
+  }
+}
+
+
+/* Final admin layout primitives: the admin experience uses this stylesheet only. */
+.operations-shell .overview-workspace {
+  width: 100%;
+  min-width: 0;
+}
+
+.operations-shell .admin-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.operations-shell .overview-grid {
+  grid-template-columns: minmax(0, 1.65fr) minmax(320px, .85fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.operations-shell .overview-support {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.operations-shell .overview-support > .panel {
+  margin: 0;
+}
+
+.operations-shell .admin-selected-details {
+  width: 100%;
+  justify-content: space-between;
+  border-top: 1px solid var(--ui-border-muted);
+  background: #f9fcff;
+}
+
+.operations-shell .driver-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.operations-shell .buses-search {
+  width: min(320px, 100%);
+}
+
+.operations-shell .buses-table-wrap {
+  width: 100%;
+}
+
+.operations-shell .buses-table {
+  min-width: 860px;
+}
+
+.operations-shell .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.operations-shell .filters > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ui-control);
+  color: #607889;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.operations-shell .map-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 390px);
+  align-items: stretch;
+  gap: 16px;
+}
+
+.operations-shell .map-layout > .panel {
+  position: relative;
+  min-height: 640px;
+  overflow: hidden;
+}
+
+.operations-shell .map-layout > .panel:first-child > .fleet-map {
+  height: 585px;
+  min-height: 585px;
+}
+
+.operations-shell .map-detail {
+  min-height: 0 !important;
+  align-self: start;
+}
+
+.operations-shell .map-detail .fields {
+  grid-template-columns: 1fr 1fr;
+}
+
+.operations-shell .map-detail .fields > div {
+  min-width: 0;
+}
+
+.operations-shell .coverage-panel {
+  min-height: 0 !important;
+}
+
+.operations-shell .coverage-panel .fleet-map {
+  height: 455px;
+  min-height: 455px;
+}
+
+.operations-shell .fleet-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 44px;
+  min-height: 58px;
+  padding: 3px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #203d53;
+  cursor: pointer;
+}
+
+.operations-shell .fleet-marker-icon {
+  box-sizing: border-box;
+  width: 36px;
+  height: 38px;
+  padding: 3px;
+  border: 1px solid #cfaa4e;
+  border-radius: 8px;
+  background: #fff2bf;
+  box-shadow: 0 2px 5px rgba(22,53,76,.16);
+}
+
+.operations-shell .fleet-marker-number {
+  min-width: 30px;
+  padding: 2px 6px;
+  border: 1px solid #d8e2e8;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(20,46,72,.08);
+  color: #29465b;
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 750;
+  text-align: center;
+}
+
+.operations-shell .fleet-marker.offline .fleet-marker-icon {
+  background: #e4ebf0;
+  border-color: #aebdc8;
+  filter: grayscale(.25);
+}
+
+.operations-shell .fleet-marker.selected .fleet-marker-icon {
+  background: #f4c65b;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #3977b8, 0 3px 8px rgba(22,53,76,.18);
+}
+
+.operations-shell .fleet-marker.selected .fleet-marker-number {
+  background: #1769b0;
+  border-color: #1769b0;
+  color: #fff;
+}
+
+.operations-shell .fleet-marker:focus-visible {
+  outline: 2px solid rgba(23,105,176,.55);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+.operations-shell .event-map-marker {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #b45b48;
+  color: #fff;
+  font-weight: 800;
+}
+
+.operations-shell .panel-heading > h2,
+.operations-shell .panel-heading > div > h2 {
+  min-width: 0;
+}
+
+.operations-shell .panel-footer-link:hover {
+  background: #eef6fb;
+}
+
+.operations-shell .buses-panel > .fleet-tabs {
+  background: #fbfdff;
+}
+
+.operations-shell .fleet-tabs button .tab-count {
+  padding: 0;
+  border-radius: 0;
+  background: transparent !important;
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.operations-shell .fleet-tabs button[aria-pressed="true"] .tab-count {
+  background: transparent !important;
+  color: rgba(255,255,255,.78);
+}
+
+.operations-shell .search {
+  background: #f4f9fc;
+  color: #5d778a;
+}
+
+.operations-shell .search input::placeholder {
+  color: #8498a7;
+}
+
+.operations-shell .search:focus-within {
+  background: #eff7fc;
+  box-shadow: 0 0 0 2px rgba(23,105,176,.10);
+}
+
+@media (max-width: 1100px) {
+  .operations-shell .map-layout > .panel {
+    min-height: 560px;
+  }
+
+  .operations-shell .map-layout > .panel:first-child > .fleet-map {
+    height: 500px;
+    min-height: 500px;
+  }
+
+  .operations-shell .coverage-panel .fleet-map {
+    height: 420px;
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 760px) {
+  .operations-shell .overview-grid,
+  .operations-shell .map-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .operations-shell .overview-metrics,
+  .operations-shell .metrics,
+  .operations-shell .driver-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .operations-shell .overview-workspace .admin-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .operations-shell .overview-workspace .admin-actions .secondary,
+  .operations-shell .overview-workspace .admin-actions .primary {
+    width: 100%;
+  }
+
+  .operations-shell .map-layout > .panel {
+    min-height: 0;
+  }
+
+  .operations-shell .map-layout > .panel:first-child > .fleet-map {
+    height: 430px;
+    min-height: 430px;
+  }
+
+  .operations-shell .coverage-panel .fleet-map {
+    height: 380px;
+    min-height: 380px;
+  }
+
+  .operations-shell .map-detail .fields {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .operations-shell .overview-metrics,
+  .operations-shell .metrics,
+  .operations-shell .driver-metrics,
+  .operations-shell .map-detail .fields {
+    grid-template-columns: 1fr;
   }
 }
