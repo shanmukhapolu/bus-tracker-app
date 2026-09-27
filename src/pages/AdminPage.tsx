@@ -135,12 +135,18 @@ export function AdminPage() {
     const setError = (message: string) => setGeofenceActivityError(message);
 
     const stopAlerts = subscribeGeofenceAlerts(
-      setGeofenceEvents,
+      (next) => {
+        setGeofenceEvents(next);
+        setGeofenceActivityError("");
+      },
       setError,
     );
 
     const stopOrder = subscribeGeofenceBusOrder(
-      setGeofenceOrder,
+      (next) => {
+        setGeofenceOrder(next);
+        setGeofenceActivityError("");
+      },
       setError,
     );
 
