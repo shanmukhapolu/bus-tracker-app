@@ -1,1138 +1,321 @@
-/* Admin portal modernization and mobile app layout */
-.admin-ui {
-  min-height: 100dvh;
-  background: #f3f6f8;
-  color: #142f50;
-}
-
-.operations-shell {
-  min-height: 100dvh;
-  display: flex;
-  background: #f3f6f8;
-}
-
-.operations-shell .sidebar {
-  width: 244px;
-  min-width: 244px;
-  padding: 18px 12px 14px;
-  background: rgba(255,255,255,.96);
-  border-right: 1px solid #e3e9ee;
-  box-shadow: 8px 0 30px rgba(20,47,80,.04);
-  display: flex;
-  flex-direction: column;
-  z-index: 20;
-}
-
-.admin-brand-logo {
-  min-height: 54px;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 0 9px 18px;
-  border-bottom: 1px solid #edf1f4;
-}
-.admin-school-logo { width: 39px; height: 39px; object-fit: contain; }
-.admin-brand-logo strong { display:block; font: 800 14px "Manrope", sans-serif; letter-spacing:-.2px; }
-.admin-brand-logo span { display:block; margin-top:3px; color:#82909d; font-size:10px; }
-
-.admin-nav {
-  display: grid;
-  gap: 4px;
-  margin-top: 17px;
-}
-.admin-nav-button {
-  width: 100%;
-  min-height: 46px;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 0 12px;
-  border-radius: 11px;
-  color: #68798a;
-  text-align: left;
-  font-size: 12px;
-  font-weight: 650;
-}
-.admin-nav-button:hover { background:#f4f7f9; color:#142f50; }
-.admin-nav-button.active {
-  background: #eaf2fa;
-  color: #123b67;
-  box-shadow: inset 3px 0 0 #2464b8;
-}
-.nav-count {
-  margin-left: auto;
-  min-width: 24px;
-  padding: 4px 7px;
-  border-radius: 999px;
-  background: #fff;
-  color: #748494;
-  font-size: 10px;
-  text-align: center;
-}
-
-.operations-shell .sidebar-bottom {
-  margin-top: auto;
-  padding-top: 13px;
-  border-top: 1px solid #edf1f4;
-}
-.operations-shell .user {
-  display:flex;
-  align-items:center;
-  gap:9px;
-  padding: 7px 8px 11px;
-}
-.operations-shell .user > div { min-width:0; }
-.operations-shell .user strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; }
-.operations-shell .user span:not(.avatar) { display:block; margin-top:2px; color:#8995a0; font-size:9px; }
-.operations-shell .avatar {
-  width:32px; height:32px; display:grid; place-items:center; flex:0 0 32px;
-  border-radius:10px; background:#123b67; color:#fff; font-size:10px; font-weight:800;
-}
-.operations-shell .signout {
-  width:100%; min-height:40px; display:flex; align-items:center; gap:9px; padding:0 9px;
-  border-radius:9px; color:#7b8996; font-size:11px; font-weight:650;
-}
-.operations-shell .signout:hover { background:#fff4f2; color:#9a4e43; }
-
-.operations-shell .main-shell { flex:1; min-width:0; min-height:100dvh; overflow:auto; }
-.operations-shell .page { width:min(1440px,100%); margin:0 auto; padding:30px 34px 42px; min-height:100dvh; outline:none; }
-
-.page-heading {
-  display:flex; align-items:flex-end; justify-content:space-between; gap:22px;
-  margin-bottom:22px;
-}
-.page-heading h1 { margin:4px 0 5px; font-size:28px; letter-spacing:-1px; }
-.page-heading p { margin:0; max-width:700px; color:#738392; font-size:12px; line-height:1.6; }
-.page-heading .eyebrow { color:#71879b; font-size:9px; letter-spacing:.14em; font-weight:800; }
-
-.panel {
-  border:1px solid #e3e9ee;
-  border-radius:16px;
-  background:#fff;
-  box-shadow:0 12px 35px rgba(20,47,80,.055);
-}
-.panel-heading { min-height:58px; padding:17px 19px; }
-.panel-heading h2 { font-size:15px; letter-spacing:-.25px; }
-.panel-heading span { color:#87939e; font-size:10px; }
-
-.overview-metrics {
-  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:18px;
-}
-.summary-stat {
-  padding:15px 17px; border:1px solid #e3e9ee; border-radius:13px; background:#fff;
-  box-shadow:0 8px 24px rgba(20,47,80,.035);
-}
-.summary-stat span { display:flex; align-items:center; gap:7px; color:#7a8997; font-size:10px; font-weight:650; }
-.summary-stat strong { display:block; margin-top:7px; font:800 23px "Manrope",sans-serif; letter-spacing:-.7px; }
-
-.buses-panel { overflow:hidden; }
-.buses-search { width:min(300px,45vw); }
-.buses-search input { font-size:12px; }
-.buses-table tbody tr { cursor:pointer; transition:background .15s ease; }
-.buses-table tbody tr:hover { background:#f8fbfd; }
-.buses-table td, .buses-table th { vertical-align:middle; }
-.buses-table .bus-link { font-weight:750; }
-.bus-geofence-select {
-  width:min(190px,100%); min-height:36px; padding:0 9px;
-  border:1px solid #dce4e9; border-radius:8px; background:#fbfcfd; color:#334f67; font-size:11px;
-}
-.bus-geofence-select:focus { border-color:#6f98c3; outline:3px solid #2464b812; }
-.badge { white-space:nowrap; }
-
-.geofence-workspace {
-  display:grid; grid-template-columns:minmax(0,1.7fr) minmax(300px,.8fr); gap:18px; align-items:start;
-}
-.geofence-map-panel { overflow:hidden; min-height:620px; position:relative; }
-.geofence-map-toolbar {
-  min-height:68px; display:flex; align-items:center; justify-content:space-between; gap:12px;
-  padding:13px 17px; border-bottom:1px solid #edf1f4; background:#fff;
-}
-.geofence-map-toolbar strong { display:block; font-size:12px; }
-.geofence-map-toolbar span { display:block; margin-top:3px; color:#8a97a2; font-size:10px; }
-.geofence-map { height:550px; min-height:420px; background:#e9eff2; }
-.geofence-draw-hint {
-  position:absolute; left:16px; bottom:16px; z-index:3;
-  display:flex; align-items:center; gap:7px; padding:9px 11px; border:1px solid #e1e8ed;
-  border-radius:10px; background:#fffffff2; box-shadow:0 8px 25px rgba(20,47,80,.1);
-  color:#526a7f; font-size:10px; font-weight:700;
-}
-.geofence-side { display:grid; gap:18px; }
-.geofence-editor { padding-bottom:17px; }
-.admin-field-label {
-  display:grid; gap:7px; padding:0 18px 14px; color:#617487; font-size:10px; font-weight:750;
-}
-.admin-field-label input {
-  width:100%; height:42px; padding:0 11px; border:1px solid #dce4e9; border-radius:9px;
-  background:#fbfcfd; color:#142f50; font-size:12px; outline:none;
-}
-.admin-field-label input:focus { border-color:#6f98c3; box-shadow:0 0 0 3px #2464b812; }
-.geofence-points { max-height:260px; overflow:auto; margin:0 18px 14px; display:grid; gap:6px; }
-.geofence-points > div {
-  display:flex; justify-content:space-between; gap:10px; padding:8px 9px;
-  border:1px solid #edf1f4; border-radius:8px; background:#fafcfd;
-}
-.geofence-points span { color:#788895; font-size:9px; font-weight:700; }
-.geofence-points code { color:#46647c; font-size:9px; }
-.geofence-editor-actions { display:flex; gap:8px; padding:0 18px; }
-.geofence-editor-actions button { flex:1; }
-.geofence-list { display:grid; gap:8px; padding:0 14px 14px; }
-.geofence-list-item {
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-  padding:12px; border:1px solid #e5ebef; border-radius:11px; background:#fafcfd;
-}
-.geofence-list-copy { min-width:0; }
-.geofence-list-copy strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
-.geofence-list-copy span { display:block; margin-top:4px; color:#8a96a1; font-size:9px; }
-.geofence-list-actions { display:flex; gap:4px; }
-.icon-action {
-  width:33px; height:33px; display:grid; place-items:center; border:1px solid #e1e7eb; border-radius:8px;
-  color:#63788a; background:#fff;
-}
-.icon-action:hover { background:#f1f5f8; }
-.icon-action.danger:hover { color:#9a4e43; background:#fff6f4; border-color:#eedbd7; }
-
-.geofence-toast-stack {
-  position:fixed; right:20px; bottom:20px; z-index:100;
-  display:grid; gap:10px; width:min(380px,calc(100vw - 32px)); pointer-events:none;
-}
-.geofence-toast-shell { pointer-events:auto; animation:geofence-toast-in .2s ease-out; }
-.geofence-toast {
-  display:grid; grid-template-columns:auto 1fr auto; align-items:start; gap:10px;
-  padding:13px; border:1px solid #dfe7ec; border-left:4px solid #2464b8; border-radius:13px;
-  background:#fff; box-shadow:0 16px 45px rgba(20,47,80,.16);
-}
-.geofence-toast-icon {
-  width:31px; height:31px; display:grid; place-items:center; border-radius:9px; background:#eaf2fa; color:#2464b8;
-  font-weight:900;
-}
-.geofence-toast-icon span { font-size:14px; }
-.geofence-toast-copy strong { display:block; font-size:11px; }
-.geofence-toast-copy p { margin:3px 0 4px; color:#566e82; font-size:10px; line-height:1.4; }
-.geofence-toast-copy span { color:#95a0a9; font-size:9px; }
-.geofence-toast > button { width:25px; height:25px; border-radius:7px; color:#8a98a4; font-size:17px; line-height:1; }
-.geofence-toast > button:hover { background:#f1f4f6; }
-@keyframes geofence-toast-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
-
-.notice, .error-box {
-  margin:0 0 16px; border-radius:10px; padding:10px 12px; font-size:11px;
-}
-.notice { border:1px solid #dcecdf; background:#f1faf4; color:#2d7049; }
-.error-box { border:1px solid #eedbd7; background:#fff7f5; color:#914b40; }
-
-@media (max-width: 900px) {
-  .operations-shell .sidebar { width:210px; min-width:210px; }
-  .operations-shell .page { padding:24px 20px 36px; }
-  .geofence-workspace { grid-template-columns:1fr; }
-  .geofence-map-panel { min-height:520px; }
-  .geofence-map { height:470px; }
-  .geofence-side { grid-template-columns:1fr 1fr; }
-}
-@media (max-width: 760px) {
-  .operations-shell { display:block; }
-  .operations-shell .sidebar {
-    position:fixed; left:0; right:0; bottom:0; top:auto; width:100%; min-width:0; height:72px;
-    padding:7px 7px calc(7px + env(safe-area-inset-bottom)); border-right:0; border-top:1px solid #dfe6eb;
-    box-shadow:0 -8px 28px rgba(20,47,80,.09);
-  }
-  .admin-brand-logo, .operations-shell .sidebar-bottom { display:none; }
-  .admin-nav {
-    height:100%; margin:0; display:flex; align-items:stretch; gap:3px; overflow-x:auto; scrollbar-width:none;
-  }
-  .admin-nav::-webkit-scrollbar { display:none; }
-  .admin-nav-button {
-    flex:1 0 78px; min-height:58px; height:58px; padding:5px 7px; justify-content:center; flex-direction:column;
-    gap:4px; border-radius:9px; font-size:9px; white-space:nowrap;
-  }
-  .admin-nav-button.active { box-shadow:inset 0 3px 0 #2464b8; }
-  .nav-count { display:none; }
-  .operations-shell .main-shell { min-height:100dvh; padding-bottom:72px; }
-  .operations-shell .page { padding:18px 13px 28px; min-height:calc(100dvh - 72px); }
-  .page-heading { align-items:flex-start; flex-direction:column; gap:12px; margin-bottom:16px; }
-  .page-heading h1 { font-size:23px; }
-  .page-heading p { font-size:11px; }
-  .overview-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-bottom:12px; }
-  .summary-stat { padding:12px 13px; border-radius:11px; }
-  .summary-stat strong { font-size:20px; }
-  .panel { border-radius:13px; }
-  .panel-heading { padding:14px; }
-  .buses-search { width:100%; }
-  .buses-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  .buses-table { min-width:820px; }
-  .geofence-side { grid-template-columns:1fr; }
-  .geofence-map-panel { min-height:0; }
-  .geofence-map { height:58vh; min-height:390px; }
-  .geofence-map-toolbar { padding:11px 13px; }
-  .geofence-editor-actions { flex-direction:column; }
-  .geofence-toast-stack { right:10px; bottom:82px; width:calc(100vw - 20px); }
-}
-@media (max-width: 430px) {
-  .overview-metrics { grid-template-columns:1fr 1fr; }
-  .summary-stat span { font-size:9px; }
-  .geofence-map { min-height:360px; }
-  .geofence-draw-hint { left:9px; right:9px; bottom:9px; }
-}
-
-
-/* Geofence manager and compact mobile admin app shell. */
-.operations-shell .geofences-page {
-  min-width: 0;
-}
-.operations-shell .geofence-overview {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0 0 18px;
-}
-.operations-shell .geofence-overview-card {
-  min-width: 0;
-  padding: 14px 16px;
-  border: 1px solid #e0e6ea;
-  border-radius: 13px;
-  background: #fff;
-  box-shadow: 0 3px 18px #142f5008;
-}
-.operations-shell .geofence-overview-card span {
-  display: block;
-  color: #74869a;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-}
-.operations-shell .geofence-overview-card strong {
-  display: block;
-  margin-top: 7px;
-  color: #142f50;
-  font: 800 20px "Manrope", sans-serif;
-  letter-spacing: -.4px;
-}
-.operations-shell .geofence-map-panel {
-  min-height: 0;
-  overflow: hidden;
-}
-.operations-shell .geofence-map {
-  position: relative;
-  min-height: 620px;
-  background: #e9eff2;
-}
-.operations-shell .geofence-map.is-drawing .map-host {
-  cursor: crosshair;
-}
-.operations-shell .geofence-map .map-host {
-  position: absolute;
-  inset: 0;
-}
-.operations-shell .geofence-map-toolbar {
-  min-height: 70px;
-  padding: 14px 16px;
-  background: rgba(255,255,255,.96);
-}
-.operations-shell .geofence-map-toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.operations-shell .geofence-map-toolbar .secondary,
-.operations-shell .geofence-map-toolbar .primary {
-  min-height: 36px;
-  padding: 0 11px;
-  font-size: 11px;
-}
-.operations-shell .geofence-draw-hint {
-  left: 14px;
-  right: auto;
-  bottom: 14px;
-  max-width: calc(100% - 28px);
-  padding: 10px 12px;
-  border: 1px solid #dce4ea;
-  border-radius: 11px;
-  background: rgba(255,255,255,.96);
-  color: #3e5a72;
-  box-shadow: 0 10px 30px #142f5015;
-}
-.operations-shell .geofence-side {
-  gap: 14px;
-}
-.operations-shell .geofence-editor {
-  padding-bottom: 16px;
-}
-.operations-shell .geofence-editor .panel-heading {
-  padding-bottom: 14px;
-}
-.operations-shell .geofence-editor .panel-heading > svg {
-  color: #2464b8;
-}
-.operations-shell .admin-field-label {
-  padding: 0 16px 14px;
-}
-.operations-shell .admin-field-label input {
-  min-height: 44px;
-}
-.operations-shell .geofence-editor-actions {
-  padding: 0 16px;
-  align-items: stretch;
-}
-.operations-shell .geofence-editor-actions button {
-  min-width: 0;
-  flex: 1;
-}
-.operations-shell .geofence-editor-note {
-  margin: 12px 16px 0;
-  color: #7a8998;
-  font-size: 10px;
-  line-height: 1.5;
-}
-.operations-shell .geofence-list {
-  gap: 7px;
-  padding: 10px 12px 12px;
-}
-.operations-shell .geofence-list-item {
-  padding: 9px;
-  border-radius: 12px;
-  transition: background .15s ease, border-color .15s ease, transform .15s ease;
-}
-.operations-shell .geofence-list-item:hover {
-  transform: translateY(-1px);
-}
-.operations-shell .geofence-list-item.selected {
-  border-color: #cfe0f2;
-  background: #f4f8fc;
-}
-.operations-shell .geofence-list-main {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-  padding: 2px;
-  border: 0;
-  background: transparent;
-  text-align: left;
-}
-.operations-shell .geofence-list-icon {
-  width: 32px;
-  height: 32px;
-  flex: 0 0 32px;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  background: #eaf2fb;
-  color: #2464b8;
-}
-.operations-shell .geofence-list-copy {
-  min-width: 0;
-}
-.operations-shell .geofence-list-copy strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.operations-shell .icon-action {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-}
-.operations-shell .buses-table-wrap {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-.operations-shell .buses-table {
-  min-width: 900px;
-}
-.operations-shell .bus-geofence-select {
-  width: min(190px, 100%);
-  min-width: 150px;
-  min-height: 36px;
-  padding: 0 9px;
-  border: 1px solid #dce4ea;
-  border-radius: 9px;
-  background: #fbfcfd;
-  color: #294761;
-  font-size: 11px;
-}
-.operations-shell .bus-geofence-select:disabled {
-  opacity: .62;
-}
-.operations-shell .geofence-toast-stack {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 200;
-  display: grid;
-  gap: 9px;
-  width: min(380px, calc(100vw - 40px));
-  pointer-events: none;
-}
-.operations-shell .geofence-toast-shell {
-  pointer-events: auto;
-  animation: geofence-toast-in .18s ease-out;
-}
-.operations-shell .geofence-toast {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 11px;
-  align-items: start;
-  padding: 13px;
-  border: 1px solid #dce5eb;
-  border-left: 4px solid #2464b8;
-  border-radius: 14px;
-  background: rgba(255,255,255,.98);
-  box-shadow: 0 18px 46px #142f5024;
-  backdrop-filter: blur(12px);
-}
-.operations-shell .geofence-toast-icon {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  background: #eaf2fb;
-  color: #2464b8;
-}
-.operations-shell .geofence-toast-copy {
-  min-width: 0;
-}
-.operations-shell .geofence-toast-copy strong {
-  display: block;
-  color: #142f50;
-  font-size: 11px;
-  font-weight: 800;
-}
-.operations-shell .geofence-toast-copy p {
-  margin: 3px 0 4px;
-  color: #526c83;
-  font-size: 11px;
-  line-height: 1.45;
-}
-.operations-shell .geofence-toast-copy p b {
-  color: #294761;
-}
-.operations-shell .geofence-toast-copy span {
-  color: #8795a2;
-  font-size: 9px;
-}
-.operations-shell .geofence-toast > button {
-  width: 26px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: #8593a0;
-}
-.operations-shell .geofence-toast > button:hover {
-  background: #f1f4f6;
-  color: #294761;
-}
-@keyframes geofence-toast-in {
-  from { opacity: 0; transform: translateY(8px) scale(.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-/* Phone layout: bottom navigation + full-width stacked app surfaces. */
-@media (max-width: 760px) {
-  .operations-shell .sidebar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    top: auto;
-    bottom: 0;
-    width: 100%;
-    min-width: 0;
-    height: calc(72px + env(safe-area-inset-bottom));
-    padding: 6px 7px env(safe-area-inset-bottom);
-    z-index: 100;
-    border-top: 1px solid #dce4ea;
-    border-right: 0;
-    background: rgba(255,255,255,.97);
-    box-shadow: 0 -10px 34px #142f5014;
-    backdrop-filter: blur(16px);
-  }
-  .operations-shell .admin-brand-logo,
-  .operations-shell .sidebar-bottom {
-    display: none;
-  }
-  .operations-shell .sidebar nav {
-    height: 100%;
-    display: flex;
-    align-items: stretch;
-    gap: 2px;
-    margin: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .operations-shell .sidebar nav::-webkit-scrollbar {
-    display: none;
-  }
-  .operations-shell .sidebar nav .admin-nav-button {
-    flex: 1 0 68px;
-    min-width: 68px;
-    min-height: 58px;
-    padding: 6px 5px;
-    flex-direction: column;
-    justify-content: center;
-    gap: 4px;
-    border: 0;
-    border-radius: 11px;
-    background: transparent;
-    color: #718196;
-    text-align: center;
-    font-size: 9px;
-    font-weight: 700;
-  }
-  .operations-shell .sidebar nav .admin-nav-button svg {
-    color: #8293a5;
-  }
-  .operations-shell .sidebar nav .admin-nav-button.active {
-    background: #edf4fc;
-    border-color: transparent;
-    box-shadow: none;
-    color: #2464b8;
-  }
-  .operations-shell .sidebar nav .admin-nav-button.active svg {
-    color: #2464b8;
-  }
-  .operations-shell .sidebar nav .admin-nav-button .nav-count {
-    display: none;
-  }
-  .operations-shell .main-shell {
-    margin-left: 0;
-    padding-bottom: calc(78px + env(safe-area-inset-bottom));
-  }
-  .operations-shell .page {
-    min-height: calc(100dvh - 78px);
-    padding: 18px 12px 24px;
-  }
-  .operations-shell .page-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 17px;
-  }
-  .operations-shell .page-heading > div:first-child {
-    width: 100%;
-  }
-  .operations-shell .page-heading .primary,
-  .operations-shell .page-heading .secondary {
-    width: 100%;
-  }
-  .operations-shell .page-heading h1 {
-    font-size: 24px;
-  }
-  .operations-shell .page-heading p {
-    font-size: 11px;
-    line-height: 1.55;
-  }
-  .operations-shell .geofence-overview {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 7px;
-    margin-bottom: 12px;
-  }
-  .operations-shell .geofence-overview-card {
-    padding: 11px 10px;
-    border-radius: 11px;
-  }
-  .operations-shell .geofence-overview-card span {
-    font-size: 8px;
-  }
-  .operations-shell .geofence-overview-card strong {
-    margin-top: 5px;
-    font-size: 16px;
-  }
-  .operations-shell .geofence-workspace {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  .operations-shell .geofence-map-panel {
-    order: 0;
-  }
-  .operations-shell .geofence-side {
-    order: 1;
-  }
-  .operations-shell .geofence-map {
-    min-height: 54vh;
-    height: 54vh;
-  }
-  .operations-shell .geofence-map-toolbar {
-    min-height: 62px;
-    padding: 11px 12px;
-  }
-  .operations-shell .geofence-map-toolbar strong {
-    font-size: 11px;
-  }
-  .operations-shell .geofence-map-toolbar span {
-    max-width: 58vw;
-    font-size: 9px;
-  }
-  .operations-shell .geofence-map-toolbar-actions .secondary {
-    width: auto;
-  }
-  .operations-shell .geofence-draw-hint {
-    right: 10px;
-    bottom: 10px;
-    left: 10px;
-    justify-content: center;
-    text-align: center;
-    padding: 9px 10px;
-    font-size: 9px;
-  }
-  .operations-shell .geofence-editor-actions {
-    flex-direction: column;
-  }
-  .operations-shell .geofence-editor-actions button {
-    width: 100%;
-  }
-  .operations-shell .geofence-toast-stack {
-    left: 10px;
-    right: 10px;
-    bottom: calc(82px + env(safe-area-inset-bottom));
-    width: auto;
-  }
-  .operations-shell .geofence-toast {
-    padding: 11px;
-    border-radius: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .operations-shell .geofence-overview {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-  .operations-shell .geofence-overview-card span {
-    min-height: 20px;
-  }
-  .operations-shell .geofence-map {
-    min-height: 50vh;
-    height: 50vh;
-  }
-  .operations-shell .geofence-list {
-    padding-left: 9px;
-    padding-right: 9px;
-  }
-  .operations-shell .geofence-toast {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 8px;
-  }
-}
-
-
-/* Current admin navigation and geofence detail layout. */
-.operations-shell .admin-nav-button.active {
-  box-shadow: none;
-  border-left: 0;
-}
-
-.operations-shell .admin-nav-button.active::before {
-  display: none;
-}
-
-.operations-shell .geofence-card-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.operations-shell .geofence-card {
-  min-height: 128px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 14px;
-  padding: 18px;
-  border: 1px solid #e2e9ee;
-  border-radius: 15px;
-  background: #fff;
-  color: #142f50;
-  text-align: left;
-  box-shadow: 0 10px 30px rgba(20,47,80,.045);
-  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
-}
-
-.operations-shell .geofence-card:hover {
-  transform: translateY(-2px);
-  border-color: #c9dceb;
-  box-shadow: 0 16px 35px rgba(20,47,80,.08);
-}
-
-.operations-shell .geofence-card-icon {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  background: #edf4fb;
-  color: #2464b8;
-}
-
-.operations-shell .geofence-card-copy {
-  min-width: 0;
-}
-
-.operations-shell .geofence-card-copy strong {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 14px;
-}
-
-.operations-shell .geofence-card-copy span {
-  display: block;
-  margin-top: 5px;
-  color: #536d83;
-  font-size: 11px;
-  font-weight: 650;
-}
-
-.operations-shell .geofence-card-copy small {
-  display: block;
-  margin-top: 5px;
-  color: #8996a2;
-  font-size: 9px;
-}
-
-.operations-shell .geofence-card-arrow {
-  color: #8393a2;
-  font-size: 20px;
-}
-
-.operations-shell .geofence-empty-panel {
-  padding: 20px;
-}
-
-.operations-shell .geofence-detail-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.operations-shell .geofence-detail-grid,
-.operations-shell .geofence-detail-bottom-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(340px, .9fr);
-  gap: 16px;
-  align-items: start;
-}
-
-.operations-shell .geofence-detail-bottom-grid {
-  margin-top: 16px;
-}
-
-.operations-shell .geofence-detail-map-panel,
-.operations-shell .geofence-detail-assigned-panel {
-  overflow: hidden;
-}
-
-.operations-shell .geofence-detail-map {
-  position: relative;
-  height: min(64vh, 640px);
-  min-height: 430px;
-  background: #e9eff2;
-}
-
-.operations-shell .geofence-detail-map.drawing .map-host {
-  cursor: crosshair;
-}
-
-.operations-shell .geofence-detail-map .map-host {
-  position: absolute;
-  inset: 0;
-}
-
-.operations-shell .geofence-detail-draw-hint {
-  position: absolute;
-  left: 14px;
-  bottom: 14px;
-  z-index: 4;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 11px;
-  border: 1px solid #dce5eb;
-  border-radius: 10px;
-  background: rgba(255,255,255,.96);
-  color: #49677f;
-  font-size: 10px;
-  font-weight: 700;
-  box-shadow: 0 10px 28px rgba(20,47,80,.1);
-}
-
-.operations-shell .geofence-detail-map-actions {
-  display: flex;
-  gap: 8px;
-  padding: 11px 14px;
-  border-top: 1px solid #edf1f4;
-}
-
-.operations-shell .geofence-bus-picker {
-  display: grid;
-  gap: 7px;
-  padding: 10px 12px 14px;
-  max-height: 560px;
-  overflow: auto;
-}
-
-.operations-shell .geofence-bus-option {
-  position: relative;
-  display: grid;
-  grid-template-columns: 18px 30px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 9px;
-  padding: 10px;
-  border: 1px solid #e3e9ee;
-  border-radius: 11px;
-  background: #fff;
-  cursor: pointer;
-}
-
-.operations-shell .geofence-bus-option:hover {
-  background: #f8fbfd;
-}
-
-.operations-shell .geofence-bus-option.checked {
-  border-color: #cfe0f2;
-  background: #f3f8fc;
-}
-
-.operations-shell .geofence-bus-option input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.operations-shell .geofence-bus-check {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border: 1px solid #d6e0e7;
-  border-radius: 8px;
-  color: transparent;
-  background: #fff;
-}
-
-.operations-shell .geofence-bus-option.checked .geofence-bus-check {
-  border-color: #2464b8;
-  background: #2464b8;
-  color: #fff;
-}
-
-.operations-shell .geofence-bus-copy {
-  min-width: 0;
-}
-
-.operations-shell .geofence-bus-copy strong {
-  display: block;
-  font-size: 11px;
-}
-
-.operations-shell .geofence-bus-copy span {
-  display: block;
-  margin-top: 2px;
-  color: #73889a;
-  font-size: 9px;
-}
-
-.operations-shell .geofence-bus-copy small {
-  display: block;
-  margin-top: 3px;
-  color: #9a6746;
-  font-size: 8px;
-  font-weight: 700;
-}
-
-.operations-shell .geofence-detail-note {
-  margin: 2px 2px 0;
-  color: #84929e;
-  font-size: 9px;
-  line-height: 1.5;
-}
-
-.operations-shell .geofence-assigned-list,
-.operations-shell .geofence-alert-list,
-.operations-shell .geofence-order-list {
-  display: grid;
-  gap: 7px;
-  padding: 10px 12px 14px;
-}
-
-.operations-shell .geofence-assigned-bus,
-.operations-shell .geofence-alert-row,
-.operations-shell .geofence-order-row {
-  display: grid;
-  gap: 10px;
-  align-items: center;
-  padding: 11px;
-  border: 1px solid #e7edf1;
-  border-radius: 10px;
-  background: #fbfcfd;
-}
-
-.operations-shell .geofence-assigned-bus {
-  grid-template-columns: 100px minmax(0, 1fr) auto;
-}
-
-.operations-shell .geofence-bus-number,
-.operations-shell .geofence-alert-row strong,
-.operations-shell .geofence-order-row strong {
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.operations-shell .geofence-assigned-bus > span:nth-child(2) {
-  color: #718496;
-  font-size: 10px;
-}
-
-.operations-shell .geofence-alert-row {
-  grid-template-columns: auto minmax(0, 1fr);
-}
-
-.operations-shell .geofence-alert-icon {
-  width: 29px;
-  height: 29px;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  background: #eaf2fb;
-  color: #2464b8;
-}
-
-.operations-shell .geofence-alert-row div:last-child span,
-.operations-shell .geofence-order-row div span {
-  display: block;
-  margin-top: 3px;
-  color: #84929e;
-  font-size: 9px;
-}
-
-.operations-shell .geofence-order-row {
-  grid-template-columns: 30px minmax(0, 1fr) auto;
-}
-
-.operations-shell .geofence-order-rank {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  background: #edf4fb;
-  color: #2464b8;
-  font-size: 10px;
-  font-weight: 850;
-}
-
-.operations-shell .geofence-detail-status {
-  margin: 12px 0 0;
-  color: #8b98a4;
-  font-size: 9px;
-}
-
-.operations-shell .buses-add-panel {
-  margin-bottom: 16px;
-  overflow: hidden;
-}
-
-.operations-shell .buses-add-form {
-  display: grid;
-  grid-template-columns: 180px minmax(180px, 1fr) auto;
-  gap: 9px;
-  padding: 0 18px 18px;
-}
-
-.operations-shell .buses-add-form input {
-  min-width: 0;
-  height: 42px;
-  padding: 0 11px;
-  border: 1px solid #dce4e9;
-  border-radius: 9px;
-  background: #fbfcfd;
-  color: #142f50;
-  font-size: 11px;
-  outline: none;
-}
-
-.operations-shell .buses-add-form input:focus {
-  border-color: #6f98c3;
-  box-shadow: 0 0 0 3px #2464b812;
-}
-
-@media (max-width: 1000px) {
-  .operations-shell .geofence-card-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .operations-shell .geofence-detail-grid,
-  .operations-shell .geofence-detail-bottom-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 760px) {
-  .operations-shell .geofence-card-grid {
-    grid-template-columns: 1fr;
-    gap: 9px;
-  }
-
-  .operations-shell .geofence-card {
-    min-height: 100px;
-    padding: 14px;
-    border-radius: 13px;
-  }
-
-  .operations-shell .geofence-card-icon {
-    width: 38px;
-    height: 38px;
-  }
-
-  .operations-shell .geofence-detail-actions {
-    width: 100%;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .operations-shell .geofence-detail-actions .secondary,
-  .operations-shell .geofence-detail-actions .primary {
-    width: 100%;
-  }
-
-  .operations-shell .geofence-detail-map {
-    height: 52vh;
-    min-height: 360px;
-  }
-
-  .operations-shell .geofence-detail-map-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .operations-shell .geofence-detail-map-actions button {
-    width: 100%;
-  }
-
-  .operations-shell .geofence-bus-picker {
-    max-height: none;
-  }
-
-  .operations-shell .buses-add-form {
-    grid-template-columns: 1fr;
-    padding: 0 13px 14px;
-  }
-}
-
-@media (max-width: 470px) {
-  .operations-shell .geofence-detail-actions,
-  .operations-shell .geofence-detail-map-actions {
-    grid-template-columns: 1fr;
-  }
-
-  .operations-shell .geofence-bus-option {
-    grid-template-columns: 18px 30px minmax(0, 1fr);
-  }
-
-  .operations-shell .geofence-bus-option .badge {
-    display: none;
-  }
+import { useMemo, useState } from "react";
+import { ArrowUpDown, ArrowRight, BusFront, ChevronLeft, ChevronRight, Map as MapIcon, Search, Trash2 } from "lucide-react";
+import type { Bus } from "../types/bus";
+import { deleteFleetBus } from "../services/fleetService";
+import { AdminFleetMap } from "./AdminFleetMap";
+import { Empty, ErrorState, Loading, PageHeading } from "./UI";
+import type { FleetDriver } from "../services/fleetService";
+
+export function AdminDashboard({
+  buses,
+  drivers,
+  connected,
+  error,
+  onRefreshHint,
+  onOpenBus,
+}: {
+  buses: Bus[];
+  drivers: FleetDriver[];
+  connected: boolean;
+  error?: string;
+  onRefreshHint?: () => void;
+  onOpenBus?: (busId: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "online" | "offline">("all");
+  const [sort, setSort] = useState<"fleet" | "number" | "route" | "status">("fleet");
+  const [ascending, setAscending] = useState(true);
+  const [page, setPage] = useState(0);
+  const [selected, setSelected] = useState(buses[0]?.id ?? "");
+  const [message, setMessage] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [deleting, setDeleting] = useState("");
+
+  const driverByBus = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const driver of drivers) {
+      if (driver.assignedBus) map.set(driver.assignedBus, driver.displayName);
+    }
+    return map;
+  }, [drivers]);
+
+  const rows = useMemo(() => {
+    const result = buses.filter((bus) => {
+      const matchesQuery = (bus.busNumber + " " + bus.route)
+        .toLowerCase()
+        .includes(query.toLowerCase());
+      const matchesFilter =
+        filter === "all" ||
+        (filter === "online" && bus.trackingActive) ||
+        (filter === "offline" && !bus.trackingActive);
+      return matchesQuery && matchesFilter;
+    });
+    if (sort !== "fleet") {
+      result.sort((a, b) => {
+        const key =
+          sort === "number"
+            ? "busNumber"
+            : sort === "route"
+              ? "route"
+              : "status";
+        return String(a[key]).localeCompare(String(b[key]), undefined, {
+          numeric: true,
+        }) * (ascending ? 1 : -1);
+      });
+    }
+    return result;
+  }, [buses, query, filter, sort, ascending]);
+
+  const online = buses.filter((bus) => bus.trackingActive).length;
+  const offline = buses.length - online;
+  const pages = Math.max(1, Math.ceil(rows.length / 8));
+  const currentPage = Math.min(page, pages - 1);
+  const visibleRows = rows.slice(currentPage * 8, currentPage * 8 + 8);
+
+  const sortBy = (key: typeof sort) => {
+    setSort(key);
+    setAscending(sort === key ? !ascending : true);
+    setPage(0);
+  };
+
+  const selectBus = (id: string) => {
+    setSelected(id);
+    const index = rows.findIndex((bus) => bus.id === id);
+    if (index >= 0) setPage(Math.floor(index / 8));
+  };
+
+  const removeBus = async (bus: Bus) => {
+    if (!window.confirm(`Delete Bus ${bus.busNumber}? Any assigned driver will be unassigned.`)) return;
+    setDeleting(bus.id);
+    setSaveError("");
+    setMessage("");
+    try {
+      await deleteFleetBus(bus.busNumber);
+      setMessage(`Bus ${bus.busNumber} deleted.`);
+      if (selected === bus.id) setSelected("");
+    } catch (caught) {
+      setSaveError(caught instanceof Error ? caught.message : "Could not delete the bus.");
+    } finally {
+      setDeleting("");
+      onRefreshHint?.();
+    }
+  };
+
+  if (error && !buses.length) return <ErrorState message={error} />;
+  if (!connected && !buses.length) return <Loading text="Waiting for live fleet data…" />;
+
+  const current = buses.find((bus) => bus.id === selected) ?? buses[0];
+  const positions = buses.map((bus) => ({
+    id: bus.id,
+    label: "Bus " + bus.busNumber,
+    latitude: bus.latitude,
+    longitude: bus.longitude,
+    offline: !bus.trackingActive,
+  }));
+
+  return (
+    <div className="overview-workspace">
+      <PageHeading title="Fleet overview" description="Monitor fleet activity and manage the registered bus fleet.">
+        <div className="admin-actions">
+          <button className="secondary overview-map-link" type="button" onClick={() => onRefreshHint?.()}>
+            <MapIcon size={16} />
+            Live feed
+          </button>
+        </div>
+      </PageHeading>
+
+      <div className="overview-metrics" aria-label="Fleet summary">
+        <div className="summary-stat"><span>Total buses</span><strong>{buses.length}</strong></div>
+        <div className="summary-stat"><span><i className="status-dot green" />Online</span><strong>{online}</strong></div>
+        <div className="summary-stat"><span><i className="status-dot muted" />Offline</span><strong>{offline}</strong></div>
+      </div>
+
+      {(message || saveError) && (
+        <div className={saveError ? "error-box" : "notice"} role={saveError ? "alert" : "status"}>
+          {saveError || message}
+        </div>
+      )}
+
+      <div className="overview-grid">
+        <section className="panel fleet-panel" aria-labelledby="fleet-status-heading">
+          <div className="panel-heading">
+            <div>
+              <h2 id="fleet-status-heading">Fleet status</h2>
+              <span>{buses.length} vehicles</span>
+            </div>
+          </div>
+
+          <div className="fleet-toolbar">
+            <div className="fleet-tabs" role="group" aria-label="Fleet status filter">
+              {([
+                ["all", "All", buses.length],
+                ["online", "Online", online],
+                ["offline", "Offline", offline],
+              ] as const).map(([value, label, count]) => (
+                <button
+                  key={value}
+                  aria-pressed={filter === value}
+                  onClick={() => { setFilter(value); setPage(0); }}
+                >
+                  <span>{label}</span><span className="tab-count">{count}</span>
+                </button>
+              ))}
+            </div>
+
+            <label className="search">
+              <Search size={15} />
+              <input
+                aria-label="Search buses"
+                placeholder="Search bus or route…"
+                value={query}
+                onChange={(event) => { setQuery(event.target.value); setPage(0); }}
+              />
+            </label>
+          </div>
+
+          {visibleRows.length ? (
+            <div className="table-wrap">
+              <table className="fleet-table">
+                <thead>
+                  <tr>
+                    {([
+                      ["number", "Bus"],
+                      ["route", "Route"],
+                      ["status", "Status"],
+                    ] as const).map(([key, label]) => (
+                      <th key={key}>
+                        <button className="sort-button" onClick={() => sortBy(key)}>
+                          {label}<ArrowUpDown size={11} />
+                        </button>
+                      </th>
+                    ))}
+                    <th>Speed</th>
+                    <th>Updated</th>
+                    <th>Driver</th>
+                    <th><span className="sr-only">Delete</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleRows.map((bus) => (
+                    <tr key={bus.id} className={selected === bus.id ? "selected-row" : ""}>
+                      <td>
+                        <button
+                          className="bus-link"
+                          type="button"
+                          onClick={() => selectBus(bus.id)}
+                        >
+                          <BusFront size={19} strokeWidth={1.8} />
+                          Bus {bus.busNumber}
+                        </button>
+                      </td>
+                      <td>{bus.route}</td>
+                      <td>
+                        <span className="status-text">
+                          <i className={"status-dot " + (bus.trackingActive ? "green" : "muted")} />
+                          {bus.trackingActive ? "Online" : "Offline"}
+                        </span>
+                      </td>
+                      <td>
+                        {typeof bus.speed === "number"
+                          ? Math.round(bus.speed * 0.621371) + " mph"
+                          : "—"}
+                      </td>
+                      <td>{bus.lastUpdated.toLocaleTimeString()}</td>
+                      <td>{driverByBus.get(bus.id) ?? "Not assigned"}</td>
+                      <td>
+                        <div className="admin-table-actions">
+                          <button
+                            className="secondary admin-table-action"
+                            type="button"
+                            onClick={() => onOpenBus?.(bus.id)}
+                            aria-label={"View Bus " + bus.busNumber + " details"}
+                          >
+                            Details
+                          </button>
+                          <button
+                            className="secondary admin-delete admin-table-action"
+                            type="button"
+                            disabled={Boolean(deleting)}
+                            onClick={() => void removeBus(bus)}
+                            aria-label={"Delete Bus " + bus.busNumber}
+                          >
+                            <Trash2 size={14} />
+                            {deleting === bus.id ? "Deleting…" : "Delete"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <Empty>{buses.length ? "No buses match the current filters." : "No buses have been created yet."}</Empty>
+          )}
+
+          <div className="table-footer">
+            <span>
+              {rows.length ? `Showing ${currentPage * 8 + 1}–${Math.min((currentPage + 1) * 8, rows.length)} of ${rows.length} buses` : "0 buses"}
+            </span>
+            <nav className="pagination" aria-label="Fleet pages">
+              <button aria-label="Previous fleet page" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>
+                <ChevronLeft size={16} />
+              </button>
+              {Array.from({ length: pages }, (_, index) => (
+                <button
+                  key={index}
+                  aria-label={"Fleet page " + (index + 1)}
+                  aria-current={currentPage === index ? "page" : undefined}
+                  onClick={() => setPage(index)}
+                >
+                  {index + 1}
+                </button>
+              ))}
+              <button aria-label="Next fleet page" disabled={currentPage === pages - 1} onClick={() => setPage(currentPage + 1)}>
+                <ChevronRight size={16} />
+              </button>
+            </nav>
+          </div>
+        </section>
+
+        <aside className="overview-support">
+          <section className="panel coverage-panel">
+            <div className="panel-heading">
+              <h2>Live coverage</h2>
+              <span>{current ? "Selected Bus " + current.busNumber : "Fleet map"}</span>
+            </div>
+            <AdminFleetMap positions={positions} selectedId={current?.id} onSelect={selectBus} />
+            <button className="panel-footer-link" type="button" onClick={() => onRefreshHint?.()}>
+              Open live map <ArrowRight size={15} />
+            </button>
+          </section>
+
+          <section className="panel">
+            <div className="panel-heading">
+              <h2>Selected bus</h2>
+            </div>
+            {current ? (
+              <>
+                <div className="fields">
+                  <div><dt>Bus</dt><dd>{current.busNumber}</dd></div>
+                  <div><dt>Route</dt><dd>{current.route}</dd></div>
+                  <div><dt>Status</dt><dd>{current.trackingActive ? "Online" : "Offline"}</dd></div>
+                  <div><dt>Driver</dt><dd>{driverByBus.get(current.id) ?? "Not assigned"}</dd></div>
+                </div>
+                <button
+                  className="panel-footer-link admin-selected-details"
+                  type="button"
+                  onClick={() => onOpenBus?.(current.id)}
+                >
+                  View bus details <ArrowRight size={15} />
+                </button>
+              </>
+            ) : (
+              <Empty>No bus selected.</Empty>
+            )}
+          </section>
+        </aside>
+      </div>
+    </div>
+  );
 }
