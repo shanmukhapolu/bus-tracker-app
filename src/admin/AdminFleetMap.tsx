@@ -4,13 +4,10 @@ import {
   Marker,
   NavigationControl,
   LngLatBounds,
-  setWorkerUrl,
   type GeoJSONSource,
 } from "maplibre-gl";
 import { Crosshair } from "lucide-react";
 import busIconUrl from "../assets/bus-front.svg";
-// The prebuild/predev hook copies MapLibre's worker and shared module into public/maplibre.
-setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 export interface MapPosition {
   id: string;
   label: string;
