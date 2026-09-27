@@ -27,6 +27,7 @@ interface Props {
   events?: MapPosition[];
   onEventSelect?: (eventId: string) => void;
   dataLabel?: string;
+  animate?: boolean;
 }
 
 export function FleetMap({
