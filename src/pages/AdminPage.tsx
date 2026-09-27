@@ -184,8 +184,6 @@ export function AdminPage() {
         onSignOut={() => void signOut()}
         displayName={displayName}
         buses={fleet.buses}
-        lastSyncAt={fleet.lastSyncAt}
-        connected={fleet.connected}
       >
         {page === "dashboard" && (
           <AdminDashboard
