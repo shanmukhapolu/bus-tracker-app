@@ -35,7 +35,6 @@ function createOfflineFleetBus(
   id: string,
   busNumber: string,
   route: string,
-  geofenceId?: string,
 ): Bus {
   return {
     id,
@@ -61,7 +60,7 @@ function mergeLiveBuses(
     if (!fleet.enabled) continue;
     merged.set(
       fleet.id,
-      createOfflineFleetBus(fleet.id, fleet.busNumber, fleet.route, fleet.geofenceId),
+      createOfflineFleetBus(fleet.id, fleet.busNumber, fleet.route),
     );
   }
 
