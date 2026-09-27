@@ -19,6 +19,7 @@ export function AdminDashboard({
   connected: boolean;
   error?: string;
   onRefreshHint?: () => void;
+  onOpenBus?: (busId: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "online" | "offline">("all");
