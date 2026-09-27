@@ -25,6 +25,7 @@ interface FleetBusRecord {
   busNumber?: string;
   route?: string;
   enabled?: boolean;
+  geofenceId?: string;
 }
 
 function isFiniteNumber(value: unknown): value is number {
@@ -35,6 +36,7 @@ function createOfflineFleetBus(
   id: string,
   busNumber: string,
   route: string,
+  geofenceId: string,
 ): Bus {
   return {
     id,
@@ -44,6 +46,7 @@ function createOfflineFleetBus(
     longitude: CARMEL_CENTER[0],
     status: "offline",
     trackingActive: false,
+    geofenceId,
     currentLocation: "Not tracking",
     lastUpdated: new Date(),
   };
@@ -61,7 +64,7 @@ function mergeLiveBuses(
 
     merged.set(
       fleet.id,
-      createOfflineFleetBus(fleet.id, fleet.busNumber, fleet.route),
+      createOfflineFleetBus(fleet.id, fleet.busNumber, fleet.route, fleet.geofenceId),
     );
   }
 
