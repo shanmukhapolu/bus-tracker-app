@@ -2676,6 +2676,9 @@
 .operations-shell .map-layout .map-center {
   top: 14px;
   right: 14px;
+  left: auto;
+  bottom: auto;
+  inset: auto 14px auto auto;
 }
 
 .operations-shell .fleet-marker-icon {
