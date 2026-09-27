@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import adminStyles from "../admin-reference.css?raw";
-import modernAdminStyles from "../admin-modern.css?raw";
+import modernAdminStyles from "../../admin-modern.css?raw";
 import { AdminLogin } from "../admin/AdminLogin";
 import { AdminLayout, type AdminPageKey } from "../admin/AdminLayout";
 import { AdminDashboard } from "../admin/AdminDashboard";
