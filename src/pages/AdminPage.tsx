@@ -285,6 +285,14 @@ export function AdminPage() {
       );
       return [...withoutDuplicate, event].slice(-300);
     });
+
+    void recordGeofenceEntry(event).catch((caught) => {
+      setGeofenceActivityError(
+        caught instanceof Error
+          ? caught.message
+          : "Could not save the geofence entry alert.",
+      );
+    });
   }, []);
 
   const handleSignedIn = (name: string) => {
