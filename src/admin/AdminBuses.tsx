@@ -35,6 +35,7 @@ export function AdminBuses({
   const [adding, setAdding] = useState(false);
   const [busNumber, setBusNumber] = useState("");
   const [route, setRoute] = useState("");
+  const [newBusGeofenceId, setNewBusGeofenceId] = useState("");
   const [message, setMessage] = useState("");
   const [saveError, setSaveError] = useState("");
 
@@ -83,9 +84,14 @@ export function AdminBuses({
 
     setAdding(true);
     try {
-      await addFleetBus(normalizedBus, normalizedRoute);
+      await addFleetBus(
+        normalizedBus,
+        normalizedRoute,
+        newBusGeofenceId,
+      );
       setBusNumber("");
       setRoute("");
+      setNewBusGeofenceId("");
       setShowAddForm(false);
       setMessage("Bus " + normalizedBus + " added.");
     } catch (caught) {
@@ -180,6 +186,19 @@ export function AdminBuses({
               value={route}
               onChange={(event) => setRoute(event.target.value)}
             />
+            <select
+              className="bus-geofence-select buses-add-geofence"
+              aria-label="Geofence for new bus"
+              value={newBusGeofenceId}
+              onChange={(event) => setNewBusGeofenceId(event.target.value)}
+            >
+              <option value="">No geofence</option>
+              {geofences.map((geofence) => (
+                <option key={geofence.id} value={geofence.id}>
+                  {geofence.name}
+                </option>
+              ))}
+            </select>
             <button
               className="primary"
               type="button"
