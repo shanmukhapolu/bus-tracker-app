@@ -372,11 +372,13 @@ export function AdminPage() {
             <AdminGeofenceDetail
               geofence={selectedGeofence}
               buses={fleet.buses}
-              events={geofenceEvents.filter(
-                (event) =>
-                  route.geofenceId === "new" ||
-                  event.geofenceId === route.geofenceId,
-              )}
+              events={
+                route.geofenceId === "new"
+                  ? []
+                  : geofenceEvents.filter(
+                      (event) => event.geofenceId === route.geofenceId,
+                    )
+              }
               connected={fleet.connected}
               error={geofenceError}
               onBack={() => navigate("geofences")}
