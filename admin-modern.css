@@ -2418,3 +2418,449 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Final spacing and component pass. Geofence rows remain the visual reference. */
+.operations-shell {
+  --ui-canvas: #fbfdff;
+  --ui-surface-subtle: #f9fcff;
+  --ui-surface-hover: #f2f7fb;
+  --ui-border: #d9e3ea;
+  --ui-border-muted: #e8eef3;
+}
+
+.operations-shell .page {
+  width: 100%;
+  padding: clamp(24px, 3vw, 36px) clamp(18px, 3vw, 40px) 46px;
+}
+
+.operations-shell .page-heading {
+  margin-bottom: 22px;
+}
+
+.operations-shell .page-heading h1 {
+  font-size: clamp(24px, 2.1vw, 29px);
+}
+
+.operations-shell .page-heading p {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.operations-shell .panel {
+  border-radius: 8px;
+}
+
+.operations-shell .panel-heading {
+  min-height: 58px;
+  padding: 14px 17px;
+}
+
+.operations-shell .panel-heading h2 {
+  font-size: 13px;
+}
+
+.operations-shell .panel-heading > span,
+.operations-shell .panel-heading div > span {
+  font-size: 9px;
+}
+
+.operations-shell .overview-metrics,
+.operations-shell .metrics {
+  gap: 9px;
+  margin-bottom: 17px;
+}
+
+.operations-shell .summary-stat,
+.operations-shell .metric {
+  min-height: 74px;
+  padding: 12px 14px;
+  border-radius: 8px;
+}
+
+.operations-shell .summary-stat strong,
+.operations-shell .metric strong {
+  margin-top: 7px;
+  font-size: 20px;
+}
+
+.operations-shell .summary-stat span,
+.operations-shell .metric span {
+  font-size: 9px;
+}
+
+.operations-shell .primary,
+.operations-shell .secondary {
+  min-height: 40px;
+  padding: 0 13px;
+  font-size: 10px;
+}
+
+.operations-shell .admin-table-action {
+  min-height: 36px;
+  padding: 0 11px;
+  font-size: 9px;
+}
+
+.operations-shell .panel-footer-link {
+  min-height: 52px;
+  padding: 13px 16px;
+  justify-content: space-between;
+  background: #f9fcff;
+  color: #1769b0;
+  font-size: 10px;
+  font-weight: 800;
+  border-top: 1px solid var(--ui-border-muted);
+}
+
+.operations-shell .panel-footer-link:hover {
+  background: #eff7fc;
+  color: #125b99;
+}
+
+.operations-shell .fleet-tabs button {
+  min-height: 32px;
+  padding: 0 11px;
+  font-size: 9px;
+}
+
+.operations-shell .fleet-tabs button[aria-pressed="true"] {
+  background: #1769b0;
+  color: #fff;
+}
+
+.operations-shell .fleet-tabs button[aria-pressed="true"] .tab-count {
+  background: transparent !important;
+  color: rgba(255,255,255,.82);
+}
+
+.operations-shell .fleet-tabs button .tab-count {
+  background: transparent !important;
+  color: currentColor;
+  padding: 0;
+}
+
+.operations-shell .search {
+  min-height: 40px;
+  background: #f4f9fc;
+  border-radius: 6px;
+}
+
+.operations-shell .search input {
+  font-size: 10px;
+}
+
+.operations-shell .search:focus-within {
+  background: #eff7fc;
+}
+
+.operations-shell .overview-grid {
+  grid-template-columns: minmax(0, 1.7fr) minmax(320px, .9fr);
+  gap: 16px;
+}
+
+.operations-shell .overview-support {
+  gap: 14px;
+}
+
+.operations-shell .overview-support .panel-heading {
+  min-height: 55px;
+}
+
+.operations-shell .coverage-panel {
+  overflow: hidden;
+}
+
+.operations-shell .coverage-panel .fleet-map {
+  height: 460px;
+  min-height: 460px;
+}
+
+.operations-shell .overview-support .fields {
+  padding: 8px 17px 10px;
+}
+
+.operations-shell .overview-support .fields > div {
+  grid-template-columns: 78px minmax(0, 1fr);
+  padding: 10px 0;
+}
+
+.operations-shell .overview-support .fields dt {
+  font-size: 9px;
+}
+
+.operations-shell .overview-support .fields dd {
+  font-size: 10px;
+}
+
+.operations-shell .admin-selected-details {
+  min-height: 54px;
+  padding: 14px 17px;
+}
+
+.operations-shell .map-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(350px, 400px);
+  gap: 16px;
+}
+
+.operations-shell .map-layout > .panel {
+  min-height: 0;
+}
+
+.operations-shell .map-layout > .panel:first-child > .fleet-map {
+  height: 610px;
+  min-height: 610px;
+}
+
+.operations-shell .map-detail {
+  min-height: 0 !important;
+}
+
+.operations-shell .map-detail-body {
+  gap: 16px;
+  padding: 16px 18px 18px;
+}
+
+.operations-shell .map-info-summary {
+  padding: 2px 1px 5px;
+}
+
+.operations-shell .map-info-summary strong {
+  font-size: 16px;
+}
+
+.operations-shell .map-info-summary span {
+  font-size: 10px;
+}
+
+.operations-shell .map-detail-section {
+  padding: 9px 13px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.operations-shell .map-detail-section + .map-detail-section {
+  border-top: 1px solid var(--ui-border-muted);
+  padding-top: 14px;
+}
+
+.operations-shell .map-detail-section-title {
+  margin-bottom: 7px;
+  font-size: 8px;
+}
+
+.operations-shell .map-detail-section .fields > div {
+  grid-template-columns: 96px minmax(0, 1fr);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ui-border-muted);
+}
+
+.operations-shell .map-detail-section .fields > div:last-child {
+  border-bottom: 0;
+}
+
+.operations-shell .map-detail-section .fields dd {
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.operations-shell .map-detail .panel-heading {
+  padding: 15px 17px;
+}
+
+.operations-shell .map-detail .badge {
+  flex-shrink: 0;
+}
+
+.operations-shell .map-layout .map-center {
+  top: 14px;
+  right: 14px;
+}
+
+.operations-shell .fleet-marker-icon {
+  border: 0 !important;
+  box-shadow: 0 2px 7px rgba(22,53,76,.15);
+}
+
+.operations-shell .fleet-marker.selected .fleet-marker-icon {
+  border: 0 !important;
+  box-shadow: 0 3px 9px rgba(22,53,76,.20);
+}
+
+.operations-shell .fleet-marker-number {
+  border: 0;
+  box-shadow: 0 1px 4px rgba(20,46,72,.08);
+}
+
+.operations-shell .buses-table td,
+.operations-shell .buses-table th {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+.operations-shell .buses-table .bus-link {
+  font-size: 10px;
+}
+
+.operations-shell .driver-table td,
+.operations-shell .driver-table th {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+.operations-shell .bus-details-page .page-heading {
+  margin-bottom: 19px;
+}
+
+.operations-shell .bus-detail-grid,
+.operations-shell .admin-bus-detail-grid {
+  gap: 16px;
+}
+
+.operations-shell .bus-detail-location .fleet-map {
+  min-height: 430px;
+  height: 430px;
+}
+
+.operations-shell .bus-detail-location > .fields,
+.operations-shell .bus-detail-side .fields {
+  padding: 9px 18px 12px;
+}
+
+.operations-shell .bus-detail-location > .fields > div,
+.operations-shell .bus-detail-side .fields > div {
+  grid-template-columns: minmax(95px, 125px) minmax(0, 1fr);
+  padding: 10px 0;
+}
+
+.operations-shell .bus-detail-location > .fields dd,
+.operations-shell .bus-detail-side .fields dd {
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.operations-shell .bus-detail-status-content {
+  padding: 15px 18px 17px;
+  gap: 10px;
+}
+
+.operations-shell .bus-detail-status-content strong {
+  font-size: 11px;
+}
+
+.operations-shell .bus-detail-status-content p {
+  margin-top: 4px;
+  font-size: 9px;
+}
+
+@media (max-width: 1100px) {
+  .operations-shell .coverage-panel .fleet-map {
+    height: 420px;
+    min-height: 420px;
+  }
+
+  .operations-shell .map-layout > .panel:first-child > .fleet-map {
+    height: 540px;
+    min-height: 540px;
+  }
+}
+
+@media (max-width: 900px) {
+  .operations-shell .page {
+    padding: 22px 18px 36px;
+  }
+
+  .operations-shell .overview-grid,
+  .operations-shell .map-layout,
+  .operations-shell .admin-bus-detail-grid,
+  .operations-shell .bus-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .operations-shell .coverage-panel .fleet-map {
+    height: 420px;
+    min-height: 420px;
+  }
+
+  .operations-shell .map-layout > .panel {
+    min-height: 0;
+  }
+
+  .operations-shell .map-layout > .panel:first-child > .fleet-map {
+    height: 520px;
+    min-height: 520px;
+  }
+
+  .operations-shell .map-detail .fields,
+  .operations-shell .map-detail-section .fields {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .operations-shell .page {
+    padding: 18px 12px 28px;
+  }
+
+  .operations-shell .overview-metrics,
+  .operations-shell .metrics {
+    gap: 7px;
+  }
+
+  .operations-shell .summary-stat,
+  .operations-shell .metric {
+    min-height: 70px;
+    padding: 11px 12px;
+  }
+
+  .operations-shell .summary-stat strong,
+  .operations-shell .metric strong {
+    font-size: 18px;
+  }
+
+  .operations-shell .overview-support .fields {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .operations-shell .coverage-panel .fleet-map {
+    height: 390px;
+    min-height: 390px;
+  }
+
+  .operations-shell .map-layout > .panel:first-child > .fleet-map {
+    height: 450px;
+    min-height: 450px;
+  }
+
+  .operations-shell .map-detail .fields,
+  .operations-shell .map-detail-section .fields {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .operations-shell .bus-detail-location .fleet-map {
+    height: 360px;
+    min-height: 360px;
+  }
+
+  .operations-shell .bus-detail-location > .fields,
+  .operations-shell .bus-detail-side .fields {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .operations-shell .map-detail .fields,
+  .operations-shell .map-detail-section .fields,
+  .operations-shell .bus-detail-location > .fields,
+  .operations-shell .bus-detail-side .fields {
+    grid-template-columns: 1fr;
+  }
+
+  .operations-shell .map-layout > .panel:first-child > .fleet-map {
+    height: 390px;
+    min-height: 390px;
+  }
+}
