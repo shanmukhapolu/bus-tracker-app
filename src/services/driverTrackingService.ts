@@ -188,7 +188,6 @@ export async function startDriverTracking(
   }
 
   let latestPosition: DriverLocation | null = firstLocation;
-  let publishing = false;
   let activePublish: Promise<void> | null = null;
   let stopped = false;
   let publishTimer: ReturnType<typeof setInterval> | undefined;
@@ -231,7 +230,6 @@ export async function startDriverTracking(
     if (stopped || !latestPosition) return Promise.resolve();
     if (activePublish) return activePublish;
 
-    publishing = true;
     activePublish = (async () => {
       try {
         await publishPosition(runtime, liveRef, options, latestPosition!);
@@ -241,8 +239,6 @@ export async function startDriverTracking(
             ? `Firebase write failed: ${error.message}`
             : "Firebase could not save the latest GPS position.",
         );
-      } finally {
-        publishing = false;
       }
     })();
 
