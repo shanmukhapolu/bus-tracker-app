@@ -2,19 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl, { type Map as MapLibreMap, type Marker } from "maplibre-gl";
 import { Edit3, MapPin, Plus, Save, Trash2, X } from "lucide-react";
 import { MAP_STYLE_URL, CARMEL_CENTER } from "../config/map";
-import {
-  deleteGeofence,
-  saveGeofence,
-  type Geofence,
-  type GeofencePoint,
-} from "../services/geofenceService";
+import { deleteGeofence, saveGeofence, type Geofence, type GeofencePoint } from "../services/geofenceService";
 import { Empty, ErrorState, Loading, PageHeading } from "./UI";
 
 function pointsToFeature(points: GeofencePoint[]) {
   const coordinates = points.map((point) => [point.longitude, point.latitude]);
-  if (coordinates.length >= 3) {
-    coordinates.push(coordinates[0]);
-  }
+  if (coordinates.length >= 3) coordinates.push(coordinates[0]);
   return {
     type: "Feature" as const,
     geometry: { type: "Polygon" as const, coordinates: [coordinates] },
@@ -22,35 +15,13 @@ function pointsToFeature(points: GeofencePoint[]) {
   };
 }
 
-function updateMapGeometry(map: MapLibreMap, points: GeofencePoint[], existing?: GeofencePoint[]) {
-  const polygonSource = map.getSource("geofence-polygon") as maplibregl.GeoJSONSource | undefined;
-  polygonSource?.setData({
-    type: "FeatureCollection",
-    features: points.length >= 3 ? [pointsToFeature(points)] : [],
-  });
-
-  const lineSource = map.getSource("geofence-line") as maplibregl.GeoJSONSource | undefined;
-  lineSource?.setData({
-    type: "FeatureCollection",
-    features: points.length >= 2
-      ? [{
-          type: "Feature",
-          geometry: {
-            type: "LineString",
-            coordinates: points.map((point) => [point.longitude, point.latitude]),
-          },
-          properties: {},
-        }]
-      : [],
-  });
-
-  if (existing) {
-    const existingSource = map.getSource("geofence-existing") as maplibregl.GeoJSONSource | undefined;
-    existingSource?.setData({
-      type: "FeatureCollection",
-      features: existing.length >= 3 ? [pointsToFeature(existing)] : [],
-    });
-  }
+function featureCollection(geofences: Geofence[]) {
+  return {
+    type: "FeatureCollection" as const,
+    features: geofences
+      .filter((geofence) => geofence.points.length >= 3)
+      .map((geofence) => pointsToFeature(geofence.points)),
+  };
 }
 
 export function AdminGeofences({
@@ -65,12 +36,26 @@ export function AdminGeofences({
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef<Marker[]>([]);
+  const editingRef = useRef<Geofence | null>(null);
+  const geofencesRef = useRef<Geofence[]>(geofences);
   const [editing, setEditing] = useState<Geofence | null>(null);
   const [draftPoints, setDraftPoints] = useState<GeofencePoint[]>([]);
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [saveError, setSaveError] = useState("");
+
+  useEffect(() => {
+    editingRef.current = editing;
+  }, [editing]);
+
+  useEffect(() => {
+    geofencesRef.current = geofences;
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    const source = map.getSource("geofence-existing") as maplibregl.GeoJSONSource | undefined;
+    source?.setData(featureCollection(geofences));
+  }, [geofences]);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
@@ -88,7 +73,7 @@ export function AdminGeofences({
     map.on("load", () => {
       map.addSource("geofence-existing", {
         type: "geojson",
-        data: { type: "FeatureCollection", features: [] },
+        data: featureCollection(geofencesRef.current),
       });
       map.addLayer({
         id: "geofence-existing-fill",
@@ -128,10 +113,11 @@ export function AdminGeofences({
         source: "geofence-line",
         paint: { "line-color": "#2464b8", "line-width": 3, "line-dasharray": [2, 1] },
       });
+      map.resize();
     });
 
     const handleClick = (event: maplibregl.MapMouseEvent) => {
-      if (!editing) return;
+      if (!editingRef.current) return;
       setDraftPoints((current) => [
         ...current,
         { latitude: event.lngLat.lat, longitude: event.lngLat.lng },
@@ -142,33 +128,37 @@ export function AdminGeofences({
     mapRef.current = map;
 
     return () => {
+      markersRef.current.forEach((marker) => marker.remove());
+      markersRef.current = [];
       map.remove();
       mapRef.current = null;
     };
-  }, [editing]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-    updateMapGeometry(map, draftPoints);
-  }, [draftPoints]);
+  }, []);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    const source = map.getSource("geofence-existing") as maplibregl.GeoJSONSource | undefined;
-    source?.setData({
+    const polygonSource = map.getSource("geofence-polygon") as maplibregl.GeoJSONSource | undefined;
+    polygonSource?.setData({
       type: "FeatureCollection",
-      features: geofences
-        .filter((geofence) => geofence.points.length >= 3)
-        .map((geofence) => pointsToFeature(geofence.points)),
+      features: draftPoints.length >= 3 ? [pointsToFeature(draftPoints)] : [],
     });
-  }, [geofences]);
 
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
+    const lineSource = map.getSource("geofence-line") as maplibregl.GeoJSONSource | undefined;
+    lineSource?.setData({
+      type: "FeatureCollection",
+      features: draftPoints.length >= 2
+        ? [{
+            type: "Feature",
+            geometry: {
+              type: "LineString",
+              coordinates: draftPoints.map((point) => [point.longitude, point.latitude]),
+            },
+            properties: {},
+          }]
+        : [],
+    });
 
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = draftPoints.map(
@@ -181,7 +171,9 @@ export function AdminGeofences({
   }, [draftPoints]);
 
   const startNew = () => {
-    setEditing({ id: "", name: "", points: [], enabled: true });
+    const blank = { id: "", name: "", points: [], enabled: true };
+    setEditing(blank);
+    editingRef.current = blank;
     setDraftPoints([]);
     setName("");
     setSaveError("");
@@ -190,6 +182,7 @@ export function AdminGeofences({
 
   const edit = (geofence: Geofence) => {
     setEditing(geofence);
+    editingRef.current = geofence;
     setDraftPoints(geofence.points);
     setName(geofence.name);
     setSaveError("");
@@ -198,9 +191,11 @@ export function AdminGeofences({
 
   const cancel = () => {
     setEditing(null);
+    editingRef.current = null;
     setDraftPoints([]);
     setName("");
     setSaveError("");
+    setMessage("");
   };
 
   const save = async () => {
@@ -217,6 +212,7 @@ export function AdminGeofences({
         createdAt: editing?.createdAt,
       });
       setEditing(saved);
+      editingRef.current = saved;
       setDraftPoints(saved.points);
       setMessage(`${saved.name} saved.`);
     } catch (caught) {
@@ -297,9 +293,7 @@ export function AdminGeofences({
                 ))}
               </div>
               <div className="geofence-editor-actions">
-                <button className="secondary" type="button" onClick={() => setDraftPoints([])} disabled={!draftPoints.length}>
-                  Clear points
-                </button>
+                <button className="secondary" type="button" onClick={() => setDraftPoints([])} disabled={!draftPoints.length}>Clear points</button>
                 <button className="primary" type="button" onClick={() => void save()} disabled={saving}>
                   <Save size={15} /> {saving ? "Saving…" : "Save geofence"}
                 </button>
@@ -334,9 +328,7 @@ export function AdminGeofences({
                     </div>
                   ))}
                 </div>
-              ) : (
-                <Empty>No geofences have been created yet.</Empty>
-              )}
+              ) : <Empty>No geofences have been created yet.</Empty>}
             </section>
           )}
         </aside>
