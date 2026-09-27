@@ -60,7 +60,11 @@ export function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (!window.location.pathname.startsWith("/admin")) return;
+    const currentPath = window.location.pathname;
+    if (
+      !currentPath.startsWith("/admin") &&
+      !/^\/bus\/[^/]+$/.test(currentPath)
+    ) return;
 
     const onPopState = () => {
       setRoute(routeFromPath(window.location.pathname));
