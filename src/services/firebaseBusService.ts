@@ -64,7 +64,7 @@ function mergeLiveBuses(
 
     merged.set(
       fleet.id,
-      createOfflineFleetBus(fleet.id, fleet.busNumber, fleet.route, fleet.geofenceId),
+      createOfflineFleetBus(fleet.id, fleet.busNumber, fleet.route, fleet.geofenceId ?? ""),
     );
   }
 
