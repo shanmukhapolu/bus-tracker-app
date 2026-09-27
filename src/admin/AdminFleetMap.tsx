@@ -156,7 +156,7 @@ export function FleetMap({
       const number = element.querySelector(".fleet-marker-number");
 
       if (number) {
-        number.textContent = point.label.replace(/^Bus\\s+/i, "");
+        number.textContent = point.label.replace(/^Bus\s+/i, "");
       }
 
       element.setAttribute("aria-label", "Select " + point.label);
