@@ -1136,3 +1136,26 @@
     display: none;
   }
 }
+
+
+.geofence-vertex {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #2464b8;
+  box-shadow: 0 1px 6px rgba(20, 47, 80, 0.32);
+  cursor: grab;
+  touch-action: none;
+  outline: none;
+}
+
+.geofence-vertex:active {
+  cursor: grabbing;
+}
+
+.geofence-vertex:focus-visible {
+  outline: 2px solid #142f50;
+  outline-offset: 2px;
+}
