@@ -25,7 +25,7 @@ export function BusInfoCard({
     return () => clearInterval(timer);
   }, []);
 
-  const stale = now - bus.lastUpdated.getTime() > 30_000;
+  const stale = !demo && now - bus.lastUpdated.getTime() > 60_000;
   const unavailable =
     stale ||
     bus.status === "offline" ||
