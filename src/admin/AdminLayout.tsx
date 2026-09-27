@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import {
   BusFront,
   LayoutDashboard,
@@ -39,7 +39,7 @@ export function AdminLayout({
   buses: Bus[];
   lastSyncAt?: Date;
   connected: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const main = useRef<HTMLElement>(null);
 
