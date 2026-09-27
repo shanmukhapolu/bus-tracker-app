@@ -80,32 +80,45 @@ export function AdminLiveMap({
 
         <aside className="panel map-detail">
           <div className="panel-heading">
-            <h2>Bus information</h2>
+            <div>
+              <h2>Bus information</h2>
+              <span>{current ? "Bus " + current.busNumber : "Select a bus"}</span>
+            </div>
+            {current && <Badge value={current.trackingActive ? "online" : "offline"} />}
           </div>
           {current ? (
-            <>
+            <div className="map-detail-body">
               <div className="map-info-summary">
                 <strong>Bus {current.busNumber}</strong>
                 <span>Route {current.route}</span>
-                <span>{current.trackingActive ? "Live GPS" : "Last reported GPS"}</span>
+                <span>{current.trackingActive ? "Live location" : "Last known location"}</span>
               </div>
-              <div className="map-info-status">
-                <Badge value={current.trackingActive ? "online" : "offline"} />
+
+              <div className="map-detail-section">
+                <span className="map-detail-section-title">Tracking</span>
+                <Fields
+                  values={[
+                    ["Driver", driver?.displayName ?? "Not assigned"],
+                    ["Speed", typeof current.speed === "number" ? Math.round(current.speed * 0.621371) + " mph" : "Not reported"],
+                    ["Heading", typeof current.heading === "number" ? Math.round(current.heading) + "°" : "Not reported"],
+                    ["GPS accuracy", current.locationAccuracyMeters !== undefined ? Math.round(current.locationAccuracyMeters) + " m" : "Not reported"],
+                    ["Last update", current.lastUpdated.toLocaleString()],
+                    ["Coordinates", current.latitude.toFixed(5) + ", " + current.longitude.toFixed(5)],
+                  ]}
+                />
               </div>
-              <Fields
-                values={[
-                  ["Driver", driver?.displayName ?? "Not assigned"],
-                  ["Speed", typeof current.speed === "number" ? Math.round(current.speed * 0.621371) + " mph" : "Not reported"],
-                  ["Heading", typeof current.heading === "number" ? Math.round(current.heading) + "°" : "Not reported"],
-                  ["GPS accuracy", current.locationAccuracyMeters !== undefined ? Math.round(current.locationAccuracyMeters) + " m" : "Not reported"],
-                  ["Last update", current.lastUpdated.toLocaleString()],
-                  ["Coordinates", current.trackingActive ? `${current.latitude.toFixed(5)}, ${current.longitude.toFixed(5)}` : "Last known position"],
-                ]}
-              />
-              <div className="notice">
-                Bus {current.busNumber} is selected on the live map.
-              </div>
-            </>
+
+              <button
+                className="panel-footer-link"
+                type="button"
+                onClick={() => {
+                  window.history.pushState({}, "", "/bus/" + encodeURIComponent(current.id));
+                  window.dispatchEvent(new PopStateEvent("popstate"));
+                }}
+              >
+                Open full bus details <ArrowRight size={15} />
+              </button>
+            </div>
           ) : (
             <Empty>Select a visible bus marker.</Empty>
           )}
