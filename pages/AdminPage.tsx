@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import adminStyles from "../admin-reference.css?raw";
+import modernAdminStyles from "../admin-modern.css?raw";
 import { AdminLogin } from "../admin/AdminLogin";
 import { AdminLayout, type AdminPageKey } from "../admin/AdminLayout";
 import { AdminDashboard } from "../admin/AdminDashboard";
@@ -46,7 +47,7 @@ export function AdminPage() {
   useEffect(() => {
     const style = document.createElement("style");
     style.id = "admin-reference-styles";
-    style.textContent = adminStyles;
+    style.textContent = adminStyles + "\n" + modernAdminStyles;
     document.getElementById(style.id)?.remove();
     document.head.appendChild(style);
     return () => document.getElementById(style.id)?.remove();
@@ -55,7 +56,6 @@ export function AdminPage() {
   useEffect(() => {
     const currentPath = window.location.pathname;
     if (!currentPath.startsWith("/admin") && !/^\/bus\/[^/]+$/.test(currentPath)) return;
-
     const onPopState = () => setRoute(routeFromPath(window.location.pathname));
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -178,11 +178,7 @@ export function AdminPage() {
 
   return (
     <div className="admin-ui">
-      <AdminGeofenceMonitor
-        buses={fleet.buses}
-        geofences={geofenceState.geofences}
-        onEnter={handleGeofenceEntry}
-      />
+      <AdminGeofenceMonitor buses={fleet.buses} geofences={geofenceState.geofences} onEnter={handleGeofenceEntry} />
 
       <AdminLayout
         page={page}
@@ -210,12 +206,7 @@ export function AdminPage() {
             onOpenBus={openBus}
           />
         ) : page === "map" ? (
-          <AdminLiveMap
-            buses={fleet.buses}
-            drivers={fleet.drivers}
-            connected={fleet.connected}
-            error={fleet.connectionError}
-          />
+          <AdminLiveMap buses={fleet.buses} drivers={fleet.drivers} connected={fleet.connected} error={fleet.connectionError} />
         ) : page === "buses" ? (
           <AdminBuses
             buses={fleet.buses}
@@ -226,11 +217,7 @@ export function AdminPage() {
             onOpenBus={openBus}
           />
         ) : page === "geofences" ? (
-          <AdminGeofences
-            geofences={geofenceState.geofences}
-            connected={fleet.connected}
-            error={geofenceState.error}
-          />
+          <AdminGeofences geofences={geofenceState.geofences} connected={fleet.connected} error={geofenceState.error} />
         ) : (
           <AdminDrivers
             drivers={fleet.drivers}
