@@ -29,7 +29,7 @@ export function AdminPage() {
   const [displayName, setDisplayName] = useState("");
   const [authError, setAuthError] = useState("");
 
-  const fleet = useAdminFleet();
+  const fleet = useAdminFleet(signedIn);
 
   useEffect(() => {
     const style = document.createElement("style");
