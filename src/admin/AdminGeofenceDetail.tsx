@@ -248,12 +248,14 @@ export function AdminGeofenceDetail({
     if (!mapReady || !mapRef.current) return;
 
     const map = mapRef.current;
+    const canvas = map.getCanvas();
 
-    const getVertexIndex = (event: MapMouseEvent) => {
-      const features = map.queryRenderedFeatures(event.point, {
-        layers: ["geofence-detail-points"],
-      });
-      const rawIndex = features[0]?.properties?.index;
+    let draggingIndex: number | null = null;
+
+    const getVertexIndex = (event: {
+      features?: Array<{ properties?: Record<string, unknown> }>;
+    }) => {
+      const rawIndex = event.features?.[0]?.properties?.index;
       const index = Number(rawIndex);
       return Number.isInteger(index) &&
         index >= 0 &&
@@ -262,26 +264,21 @@ export function AdminGeofenceDetail({
         : null;
     };
 
-    const handleMouseDown = (event: MapMouseEvent) => {
-      if (!editing) return;
-      const index = getVertexIndex(event);
-      if (index === null) return;
-
-      draggingVertexRef.current = index;
-      suppressMapClickRef.current = true;
-      map.dragPan.disable();
-      map.getCanvas().style.cursor = "grabbing";
-      event.preventDefault();
+    const finishMouseDrag = () => {
+      if (draggingIndex === null) return;
+      draggingIndex = null;
+      map.off("mousemove", handleMouseMove);
+      map.dragPan.enable();
+      canvas.style.cursor = drawing ? "crosshair" : "";
     };
 
     const handleMouseMove = (event: MapMouseEvent) => {
-      const index = draggingVertexRef.current;
-      if (index === null || !editing) return;
+      if (draggingIndex === null || !editing) return;
 
       const point = map.unproject(event.point);
       setCoordinates((current) =>
         current.map((currentPoint, currentIndex) =>
-          currentIndex === index
+          currentIndex === draggingIndex
             ? [point.lng, point.lat]
             : currentPoint,
         ),
@@ -290,40 +287,50 @@ export function AdminGeofenceDetail({
       setMessage("");
     };
 
-    const finishDrag = () => {
-      if (draggingVertexRef.current === null) return;
-      draggingVertexRef.current = null;
-      map.dragPan.enable();
-      map.getCanvas().style.cursor = drawing ? "crosshair" : "";
-      setSaveError("");
-      setMessage("");
+    const handleMouseDown = (event: MapMouseEvent & {
+      features?: Array<{ properties?: Record<string, unknown> }>;
+    }) => {
+      if (!editing) return;
+
+      const index = getVertexIndex(event);
+      if (index === null) return;
+
+      draggingIndex = index;
+      suppressMapClickRef.current = true;
+      event.preventDefault();
+      map.dragPan.disable();
+      canvas.style.cursor = "grabbing";
+      map.on("mousemove", handleMouseMove);
     };
 
     const handleMouseUp = () => {
-      finishDrag();
+      finishMouseDrag();
     };
 
     const handleMouseLeave = () => {
-      if (draggingVertexRef.current !== null) {
-        finishDrag();
+      finishMouseDrag();
+    };
+
+    map.on("mousedown", "geofence-detail-points", handleMouseDown);
+    map.on("mouseup", handleMouseUp);
+    const handleVertexLeave = () => {
+      if (draggingIndex === null) {
+        canvas.style.cursor = drawing ? "crosshair" : "";
       }
     };
 
-    map.on("mousedown", handleMouseDown);
-    map.on("mousemove", handleMouseMove);
-    map.on("mouseup", handleMouseUp);
-    map.on("mouseleave", handleMouseLeave);
+    map.on("mouseleave", "geofence-detail-points", handleVertexLeave);
 
     return () => {
-      map.off("mousedown", handleMouseDown);
-      map.off("mousemove", handleMouseMove);
+      map.off("mousedown", "geofence-detail-points", handleMouseDown);
       map.off("mouseup", handleMouseUp);
-      map.off("mouseleave", handleMouseLeave);
-      if (draggingVertexRef.current !== null) {
-        draggingVertexRef.current = null;
+      map.off("mouseleave", "geofence-detail-points", handleVertexLeave);
+      map.off("mousemove", handleMouseMove);
+      if (draggingIndex !== null) {
+        draggingIndex = null;
         map.dragPan.enable();
       }
-      map.getCanvas().style.cursor = "";
+      canvas.style.cursor = "";
     };
   }, [coordinates.length, drawing, editing, mapReady]);
 
