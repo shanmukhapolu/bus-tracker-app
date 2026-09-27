@@ -41,6 +41,24 @@
         ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
         ".validate": "newData.child('busNumber').isString() && newData.child('route').isString() && newData.child('enabled').isBoolean() && (!newData.child('geofenceId').exists() || newData.child('geofenceId').isString())"
       }
+    },
+    "geofenceAlerts": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
+      "$geofenceId": {
+        "$eventId": {
+          ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
+          ".validate": "newData.hasChildren(['id','busId','busNumber','geofenceId','geofenceName','createdAt']) && newData.child('id').isString() && newData.child('busId').isString() && newData.child('busNumber').isString() && newData.child('geofenceId').isString() && newData.child('geofenceName').isString() && newData.child('createdAt').isNumber()"
+        }
+      }
+    },
+    "geofenceBusOrder": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
+      "$geofenceId": {
+        "$busId": {
+          ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
+          ".validate": "newData.hasChildren(['busId','busNumber','firstEntryAt']) && newData.child('busId').isString() && newData.child('busNumber').isString() && newData.child('firstEntryAt').isNumber()"
+        }
+      }
     }
   }
 }
