@@ -3,17 +3,23 @@ import { ArrowUpDown, BusFront, ChevronLeft, ChevronRight, Search, Trash2 } from
 import type { Bus } from "../types/bus";
 import type { FleetDriver } from "../services/fleetService";
 import { deleteFleetBus } from "../services/fleetService";
+import { assignBusGeofence } from "../services/geofenceService";
+import type { Geofence } from "../types/geofence";
 import { Badge, Empty, ErrorState, Loading, PageHeading } from "./UI";
 
 export function AdminBuses({
   buses,
   drivers,
+  geofences,
+  geofenceError,
   connected,
   error,
   onOpenBus,
 }: {
   buses: Bus[];
   drivers: FleetDriver[];
+  geofences: Geofence[];
+  geofenceError?: string;
   connected: boolean;
   error?: string;
   onOpenBus: (busId: string) => void;
@@ -24,6 +30,8 @@ export function AdminBuses({
   const [ascending, setAscending] = useState(true);
   const [page, setPage] = useState(0);
   const [deleting, setDeleting] = useState("");
+  const [assigning, setAssigning] = useState("");
+  
   const [message, setMessage] = useState("");
   const [saveError, setSaveError] = useState("");
 
@@ -65,6 +73,25 @@ export function AdminBuses({
     setPage(0);
   };
 
+  const assignGeofence = async (bus: Bus, geofenceId: string) => {
+    setAssigning(bus.id);
+    setMessage("");
+    setSaveError("");
+    try {
+      await assignBusGeofence(bus.id, geofenceId);
+      const geofence = geofences.find((item) => item.id === geofenceId);
+      setMessage(
+        geofence
+          ? `Bus ${bus.busNumber} assigned to ${geofence.name}.`
+          : `Geofence assignment cleared for Bus ${bus.busNumber}.`,
+      );
+    } catch (caught) {
+      setSaveError(caught instanceof Error ? caught.message : "Could not update the geofence assignment.");
+    } finally {
+      setAssigning("");
+    }
+  };
+
   const removeBus = async (bus: Bus) => {
     if (!window.confirm(`Delete Bus ${bus.busNumber}? Any assigned driver will be unassigned.`)) return;
     setDeleting(bus.id);
@@ -94,8 +121,10 @@ export function AdminBuses({
         <div className="summary-stat"><span><i className="status-dot muted" />Offline</span><strong>{buses.length - online}</strong></div>
       </div>
 
-      {(message || saveError) && (
-        <div className={saveError ? "error-box" : "notice"} role={saveError ? "alert" : "status"}>{saveError || message}</div>
+      {(message || saveError || geofenceError) && (
+        <div className={saveError || geofenceError ? "error-box" : "notice"} role={saveError || geofenceError ? "alert" : "status"}>
+          {saveError || geofenceError || message}
+        </div>
       )}
 
       <section className="panel buses-panel">
@@ -144,6 +173,7 @@ export function AdminBuses({
                     </th>
                   ))}
                   <th>Driver</th>
+                  <th>Geofence</th>
                   <th>Last update</th>
                   <th><span className="sr-only">Actions</span></th>
                 </tr>
@@ -160,6 +190,26 @@ export function AdminBuses({
                       <td>{bus.route}</td>
                       <td><Badge value={bus.trackingActive ? "online" : "offline"} /></td>
                       <td>{driverByBus.get(bus.id) ?? "Not assigned"}</td>
+                      <td>
+                        <select
+                          className="bus-geofence-select"
+                          aria-label={`Geofence for Bus ${bus.busNumber}`}
+                          value={bus.geofenceId ?? ""}
+                          disabled={Boolean(assigning)}
+                          onClick={(event) => event.stopPropagation()}
+                          onChange={(event) => {
+                            event.stopPropagation();
+                            void assignGeofence(bus, event.target.value);
+                          }}
+                        >
+                          <option value="">No geofence</option>
+                          {geofences.map((geofence) => (
+                            <option key={geofence.id} value={geofence.id}>
+                              {geofence.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
                       <td>{bus.trackingActive ? bus.lastUpdated.toLocaleTimeString() : "Not reporting"}</td>
                       <td onClick={(event) => event.stopPropagation()}>
                         <button className="secondary admin-table-action admin-delete" type="button" disabled={Boolean(deleting)} onClick={() => void removeBus(bus)}>
