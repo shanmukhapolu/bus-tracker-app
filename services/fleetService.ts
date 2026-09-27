@@ -5,7 +5,6 @@ export interface FleetBus {
   busNumber: string;
   route: string;
   enabled: boolean;
-  geofenceId?: string;
 }
 
 export interface FleetDriver {
@@ -34,10 +33,6 @@ export function normalizeBus(value: unknown, id: string): FleetBus | null {
     busNumber,
     route,
     enabled: record.enabled !== false,
-    geofenceId:
-      typeof record.geofenceId === "string" && record.geofenceId.trim()
-        ? record.geofenceId.trim()
-        : undefined,
   };
 }
 
