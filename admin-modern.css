@@ -1392,19 +1392,19 @@
   pointer-events: none;
 }
 
-.operations-shell .login {
+.admin-ui .login {
   min-height: 100dvh;
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr);
   background: var(--ui-canvas);
 }
 
-.operations-shell .login-story,
-.operations-shell .login-form {
+.admin-ui .login-story,
+.admin-ui .login-form {
   min-width: 0;
 }
 
-.operations-shell .login-story {
+.admin-ui .login-story {
   padding: 44px;
   display: flex;
   flex-direction: column;
@@ -1413,7 +1413,7 @@
   border-right: 1px solid var(--ui-border);
 }
 
-.operations-shell .login-form {
+.admin-ui .login-form {
   padding: 44px;
   display: flex;
   justify-content: center;
@@ -1421,7 +1421,7 @@
   background: #fff;
 }
 
-.operations-shell .login-story .admin-brand-logo {
+.admin-ui .login-story .admin-brand-logo {
   width: min(440px, 100%);
   min-height: auto;
   padding: 0 0 16px;
@@ -1429,27 +1429,27 @@
   background: transparent;
 }
 
-.operations-shell .login-points {
+.admin-ui .login-points {
   width: min(440px, 100%);
   display: grid;
   gap: 8px;
   margin-top: 18px;
 }
 
-.operations-shell .login-points > div {
+.admin-ui .login-points > div {
   padding: 11px 12px;
   border: 1px solid var(--ui-border);
   border-radius: 7px;
   background: rgba(255,255,255,.72);
 }
 
-.operations-shell .login-points strong {
+.admin-ui .login-points strong {
   display: block;
   color: var(--ui-text);
   font-size: 10px;
 }
 
-.operations-shell .login-points span {
+.admin-ui .login-points span {
   display: block;
   margin-top: 3px;
   color: var(--ui-text-muted);
@@ -1457,13 +1457,13 @@
   line-height: 1.45;
 }
 
-.operations-shell .login-form > * {
+.admin-ui .login-form > * {
   width: min(390px, 100%);
   margin-right: auto;
   margin-left: auto;
 }
 
-.operations-shell .login-form .demo-label {
+.admin-ui .login-form .demo-label {
   margin-bottom: 8px;
   color: #8997a2;
   font-size: 8px;
@@ -1471,20 +1471,20 @@
   letter-spacing: .14em;
 }
 
-.operations-shell .login-form h1 {
+.admin-ui .login-form h1 {
   margin: 0 0 6px;
   color: var(--ui-text);
   font-size: 25px;
   letter-spacing: -.6px;
 }
 
-.operations-shell .login-form form {
+.admin-ui .login-form form {
   display: grid;
   gap: 9px;
   margin-top: 18px;
 }
 
-.operations-shell .login-form input {
+.admin-ui .login-form input {
   width: 100%;
   min-height: 42px;
   padding: 0 11px;
@@ -1496,18 +1496,18 @@
   outline: 0;
 }
 
-.operations-shell .login-form input:focus {
+.admin-ui .login-form input:focus {
   border-color: #9dbbd4;
   box-shadow: 0 0 0 2px rgba(23,105,176,.08);
 }
 
-.operations-shell .login-form .primary {
+.admin-ui .login-form .primary {
   width: 100%;
   min-height: 42px;
   margin-top: 3px;
 }
 
-.operations-shell .login-policy {
+.admin-ui .login-policy {
   margin-top: 12px;
   color: var(--ui-text-muted);
   font-size: 9px;
@@ -1780,15 +1780,15 @@
     grid-column: 1 / -1;
   }
 
-  .operations-shell .login {
+  .admin-ui .login {
     grid-template-columns: 1fr;
   }
 
-  .operations-shell .login-story {
+  .admin-ui .login-story {
     display: none;
   }
 
-  .operations-shell .login-form {
+  .admin-ui .login-form {
     min-height: 100dvh;
     padding: 28px 18px;
   }
@@ -1823,7 +1823,7 @@
     width: auto;
   }
 
-  .operations-shell .login-form h1 {
+  .admin-ui .login-form h1 {
     font-size: 22px;
   }
 }
