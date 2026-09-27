@@ -326,7 +326,7 @@ export function DriversPage() {
     setPosition(null);
     setNextStopIndex(0);
     setStatus("idle");
-    setMessage("Tracking stopped. The live bus location was removed.");
+    setMessage("Tracking stopped. The bus remains on the map at its last known location.");
   };
 
   const startTracking = async () => {
