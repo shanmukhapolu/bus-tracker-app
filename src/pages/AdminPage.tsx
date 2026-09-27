@@ -6,12 +6,25 @@ import { AdminDashboard } from "../admin/AdminDashboard";
 import { AdminLiveMap } from "../admin/AdminLiveMap";
 import { AdminDevices } from "../admin/AdminDevices";
 import { AdminDrivers } from "../admin/AdminDrivers";
+import { AdminBusDetails } from "../admin/AdminBusDetails";
 import { useAdminFleet } from "../admin/adminData";
 import {
   loadAdminProfile,
   signOutAdmin,
 } from "../services/adminAuthService";
 import { getFirebaseRuntime } from "../config/firebase";
+
+function busIdFromPath(pathname: string) {
+  const match = pathname.match(/^\/bus\/([^/]+)$/);
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
+function routeFromPath(pathname: string) {
+  return {
+    page: pageFromPath(pathname),
+    busId: busIdFromPath(pathname),
+  };
+}
 
 function pageFromPath(pathname: string): AdminPageKey {
   if (pathname === "/admin/map") return "map";
@@ -21,9 +34,10 @@ function pageFromPath(pathname: string): AdminPageKey {
 }
 
 export function AdminPage() {
-  const [page, setPage] = useState<AdminPageKey>(() =>
-    pageFromPath(window.location.pathname),
+  const [route, setRoute] = useState(() =>
+    routeFromPath(window.location.pathname),
   );
+  const page = route.page;
   const [authLoading, setAuthLoading] = useState(true);
   const [signedIn, setSignedIn] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -49,7 +63,7 @@ export function AdminPage() {
     if (!window.location.pathname.startsWith("/admin")) return;
 
     const onPopState = () => {
-      setPage(pageFromPath(window.location.pathname));
+      setRoute(routeFromPath(window.location.pathname));
     };
 
     window.addEventListener("popstate", onPopState);
@@ -142,22 +156,31 @@ export function AdminPage() {
       drivers: "/admin/drivers",
     };
     window.history.pushState({}, "", paths[next]);
-    setPage(next);
+    setRoute({ page: next, busId: "" });
   };
 
   const handleSignedIn = (name: string) => {
     setSignedIn(true);
     setDisplayName(name);
     setAuthError("");
-    const requested = pageFromPath(window.location.pathname);
-    navigate(requested);
+    const requested = routeFromPath(window.location.pathname);
+    if (requested.busId) {
+      setRoute(requested);
+      return;
+    }
+    navigate(requested.page);
+  };
+
+  const openBus = (busId: string) => {
+    window.history.pushState({}, "", "/bus/" + encodeURIComponent(busId));
+    setRoute({ page: "dashboard", busId });
   };
 
   const signOut = async () => {
     await signOutAdmin();
     setSignedIn(false);
     setDisplayName("");
-    setPage("dashboard");
+    setRoute({ page: "dashboard", busId: "" });
     window.history.replaceState({}, "", "/admin");
   };
 
@@ -185,13 +208,23 @@ export function AdminPage() {
         displayName={displayName}
         buses={fleet.buses}
       >
-        {page === "dashboard" && (
+        {route.busId ? (
+          <AdminBusDetails
+            busId={route.busId}
+            buses={fleet.buses}
+            drivers={fleet.drivers}
+            connected={fleet.connected}
+            error={fleet.connectionError}
+            onBack={() => navigate("dashboard")}
+          />
+        ) : page === "dashboard" && (
           <AdminDashboard
             buses={fleet.buses}
             drivers={fleet.drivers}
             connected={fleet.connected}
             error={fleet.connectionError || fleet.driverError}
             onRefreshHint={() => navigate("map")}
+            onOpenBus={openBus}
           />
         )}
         {page === "map" && (
