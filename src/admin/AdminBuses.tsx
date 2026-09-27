@@ -23,7 +23,6 @@ export function AdminBuses({
   const [sort, setSort] = useState<"fleet" | "number" | "route" | "status">("fleet");
   const [ascending, setAscending] = useState(true);
   const [page, setPage] = useState(0);
-  const [savingBus, setSavingBus] = useState("");
   const [deleting, setDeleting] = useState("");
   const [message, setMessage] = useState("");
   const [saveError, setSaveError] = useState("");
