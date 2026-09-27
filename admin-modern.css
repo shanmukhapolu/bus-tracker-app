@@ -4,9 +4,9 @@
  * restrained borders, compact controls, clear hierarchy, and functional density.
  */
 .operations-shell {
-  --ui-canvas: #fafcff;
+  --ui-canvas: #fbfdff;
   --ui-surface: #ffffff;
-  --ui-surface-subtle: #f7faff;
+  --ui-surface-subtle: #f9fcff;
   --ui-surface-hover: #f1f6fa;
   --ui-border: #d9e2e9;
   --ui-border-muted: #e8eef3;
