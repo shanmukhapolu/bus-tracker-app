@@ -13,7 +13,6 @@ export interface Bus {
   currentLocation?: string;
   trackingActive?: boolean;
   locationAccuracyMeters?: number;
-  geofenceId?: string;
   lastUpdated: Date;
 }
 
