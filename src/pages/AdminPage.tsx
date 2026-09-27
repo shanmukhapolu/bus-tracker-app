@@ -132,27 +132,15 @@ export function AdminPage() {
       return;
     }
 
-    let alerts = [] as GeofenceEntryEvent[];
-    let order = {} as Record<
-      string,
-      import("../services/geofenceService").GeofenceBusOrderEntry[]
-    >;
-
     const setError = (message: string) => setGeofenceActivityError(message);
 
     const stopAlerts = subscribeGeofenceAlerts(
-      (next) => {
-        alerts = next;
-        setGeofenceEvents(next);
-      },
+      setGeofenceEvents,
       setError,
     );
 
     const stopOrder = subscribeGeofenceBusOrder(
-      (next) => {
-        order = next;
-        setGeofenceOrder(next);
-      },
+      setGeofenceOrder,
       setError,
     );
 
