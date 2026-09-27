@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { ArrowUpDown, ArrowRight, BusFront, ChevronLeft, ChevronRight, Map, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowUpDown, ArrowRight, BusFront, ChevronLeft, ChevronRight, Map as MapIcon, Plus, Search, Trash2 } from "lucide-react";
 import type { Bus } from "../types/bus";
 import { deleteFleetBus, addFleetBus } from "../services/fleetService";
 import { AdminFleetMap } from "./AdminFleetMap";
-import { Empty, ErrorState, Loading, Metric, PageHeading } from "./UI";
+import { Empty, ErrorState, Loading, PageHeading } from "./UI";
 import type { FleetDriver } from "../services/fleetService";
 
 export function AdminDashboard({
@@ -146,7 +146,7 @@ export function AdminDashboard({
             {showAddForm ? "Close" : "Add bus"}
           </button>
           <button className="secondary overview-map-link" type="button" onClick={() => onRefreshHint?.()}>
-            <Map size={16} />
+            <MapIcon size={16} />
             Live feed
           </button>
         </div>
