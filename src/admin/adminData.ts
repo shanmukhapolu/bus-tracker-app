@@ -16,11 +16,16 @@ export interface AdminDevice {
   driverName: string;
 }
 
-export function useAdminDrivers() {
+export function useAdminDrivers(enabled = true) {
   const [drivers, setDrivers] = useState<FleetDriver[]>([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!enabled) {
+      setDrivers([]);
+      setError("");
+      return;
+    }
     let stopped = false;
     let unsubscribe: (() => void) | undefined;
 
@@ -60,14 +65,14 @@ export function useAdminDrivers() {
       stopped = true;
       unsubscribe?.();
     };
-  }, []);
+  }, [enabled]);
 
   return { drivers, error };
 }
 
-export function useAdminFleet() {
+export function useAdminFleet(enabled = true) {
   const snapshot = useBuses();
-  const driversState = useAdminDrivers();
+  const driversState = useAdminDrivers(enabled);
 
   const driverByBus = useMemo(() => {
     const map = new Map<string, string>();
