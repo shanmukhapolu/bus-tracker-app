@@ -24,7 +24,6 @@ interface Props {
   progress?: [number, number][];
   events?: MapPosition[];
   onEventSelect?: (eventId: string) => void;
-  animate?: boolean;
   dataLabel?: string;
 }
 export function FleetMap({
@@ -35,7 +34,6 @@ export function FleetMap({
   progress,
   events = [],
   onEventSelect,
-  animate = true,
   dataLabel = "LIVE GPS",
 }: Props) {
   const host = useRef<HTMLDivElement>(null),
@@ -107,11 +105,144 @@ export function FleetMap({
         markers.current.delete(id);
       }
     });
-    const animations: {
-      marker: Marker;
-      from: [number, number];
-      to: [number, number];
-    }[] = [];
+    positions.forEach((point) => {
+      let marker = markers.current.get(point.id);
+      if (!marker) {
+        const element = document.createElement("button");
+        element.type = "button";
+        const icon = document.createElement("img");
+        icon.src = busIconUrl;
+        icon.alt = "";
+        icon.className = "fleet-marker-icon";
+        const number = document.createElement("span");
+        number.className = "fleet-marker-number";
+        element.append(icon, number);
+        element.addEventListener("click", () =>
+          current.current.onSelect?.(point.id),
+        );
+        marker = new Marker({ element })
+          .setLngLat([point.longitude, point.latitude])
+          .addTo(instance);
+        markers.current.set(point.id, marker);
+      }
+      const element = marker.getElement();
+      element.querySelector(".fleet-marker-number")!.textContent =
+        point.label.replace(/^Bus\s+/i, "");
+      element.setAttribute("aria-label", "Select " + point.label);
+      element.setAttribute("aria-pressed", String(selectedId === point.id));
+      element.className =
+        "maplibregl-marker fleet-marker" +
+        (point.alert ? " alert" : "") +
+        (point.offline ? " offline" : "") +
+        (selectedId === point.id ? " selected" : "");
+      marker.setLngLat([point.longitude, point.latitude]);
+t { useEffect, useRef, useState } from "react";
+import {
+  Map as LibreMap,
+  Marker,
+  NavigationControl,
+  LngLatBounds,
+  type GeoJSONSource,
+} from "maplibre-gl";
+import { Crosshair } from "lucide-react";
+import busIconUrl from "../assets/bus-front.svg";
+export interface MapPosition {
+  id: string;
+  label: string;
+  latitude: number;
+  longitude: number;
+  alert?: boolean;
+  offline?: boolean;
+}
+interface Props {
+  positions: MapPosition[];
+  selectedId?: string;
+  onSelect?: (id: string) => void;
+  line?: [number, number][];
+  progress?: [number, number][];
+  events?: MapPosition[];
+  onEventSelect?: (eventId: string) => void;
+  dataLabel?: string;
+}
+export function FleetMap({
+  positions,
+  selectedId,
+  onSelect,
+  line,
+  progress,
+  events = [],
+  onEventSelect,
+  dataLabel = "LIVE GPS",
+}: Props) {
+  const host = useRef<HTMLDivElement>(null),
+    map = useRef<LibreMap | null>(null),
+    markers = useRef(new Map<string, Marker>());
+  const [ready, setReady] = useState(false),
+    [error, setError] = useState(""),
+    [attempt, setAttempt] = useState(0);
+  const current = useRef({ positions, onSelect, line });
+  current.current = { positions, onSelect, line };
+  useEffect(() => {
+    if (!host.current) return;
+    setError("");
+    setReady(false);
+    let instance: LibreMap;
+    try {
+      instance = new LibreMap({
+        container: host.current,
+        style: "https://tiles.openfreemap.org/styles/positron",
+        center: [-86.155, 39.976],
+        zoom: 11.8,
+        attributionControl: { compact: true },
+      });
+    } catch {
+      setError(
+        "Map requires WebGL. Fleet information remains available in the tables.",
+      );
+      return;
+    }
+    map.current = instance;
+    instance.addControl(
+      new NavigationControl({ showCompass: false }),
+      "top-right",
+    );
+    const timer = setTimeout(() => {
+      if (!instance.loaded())
+        setError(
+          "Map is taking too long to load. Check your connection and retry.",
+        );
+    }, 20000);
+    instance.on("load", () => {
+      clearTimeout(timer);
+      setReady(true);
+      setError("");
+    });
+    instance.on("error", () =>
+      setError(
+        "Some map resources could not load. Check your connection or retry the map.",
+      ),
+    );
+    const observer = new ResizeObserver(() => instance.resize());
+    observer.observe(host.current);
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+      markers.current.forEach((marker) => marker.remove());
+      markers.current.clear();
+      instance.remove();
+      map.current = null;
+    };
+  }, [attempt]);
+  useEffect(() => {
+    if (!ready || !map.current) return;
+    const instance = map.current;
+    const ids = new Set(positions.map((point) => point.id));
+    markers.current.forEach((marker, id) => {
+      if (!ids.has(id)) {
+        marker.remove();
+        markers.current.delete(id);
+      }
+    });
     positions.forEach((point) => {
       let marker = markers.current.get(point.id);
       if (!marker) {
@@ -149,25 +280,6 @@ export function FleetMap({
         to: [point.longitude, point.latitude],
       });
     });
-    let frame = 0;
-    const start = performance.now();
-    const duration =
-      animate && !matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? 2800
-        : 0;
-    const draw = (now: number) => {
-      const t = duration ? Math.min(1, (now - start) / duration) : 1;
-      animations.forEach(({ marker, from, to }) =>
-        marker.setLngLat([
-          from[0] + (to[0] - from[0]) * t,
-          from[1] + (to[1] - from[1]) * t,
-        ]),
-      );
-      if (t < 1) frame = requestAnimationFrame(draw);
-    };
-    frame = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(frame);
-  }, [positions, selectedId, ready, animate]);
   useEffect(() => {
     if (!map.current || !ready) return;
     for (const [id, coordinates, color, width] of [
