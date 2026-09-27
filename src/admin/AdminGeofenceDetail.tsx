@@ -304,10 +304,6 @@ export function AdminGeofenceDetail({
       finishMouseDrag();
     };
 
-    const handleMouseLeave = () => {
-      finishMouseDrag();
-    };
-
     map.on("mousedown", "geofence-detail-points", handleMouseDown);
     map.on("mouseup", handleMouseUp);
     const handleVertexLeave = () => {
