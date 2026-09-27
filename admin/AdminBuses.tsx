@@ -151,7 +151,6 @@ export function AdminBuses({
               </thead>
               <tbody>
                 {visibleRows.map((bus) => {
-                  const geofence = bus.geofenceId ? geofenceById.get(bus.geofenceId) : undefined;
                   return (
                     <tr key={bus.id} onClick={() => onOpenBus(bus.id)} className="bus-click-row">
                       <td>
@@ -162,20 +161,6 @@ export function AdminBuses({
                       <td>{bus.route}</td>
                       <td><Badge value={bus.trackingActive ? "online" : "offline"} /></td>
                       <td>{driverByBus.get(bus.id) ?? "Not assigned"}</td>
-                      <td onClick={(event) => event.stopPropagation()}>
-                        <select
-                          className="bus-geofence-select"
-                          value={bus.geofenceId ?? ""}
-                          disabled={savingBus === bus.id}
-                          onChange={(event) => void updateGeofence(bus, event.target.value)}
-                          aria-label={`Geofence for Bus ${bus.busNumber}`}
-                        >
-                          <option value="">No geofence</option>
-                          {geofences.filter((item) => item.enabled).map((geofence) => (
-                            <option key={geofence.id} value={geofence.id}>{geofence.name}</option>
-                          ))}
-                        </select>
-                      </td>
                       <td>{bus.trackingActive ? bus.lastUpdated.toLocaleTimeString() : "Not reporting"}</td>
                       <td onClick={(event) => event.stopPropagation()}>
                         <button className="secondary admin-table-action admin-delete" type="button" disabled={Boolean(deleting)} onClick={() => void removeBus(bus)}>
