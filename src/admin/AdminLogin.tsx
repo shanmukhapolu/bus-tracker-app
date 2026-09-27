@@ -80,45 +80,42 @@ export function AdminLogin({
       <section className="login-story">
         <div className="admin-brand-logo">
           <SchoolLogo className="admin-school-logo" alt="" />
-          <strong>BUS SAFETY ADMIN</strong>
+          <strong>Admin Panel</strong>
         </div>
+
         <div>
-          <span className="eyebrow">TRANSPORTATION OPERATIONS</span>
+          <span className="eyebrow">CARMEL CLAY SCHOOLS</span>
           <h1>
-            A clearer view.
-            <br />A safer journey.
+            Manage the fleet.
+            <br />Keep every route in view.
           </h1>
           <p>
-            Fleet awareness, driver management, and device health in one
-            focused workspace.
+            View buses, devices, and driver access from one place.
           </p>
           <div className="login-points">
             <span>
               <ShieldCheck />
-              Monitor the live fleet in context
+              Live fleet visibility
             </span>
             <span>
               <LockKeyhole />
-              Authenticated administrative access
+              Protected administrator access
             </span>
           </div>
         </div>
-        <small>
-          Independent CCS-inspired prototype · Not an official district product
-        </small>
+
+        <small>CCS-inspired prototype · Not an official district product</small>
       </section>
 
       <section className="login-form">
-        <span className="demo-label">AUTHORIZED ACCESS</span>
+        <span className="demo-label">ADMIN ACCESS</span>
         <h2>
-          {mode === "login"
-            ? "Sign in to transportation operations"
-            : "Create an administrator account"}
+          {mode === "login" ? "Admin sign in" : "Create admin account"}
         </h2>
         <p>
           {mode === "login"
-            ? "Use an enabled administrator account from the shared Firebase project."
-            : "Create an account. An existing administrator must enable it before access is allowed."}
+            ? "Use an approved administrator account."
+            : "Create an account. An administrator must enable it before access is allowed."}
         </p>
 
         {sessionMessage && (
@@ -190,11 +187,6 @@ export function AdminLogin({
             {message}
           </p>
         )}
-
-        <p className="login-policy">
-          Access requires Firebase Authentication and an enabled admin profile.
-          Credentials are handled by Firebase and are not stored by this app.
-        </p>
 
         <button
           type="button"
