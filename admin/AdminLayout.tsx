@@ -58,7 +58,7 @@ export function AdminLayout({
           <SchoolLogo className="admin-school-logo" alt="" />
           <div>
             <strong>Admin Panel</strong>
-            <span>Transportation • TEST UPDATE</span>
+            <span>Transportation</span>
           </div>
         </div>
 
