@@ -10,7 +10,9 @@
     "test": "vitest run",
     "format": "prettier --write src index.html vite.config.ts tsconfig.json package.json README.md",
     "firebase:deploy": "firebase deploy --only hosting,database",
-    "firebase:serve": "firebase serve --only hosting"
+    "firebase:serve": "firebase serve --only hosting",
+    "prebuild": "node ./scripts/copy-maplibre-worker.mjs",
+    "predev": "node ./scripts/copy-maplibre-worker.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
