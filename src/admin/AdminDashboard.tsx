@@ -351,19 +351,21 @@ export function AdminDashboard({
               <h2>Selected bus</h2>
             </div>
             {current ? (
-              <div className="fields">
-                <div><dt>Bus</dt><dd>{current.busNumber}</dd></div>
-                <div><dt>Route</dt><dd>{current.route}</dd></div>
-                <div><dt>Status</dt><dd>{current.trackingActive ? "Online" : "Offline"}</dd></div>
-                <div><dt>Driver</dt><dd>{driverByBus.get(current.id) ?? "Not assigned"}</dd></div>
-              </div>
-              <button
-                className="panel-footer-link admin-selected-details"
-                type="button"
-                onClick={() => onOpenBus?.(current.id)}
-              >
-                View bus details <ArrowRight size={15} />
-              </button>
+              <>
+                <div className="fields">
+                  <div><dt>Bus</dt><dd>{current.busNumber}</dd></div>
+                  <div><dt>Route</dt><dd>{current.route}</dd></div>
+                  <div><dt>Status</dt><dd>{current.trackingActive ? "Online" : "Offline"}</dd></div>
+                  <div><dt>Driver</dt><dd>{driverByBus.get(current.id) ?? "Not assigned"}</dd></div>
+                </div>
+                <button
+                  className="panel-footer-link admin-selected-details"
+                  type="button"
+                  onClick={() => onOpenBus?.(current.id)}
+                >
+                  View bus details <ArrowRight size={15} />
+                </button>
+              </>
             ) : (
               <Empty>No bus selected.</Empty>
             )}
