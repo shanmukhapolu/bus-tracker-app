@@ -6,12 +6,9 @@ import { AdminLayout, type AdminPageKey } from "../admin/AdminLayout";
 import { AdminDashboard } from "../admin/AdminDashboard";
 import { AdminLiveMap } from "../admin/AdminLiveMap";
 import { AdminBuses } from "../admin/AdminBuses";
-import { AdminGeofences } from "../admin/AdminGeofences";
 import { AdminDrivers } from "../admin/AdminDrivers";
 import { AdminBusDetails } from "../admin/AdminBusDetails";
-import { AdminGeofenceMonitor, type GeofenceAlert } from "../admin/AdminGeofenceMonitor";
 import { useAdminFleet } from "../admin/adminData";
-import { useGeofences } from "../services/geofenceService";
 import { loadAdminProfile, signOutAdmin } from "../services/adminAuthService";
 import { getFirebaseRuntime } from "../config/firebase";
 
@@ -27,7 +24,6 @@ function routeFromPath(pathname: string) {
 function pageFromPath(pathname: string): AdminPageKey {
   if (pathname === "/admin/map") return "map";
   if (pathname === "/admin/buses" || pathname === "/admin/devices") return "buses";
-  if (pathname === "/admin/geofences") return "geofences";
   if (pathname === "/admin/drivers") return "drivers";
   return "dashboard";
 }
@@ -39,10 +35,7 @@ export function AdminPage() {
   const [signedIn, setSignedIn] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [authError, setAuthError] = useState("");
-  const [alerts, setAlerts] = useState<GeofenceAlert[]>([]);
-
   const fleet = useAdminFleet(signedIn);
-  const geofenceState = useGeofences(signedIn);
 
   useEffect(() => {
     const style = document.createElement("style");
@@ -119,21 +112,11 @@ export function AdminPage() {
     };
   }, []);
 
-  const dismissAlert = useCallback((id: string) => {
-    setAlerts((current) => current.filter((alert) => alert.id !== id));
-  }, []);
-
-  const handleGeofenceEntry = useCallback((alert: GeofenceAlert) => {
-    setAlerts((current) => [alert, ...current].slice(0, 4));
-    window.setTimeout(() => dismissAlert(alert.id), 7000);
-  }, [dismissAlert]);
-
   const navigate = (next: AdminPageKey) => {
     const paths: Record<AdminPageKey, string> = {
       dashboard: "/admin",
       map: "/admin/map",
       buses: "/admin/buses",
-      geofences: "/admin/geofences",
       drivers: "/admin/drivers",
     };
     window.history.pushState({}, "", paths[next]);
@@ -161,7 +144,6 @@ export function AdminPage() {
     await signOutAdmin();
     setSignedIn(false);
     setDisplayName("");
-    setAlerts([]);
     setRoute({ page: "dashboard", busId: "" });
     window.history.replaceState({}, "", "/admin");
   };
@@ -178,8 +160,6 @@ export function AdminPage() {
 
   return (
     <div className="admin-ui">
-      <AdminGeofenceMonitor buses={fleet.buses} geofences={geofenceState.geofences} onEnter={handleGeofenceEntry} />
-
       <AdminLayout
         page={page}
         onNavigate={navigate}
@@ -211,13 +191,10 @@ export function AdminPage() {
           <AdminBuses
             buses={fleet.buses}
             drivers={fleet.drivers}
-            geofences={geofenceState.geofences}
             connected={fleet.connected}
-            error={fleet.connectionError || geofenceState.error}
+            error={fleet.connectionError}
             onOpenBus={openBus}
           />
-        ) : page === "geofences" ? (
-          <AdminGeofences geofences={geofenceState.geofences} connected={fleet.connected} error={geofenceState.error} />
         ) : (
           <AdminDrivers
             drivers={fleet.drivers}
@@ -231,22 +208,6 @@ export function AdminPage() {
           />
         )}
       </AdminLayout>
-
-      <div className="geofence-toast-stack">
-        {alerts.map((alert) => (
-          <div key={alert.id} className="geofence-toast-shell">
-            <div className="geofence-toast" role="status" aria-live="polite">
-              <div className="geofence-toast-icon"><span>!</span></div>
-              <div className="geofence-toast-copy">
-                <strong>Geofence entry</strong>
-                <p>Bus {alert.busNumber} entered {alert.geofenceName}.</p>
-                <span>{new Date(alert.timestamp).toLocaleTimeString()}</span>
-              </div>
-              <button type="button" onClick={() => dismissAlert(alert.id)} aria-label="Dismiss notification">×</button>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
