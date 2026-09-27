@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { titleCase } from "../utils";
+import { titleCase } from "./utils";
 export function Badge({ value }: { value: string }) {
   return <span className={"badge " + value}>{titleCase(value)}</span>;
 }
