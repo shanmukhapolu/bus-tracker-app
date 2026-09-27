@@ -46,8 +46,9 @@ function createOfflineFleetBus(
     longitude: CARMEL_CENTER[0],
     status: "offline",
     trackingActive: false,
+    hasKnownLocation: false,
     geofenceId,
-    currentLocation: "Not tracking",
+    currentLocation: "No location history",
     lastUpdated: new Date(),
   };
 }
@@ -89,11 +90,14 @@ function mergeLiveBuses(
       isFiniteNumber(live.lastUpdated) &&
       Date.now() - live.lastUpdated <= LIVE_STALE_MS;
 
+    const hasKnownLocation =
+      isFiniteNumber(live.latitude) &&
+      isFiniteNumber(live.longitude);
+
     const active =
       live.active === true &&
       hasFreshUpdate &&
-      isFiniteNumber(live.latitude) &&
-      isFiniteNumber(live.longitude);
+      hasKnownLocation;
 
     const firebaseLastUpdated = isFiniteNumber(live.lastUpdated)
       ? new Date(live.lastUpdated)
@@ -106,12 +110,20 @@ function mergeLiveBuses(
         ...base,
         busNumber: live.busNumber ?? base.busNumber,
         route: live.route ?? base.route,
+        latitude: hasKnownLocation ? live.latitude! : base.latitude,
+        longitude: hasKnownLocation ? live.longitude! : base.longitude,
         trackingActive: false,
+        hasKnownLocation,
         status: "offline",
         etaMinutes: undefined,
         speed: undefined,
         heading: undefined,
-        currentLocation: "Not tracking",
+        currentLocation: hasKnownLocation
+          ? "Last known location"
+          : "No location history",
+        locationAccuracyMeters: isFiniteNumber(live.accuracyMeters)
+          ? live.accuracyMeters
+          : undefined,
         lastUpdated: firebaseLastUpdated,
       };
     }
@@ -125,6 +137,7 @@ function mergeLiveBuses(
       speed: isFiniteNumber(live.speedMps) ? live.speedMps! * 3.6 : undefined,
       heading: isFiniteNumber(live.headingDeg) ? live.headingDeg! : undefined,
       trackingActive: true,
+      hasKnownLocation: true,
       status: "on-time",
       delayMinutes: undefined,
       etaMinutes: undefined,
