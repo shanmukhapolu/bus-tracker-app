@@ -12,6 +12,7 @@ import {
 import {
   LngLatBounds,
   Map as LibreMap,
+  Marker,
   NavigationControl,
   type GeoJSONSource,
   type MapMouseEvent,
@@ -63,6 +64,8 @@ export function AdminGeofenceDetail({
   const isNew = !geofence;
   const mapHost = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LibreMap | null>(null);
+  const vertexMarkersRef = useRef<Map<number, Marker>>(new Map());
+  const cameraInitializedRef = useRef(false);
 
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState("");
@@ -94,6 +97,10 @@ export function AdminGeofenceDetail({
     setMessage("");
     setSaveError("");
   }, [geofence?.id, geofence?.name, geofence?.updatedAt]);
+
+  useEffect(() => {
+    cameraInitializedRef.current = false;
+  }, [geofence?.id]);
 
   useEffect(() => {
     if (!mapHost.current) return;
@@ -157,21 +164,6 @@ export function AdminGeofenceDetail({
         source: "geofence-detail",
         paint: { "line-color": "#142f50", "line-width": 3 },
       });
-      instance.addSource("geofence-detail-points", {
-        type: "geojson",
-        data: { type: "FeatureCollection", features: [] },
-      });
-      instance.addLayer({
-        id: "geofence-detail-points",
-        type: "circle",
-        source: "geofence-detail-points",
-        paint: {
-          "circle-radius": 5,
-          "circle-color": "#2464b8",
-          "circle-stroke-color": "#fff",
-          "circle-stroke-width": 2,
-        },
-      });
     });
 
     const resizeObserver = new ResizeObserver(() => instance.resize());
@@ -180,6 +172,8 @@ export function AdminGeofenceDetail({
     return () => {
       window.clearTimeout(timeout);
       resizeObserver.disconnect();
+      vertexMarkersRef.current.forEach((marker) => marker.remove());
+      vertexMarkersRef.current.clear();
       instance.remove();
       mapRef.current = null;
       setMapReady(false);
@@ -197,37 +191,20 @@ export function AdminGeofenceDetail({
       features: feature ? [feature] : [],
     });
 
-    (map.getSource("geofence-detail-points") as GeoJSONSource).setData({
-      type: "FeatureCollection",
-      features: editing
-        ? coordinates.map((point, index) => ({
-            type: "Feature" as const,
-            properties: { index: index + 1 },
-            geometry: {
-              type: "Point" as const,
-              coordinates: point,
-            },
-          }))
-        : [],
-    });
-  }, [coordinates, editing, mapReady]);
+  }, [coordinates, mapReady]);
 
   useEffect(() => {
-    if (!mapReady || !mapRef.current || drawing) return;
+    if (!mapReady || !mapRef.current || cameraInitializedRef.current) return;
 
-    if (!coordinates.length) {
-      mapRef.current.easeTo({
-        center: CARMEL_CENTER,
-        zoom: 12.4,
-        duration: 350,
-      });
-      return;
-    }
+    const map = mapRef.current;
+    cameraInitializedRef.current = true;
+
+    if (!coordinates.length) return;
 
     if (coordinates.length === 1) {
-      mapRef.current.easeTo({
+      map.easeTo({
         center: coordinates[0],
-        zoom: 15,
+        zoom: Math.max(map.getZoom(), 15),
         duration: 350,
       });
       return;
@@ -235,12 +212,76 @@ export function AdminGeofenceDetail({
 
     const bounds = new LngLatBounds();
     coordinates.forEach((point) => bounds.extend(point));
-    mapRef.current.fitBounds(bounds, {
+    map.fitBounds(bounds, {
       padding: 70,
       maxZoom: 16,
       duration: 450,
     });
-  }, [coordinates, drawing, mapReady]);
+  }, [coordinates, mapReady]);
+
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+
+    const map = mapRef.current;
+    const markers = vertexMarkersRef.current;
+    const activeIndexes = new Set<number>();
+
+    if (editing) {
+      coordinates.forEach((point, index) => {
+        activeIndexes.add(index);
+
+        let marker = markers.get(index);
+        if (!marker) {
+          const element = document.createElement("button");
+          element.type = "button";
+          element.className = "geofence-vertex";
+          element.setAttribute(
+            "aria-label",
+            "Geofence point " + String(index + 1),
+          );
+
+          const stopMapInteraction = (event: Event) => {
+            event.stopPropagation();
+          };
+          element.addEventListener("pointerdown", stopMapInteraction);
+          element.addEventListener("mousedown", stopMapInteraction);
+          element.addEventListener("touchstart", stopMapInteraction);
+          element.addEventListener("click", stopMapInteraction);
+
+          marker = new Marker({
+            element,
+            draggable: true,
+          })
+            .setLngLat(point)
+            .addTo(map);
+
+          marker.on("dragend", () => {
+            const position = marker!.getLngLat();
+            setCoordinates((current) =>
+              current.map((currentPoint, currentIndex) =>
+                currentIndex === index
+                  ? [position.lng, position.lat]
+                  : currentPoint,
+              ),
+            );
+            setSaveError("");
+            setMessage("");
+          });
+
+          markers.set(index, marker);
+        } else {
+          marker.setLngLat(point);
+        }
+      });
+    }
+
+    markers.forEach((marker, index) => {
+      if (!activeIndexes.has(index)) {
+        marker.remove();
+        markers.delete(index);
+      }
+    });
+  }, [coordinates, editing, mapReady]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
