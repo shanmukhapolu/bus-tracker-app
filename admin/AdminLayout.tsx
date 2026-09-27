@@ -68,7 +68,9 @@ export function AdminLayout({
               key={key}
               type="button"
               className={page === key ? "admin-nav-button active" : "admin-nav-button"}
-              onClick={() => onNavigate(key)}
+              onClick={() => {
+                if (key !== "geofences") onNavigate(key);
+              }}
             >
               <Icon size={19} strokeWidth={1.8} />
               <span>{label}</span>
