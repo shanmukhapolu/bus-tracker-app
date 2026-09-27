@@ -1,0 +1,30 @@
+export interface Bus {
+  id: string;
+  busNumber: string;
+  route: string;
+  latitude: number;
+  longitude: number;
+  speed?: number;
+  heading?: number;
+  status: "on-time" | "late" | "offline";
+  delayMinutes?: number;
+  etaMinutes?: number;
+  nextStop?: string;
+  currentLocation?: string;
+  trackingActive?: boolean;
+  locationAccuracyMeters?: number;
+  geofenceId?: string;
+  lastUpdated: Date;
+}
+
+export type Coordinate = readonly [longitude: number, latitude: number];
+
+export interface BusSnapshot {
+  buses: Bus[];
+  mode: "demo" | "live";
+  connected: boolean;
+  connectionError?: string;
+  lastSyncAt?: Date;
+  /** Typical cadence of server updates, used for presentation interpolation. */
+  updateIntervalMs: number;
+}
