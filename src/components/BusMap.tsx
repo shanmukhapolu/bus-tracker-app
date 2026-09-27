@@ -15,6 +15,7 @@ interface Props {
   onSelect: (id: string) => void;
   centerRequest: number;
   onCenter: () => void;
+  intervalMs?: number;
   demo: boolean;
   obscured: boolean;
   connectionError?: string;
