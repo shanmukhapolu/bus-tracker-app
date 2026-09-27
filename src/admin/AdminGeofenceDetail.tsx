@@ -287,14 +287,6 @@ export function AdminGeofenceDetail({
     () => new Map(order.map((entry) => [entry.busId, entry])),
     [order],
   );
-  const entryByBus = useMemo(
-    () =>
-      new Map(
-        entryEvents.map((event) => [event.busId, event]),
-      ),
-    [entryEvents],
-  );
-
   const orderedBuses = useMemo(() => {
     const withEntries = assignedBuses
       .filter((bus) => orderByBus.has(bus.id))
@@ -662,25 +654,30 @@ export function AdminGeofenceDetail({
 
           {orderedBuses.length ? (
             <div className="geofence-order-list">
-              {orderedBuses.map((bus, index) => {
-                const entry = entryByBus.get(bus.id);
+              {orderedBuses.map((bus) => {
+                const orderEntry = orderByBus.get(bus.id);
 
                 return (
                   <div className="geofence-order-row" key={bus.id}>
                     <span className="geofence-order-rank">
-                      {entry ? String(order.findIndex((item) => item.busId === bus.id) + 1) : "—"}
+                      {orderEntry
+                        ? String(
+                            order.findIndex(
+                              (item) => item.busId === bus.id,
+                            ) + 1,
+                          )
+                        : "—"}
                     </span>
                     <div>
                       <strong>Bus {bus.busNumber}</strong>
                       <span>
-                        {entry
-                          ? new Date(entry.createdAt).toLocaleTimeString()
+                        {orderEntry
+                          ? new Date(
+                              orderEntry.firstEntryAt,
+                            ).toLocaleTimeString()
                           : "No entry recorded yet"}
                       </span>
                     </div>
-                    <Badge
-                      value={bus.trackingActive ? "online" : "offline"}
-                    />
                   </div>
                 );
               })}
