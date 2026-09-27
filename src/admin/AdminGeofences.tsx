@@ -1,4 +1,4 @@
-import { MapPinned, Plus } from "lucide-react";
+import { ChevronRight, MapPinned, Plus } from "lucide-react";
 import type { Bus } from "../types/bus";
 import type { Geofence } from "../types/geofence";
 import { Empty, PageHeading } from "./UI";
@@ -29,7 +29,7 @@ export function AdminGeofences({
       </PageHeading>
 
       {geofences.length ? (
-        <div className="geofence-card-grid">
+        <div className="geofence-list-view">
           {geofences.map((geofence) => {
             const assigned = buses.filter(
               (bus) => bus.geofenceId === geofence.id,
@@ -37,23 +37,23 @@ export function AdminGeofences({
 
             return (
               <button
-                className="geofence-card"
+                className="geofence-list-row"
                 type="button"
                 key={geofence.id}
                 onClick={() => onOpenGeofence(geofence.id)}
               >
-                <span className="geofence-card-icon">
-                  <MapPinned size={19} />
+                <span className="geofence-list-row-icon">
+                  <MapPinned size={17} />
                 </span>
-                <span className="geofence-card-copy">
-                  <strong>{geofence.name}</strong>
-                  <span>
-                    {assigned} assigned bus{assigned === 1 ? "" : "es"}
-                  </span>
-                  <small>{geofence.coordinates.length} polygon points</small>
+                <span className="geofence-list-row-name">{geofence.name}</span>
+                <span className="geofence-list-row-meta">
+                  {assigned} assigned bus{assigned === 1 ? "" : "es"}
                 </span>
-                <span className="geofence-card-arrow" aria-hidden="true">
-                  →
+                <span className="geofence-list-row-meta">
+                  {geofence.coordinates.length} points
+                </span>
+                <span className="geofence-list-row-arrow" aria-hidden="true">
+                  <ChevronRight size={17} />
                 </span>
               </button>
             );
