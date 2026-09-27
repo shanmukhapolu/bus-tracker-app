@@ -1,835 +1,1097 @@
-/* Admin portal modernization and mobile app layout */
-.admin-ui {
-  min-height: 100dvh;
-  background: #f3f6f8;
-  color: #142f50;
-}
-
+/* 
+ * Carmel Transportation Admin UI
+ * Visual system informed by GitHub Primer:
+ * restrained borders, compact controls, clear hierarchy, and functional density.
+ */
 .operations-shell {
+  --ui-canvas: #f6f8fa;
+  --ui-surface: #ffffff;
+  --ui-surface-subtle: #f8fafb;
+  --ui-surface-hover: #f3f6f8;
+  --ui-border: #dfe5ea;
+  --ui-border-muted: #ebeff2;
+  --ui-text: #172b3d;
+  --ui-text-secondary: #526779;
+  --ui-text-muted: #7b8b98;
+  --ui-text-faint: #9aa7b1;
+  --ui-accent: #1769b0;
+  --ui-accent-soft: #eaf3fb;
+  --ui-success: #20744f;
+  --ui-success-soft: #edf8f2;
+  --ui-danger: #a34d42;
+  --ui-danger-soft: #fff5f3;
+  --ui-warning: #94622e;
+  --ui-warning-soft: #fff8ed;
+  --ui-radius: 8px;
+  --ui-radius-sm: 6px;
+  --ui-control: 38px;
+
   min-height: 100dvh;
   display: flex;
-  background: #f3f6f8;
+  background: var(--ui-canvas);
+  color: var(--ui-text);
+}
+
+.operations-shell *,
+.operations-shell *::before,
+.operations-shell *::after {
+  box-sizing: border-box;
+}
+
+.operations-shell button,
+.operations-shell input,
+.operations-shell select,
+.operations-shell textarea {
+  font: inherit;
+}
+
+.operations-shell button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.operations-shell button:focus-visible,
+.operations-shell input:focus-visible,
+.operations-shell select:focus-visible,
+.operations-shell textarea:focus-visible {
+  outline: 2px solid rgba(23, 105, 176, .45);
+  outline-offset: 2px;
+}
+
+.operations-shell .skip-link {
+  position: fixed;
+  left: 12px;
+  top: 12px;
+  z-index: 1000;
+  transform: translateY(-150%);
+  padding: 8px 10px;
+  background: var(--ui-text);
+  color: #fff;
+  border-radius: var(--ui-radius-sm);
+  font-size: 11px;
+}
+
+.operations-shell .skip-link:focus {
+  transform: translateY(0);
 }
 
 .operations-shell .sidebar {
-  width: 244px;
-  min-width: 244px;
-  padding: 18px 12px 14px;
-  background: rgba(255,255,255,.96);
-  border-right: 1px solid #e3e9ee;
-  box-shadow: 8px 0 30px rgba(20,47,80,.04);
+  width: 228px;
+  min-width: 228px;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  padding: 14px 10px;
   display: flex;
   flex-direction: column;
+  background: rgba(255,255,255,.98);
+  border-right: 1px solid var(--ui-border);
+  box-shadow: none;
   z-index: 20;
 }
 
-.admin-brand-logo {
-  min-height: 54px;
+.operations-shell .admin-brand-logo {
+  min-height: 57px;
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 0 9px 18px;
-  border-bottom: 1px solid #edf1f4;
+  gap: 10px;
+  padding: 1px 8px 14px;
+  border-bottom: 1px solid var(--ui-border-muted);
 }
-.admin-school-logo { width: 39px; height: 39px; object-fit: contain; }
-.admin-brand-logo strong { display:block; font: 800 14px "Manrope", sans-serif; letter-spacing:-.2px; }
-.admin-brand-logo span { display:block; margin-top:3px; color:#82909d; font-size:10px; }
 
-.admin-nav {
-  display: grid;
-  gap: 4px;
-  margin-top: 17px;
+.operations-shell .admin-school-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
 }
-.admin-nav-button {
+
+.operations-shell .admin-brand-logo strong {
+  display: block;
+  color: var(--ui-text);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: -.1px;
+}
+
+.operations-shell .admin-brand-logo span {
+  display: block;
+  margin-top: 2px;
+  color: var(--ui-text-faint);
+  font-size: 9px;
+}
+
+.operations-shell .admin-nav {
+  display: grid;
+  gap: 2px;
+  margin-top: 12px;
+}
+
+.operations-shell .admin-nav-button,
+.operations-shell .admin-nav-button:hover,
+.operations-shell .admin-nav-button:focus,
+.operations-shell .admin-nav-button:focus-visible {
   width: 100%;
-  min-height: 46px;
+  min-height: 42px;
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 0 12px;
-  border-radius: 11px;
-  color: #68798a;
+  gap: 10px;
+  padding: 0 10px;
+  border: 0 !important;
+  outline: none;
+  border-radius: 7px;
+  background: transparent;
+  box-shadow: none !important;
+  transform: none !important;
+  color: #627587;
   text-align: left;
-  font-size: 12px;
-  font-weight: 650;
+  font-size: 11px;
+  font-weight: 700;
 }
-.admin-nav-button:hover { background:#f4f7f9; color:#142f50; }
-.admin-nav-button.active {
-  background: #eaf2fa;
-  color: #123b67;
-  box-shadow: inset 3px 0 0 #2464b8;
+
+.operations-shell .admin-nav-button:hover {
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
 }
-.nav-count {
+
+.operations-shell .admin-nav-button.active,
+.operations-shell .admin-nav-button.active:hover,
+.operations-shell .admin-nav-button.active:focus,
+.operations-shell .admin-nav-button.active:focus-visible {
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent);
+}
+
+.operations-shell .admin-nav-button.active::before,
+.operations-shell .admin-nav-button.active::after {
+  display: none !important;
+  content: none;
+}
+
+.operations-shell .admin-nav-button svg {
+  color: #8796a2;
+}
+
+.operations-shell .admin-nav-button.active svg {
+  color: var(--ui-accent);
+}
+
+.operations-shell .nav-count {
+  min-width: 22px;
   margin-left: auto;
-  min-width: 24px;
-  padding: 4px 7px;
-  border-radius: 999px;
-  background: #fff;
-  color: #748494;
-  font-size: 10px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  background: #eef2f5;
+  color: #7d8b96;
+  font-size: 9px;
+  line-height: 1;
   text-align: center;
 }
 
 .operations-shell .sidebar-bottom {
   margin-top: auto;
-  padding-top: 13px;
-  border-top: 1px solid #edf1f4;
+  padding-top: 10px;
+  border-top: 1px solid var(--ui-border-muted);
 }
+
 .operations-shell .user {
-  display:flex;
-  align-items:center;
-  gap:9px;
-  padding: 7px 8px 11px;
-}
-.operations-shell .user > div { min-width:0; }
-.operations-shell .user strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; }
-.operations-shell .user span:not(.avatar) { display:block; margin-top:2px; color:#8995a0; font-size:9px; }
-.operations-shell .avatar {
-  width:32px; height:32px; display:grid; place-items:center; flex:0 0 32px;
-  border-radius:10px; background:#123b67; color:#fff; font-size:10px; font-weight:800;
-}
-.operations-shell .signout {
-  width:100%; min-height:40px; display:flex; align-items:center; gap:9px; padding:0 9px;
-  border-radius:9px; color:#7b8996; font-size:11px; font-weight:650;
-}
-.operations-shell .signout:hover { background:#fff4f2; color:#9a4e43; }
-
-.operations-shell .main-shell { flex:1; min-width:0; min-height:100dvh; overflow:auto; }
-.operations-shell .page { width:min(1440px,100%); margin:0 auto; padding:30px 34px 42px; min-height:100dvh; outline:none; }
-
-.page-heading {
-  display:flex; align-items:flex-end; justify-content:space-between; gap:22px;
-  margin-bottom:22px;
-}
-.page-heading h1 { margin:4px 0 5px; font-size:28px; letter-spacing:-1px; }
-.page-heading p { margin:0; max-width:700px; color:#738392; font-size:12px; line-height:1.6; }
-.page-heading .eyebrow { color:#71879b; font-size:9px; letter-spacing:.14em; font-weight:800; }
-
-.panel {
-  border:1px solid #e3e9ee;
-  border-radius:16px;
-  background:#fff;
-  box-shadow:0 12px 35px rgba(20,47,80,.055);
-}
-.panel-heading { min-height:58px; padding:17px 19px; }
-.panel-heading h2 { font-size:15px; letter-spacing:-.25px; }
-.panel-heading span { color:#87939e; font-size:10px; }
-
-.overview-metrics {
-  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:18px;
-}
-.summary-stat {
-  padding:15px 17px; border:1px solid #e3e9ee; border-radius:13px; background:#fff;
-  box-shadow:0 8px 24px rgba(20,47,80,.035);
-}
-.summary-stat span { display:flex; align-items:center; gap:7px; color:#7a8997; font-size:10px; font-weight:650; }
-.summary-stat strong { display:block; margin-top:7px; font:800 23px "Manrope",sans-serif; letter-spacing:-.7px; }
-
-.buses-panel { overflow:hidden; }
-.buses-search { width:min(300px,45vw); }
-.buses-search input { font-size:12px; }
-.buses-table tbody tr { cursor:pointer; transition:background .15s ease; }
-.buses-table tbody tr:hover { background:#f8fbfd; }
-.buses-table td, .buses-table th { vertical-align:middle; }
-.buses-table .bus-link { font-weight:750; }
-.bus-geofence-select {
-  width:min(190px,100%); min-height:36px; padding:0 9px;
-  border:1px solid #dce4e9; border-radius:8px; background:#fbfcfd; color:#334f67; font-size:11px;
-}
-.bus-geofence-select:focus { border-color:#6f98c3; outline:3px solid #2464b812; }
-.badge { white-space:nowrap; }
-
-.geofence-workspace {
-  display:grid; grid-template-columns:minmax(0,1.7fr) minmax(300px,.8fr); gap:18px; align-items:start;
-}
-.geofence-map-panel { overflow:hidden; min-height:620px; position:relative; }
-.geofence-map-toolbar {
-  min-height:68px; display:flex; align-items:center; justify-content:space-between; gap:12px;
-  padding:13px 17px; border-bottom:1px solid #edf1f4; background:#fff;
-}
-.geofence-map-toolbar strong { display:block; font-size:12px; }
-.geofence-map-toolbar span { display:block; margin-top:3px; color:#8a97a2; font-size:10px; }
-.geofence-map { height:550px; min-height:420px; background:#e9eff2; }
-.geofence-draw-hint {
-  position:absolute; left:16px; bottom:16px; z-index:3;
-  display:flex; align-items:center; gap:7px; padding:9px 11px; border:1px solid #e1e8ed;
-  border-radius:10px; background:#fffffff2; box-shadow:0 8px 25px rgba(20,47,80,.1);
-  color:#526a7f; font-size:10px; font-weight:700;
-}
-.geofence-side { display:grid; gap:18px; }
-.geofence-editor { padding-bottom:17px; }
-.admin-field-label {
-  display:grid; gap:7px; padding:0 18px 14px; color:#617487; font-size:10px; font-weight:750;
-}
-.admin-field-label input {
-  width:100%; height:42px; padding:0 11px; border:1px solid #dce4e9; border-radius:9px;
-  background:#fbfcfd; color:#142f50; font-size:12px; outline:none;
-}
-.admin-field-label input:focus { border-color:#6f98c3; box-shadow:0 0 0 3px #2464b812; }
-.geofence-points { max-height:260px; overflow:auto; margin:0 18px 14px; display:grid; gap:6px; }
-.geofence-points > div {
-  display:flex; justify-content:space-between; gap:10px; padding:8px 9px;
-  border:1px solid #edf1f4; border-radius:8px; background:#fafcfd;
-}
-.geofence-points span { color:#788895; font-size:9px; font-weight:700; }
-.geofence-points code { color:#46647c; font-size:9px; }
-.geofence-editor-actions { display:flex; gap:8px; padding:0 18px; }
-.geofence-editor-actions button { flex:1; }
-.geofence-list { display:grid; gap:8px; padding:0 14px 14px; }
-.geofence-list-item {
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-  padding:12px; border:1px solid #e5ebef; border-radius:11px; background:#fafcfd;
-}
-.geofence-list-copy { min-width:0; }
-.geofence-list-copy strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
-.geofence-list-copy span { display:block; margin-top:4px; color:#8a96a1; font-size:9px; }
-.geofence-list-actions { display:flex; gap:4px; }
-.icon-action {
-  width:33px; height:33px; display:grid; place-items:center; border:1px solid #e1e7eb; border-radius:8px;
-  color:#63788a; background:#fff;
-}
-.icon-action:hover { background:#f1f5f8; }
-.icon-action.danger:hover { color:#9a4e43; background:#fff6f4; border-color:#eedbd7; }
-
-.geofence-toast-stack {
-  position:fixed; right:20px; bottom:20px; z-index:100;
-  display:grid; gap:10px; width:min(380px,calc(100vw - 32px)); pointer-events:none;
-}
-.geofence-toast-shell { pointer-events:auto; animation:geofence-toast-in .2s ease-out; }
-.geofence-toast {
-  display:grid; grid-template-columns:auto 1fr auto; align-items:start; gap:10px;
-  padding:13px; border:1px solid #dfe7ec; border-left:4px solid #2464b8; border-radius:13px;
-  background:#fff; box-shadow:0 16px 45px rgba(20,47,80,.16);
-}
-.geofence-toast-icon {
-  width:31px; height:31px; display:grid; place-items:center; border-radius:9px; background:#eaf2fa; color:#2464b8;
-  font-weight:900;
-}
-.geofence-toast-icon span { font-size:14px; }
-.geofence-toast-copy strong { display:block; font-size:11px; }
-.geofence-toast-copy p { margin:3px 0 4px; color:#566e82; font-size:10px; line-height:1.4; }
-.geofence-toast-copy span { color:#95a0a9; font-size:9px; }
-.geofence-toast > button { width:25px; height:25px; border-radius:7px; color:#8a98a4; font-size:17px; line-height:1; }
-.geofence-toast > button:hover { background:#f1f4f6; }
-@keyframes geofence-toast-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
-
-.notice, .error-box {
-  margin:0 0 16px; border-radius:10px; padding:10px 12px; font-size:11px;
-}
-.notice { border:1px solid #dcecdf; background:#f1faf4; color:#2d7049; }
-.error-box { border:1px solid #eedbd7; background:#fff7f5; color:#914b40; }
-
-@media (max-width: 900px) {
-  .operations-shell .sidebar { width:210px; min-width:210px; }
-  .operations-shell .page { padding:24px 20px 36px; }
-  .geofence-workspace { grid-template-columns:1fr; }
-  .geofence-map-panel { min-height:520px; }
-  .geofence-map { height:470px; }
-  .geofence-side { grid-template-columns:1fr 1fr; }
-}
-@media (max-width: 760px) {
-  .operations-shell { display:block; }
-  .operations-shell .sidebar {
-    position:fixed; left:0; right:0; bottom:0; top:auto; width:100%; min-width:0; height:72px;
-    padding:7px 7px calc(7px + env(safe-area-inset-bottom)); border-right:0; border-top:1px solid #dfe6eb;
-    box-shadow:0 -8px 28px rgba(20,47,80,.09);
-  }
-  .admin-brand-logo, .operations-shell .sidebar-bottom { display:none; }
-  .admin-nav {
-    height:100%; margin:0; display:flex; align-items:stretch; gap:3px; overflow-x:auto; scrollbar-width:none;
-  }
-  .admin-nav::-webkit-scrollbar { display:none; }
-  .admin-nav-button {
-    flex:1 0 78px; min-height:58px; height:58px; padding:5px 7px; justify-content:center; flex-direction:column;
-    gap:4px; border-radius:9px; font-size:9px; white-space:nowrap;
-  }
-  .admin-nav-button.active { box-shadow:inset 0 3px 0 #2464b8; }
-  .nav-count { display:none; }
-  .operations-shell .main-shell { min-height:100dvh; padding-bottom:72px; }
-  .operations-shell .page { padding:18px 13px 28px; min-height:calc(100dvh - 72px); }
-  .page-heading { align-items:flex-start; flex-direction:column; gap:12px; margin-bottom:16px; }
-  .page-heading h1 { font-size:23px; }
-  .page-heading p { font-size:11px; }
-  .overview-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-bottom:12px; }
-  .summary-stat { padding:12px 13px; border-radius:11px; }
-  .summary-stat strong { font-size:20px; }
-  .panel { border-radius:13px; }
-  .panel-heading { padding:14px; }
-  .buses-search { width:100%; }
-  .buses-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  .buses-table { min-width:820px; }
-  .geofence-side { grid-template-columns:1fr; }
-  .geofence-map-panel { min-height:0; }
-  .geofence-map { height:58vh; min-height:390px; }
-  .geofence-map-toolbar { padding:11px 13px; }
-  .geofence-editor-actions { flex-direction:column; }
-  .geofence-toast-stack { right:10px; bottom:82px; width:calc(100vw - 20px); }
-}
-@media (max-width: 430px) {
-  .overview-metrics { grid-template-columns:1fr 1fr; }
-  .summary-stat span { font-size:9px; }
-  .geofence-map { min-height:360px; }
-  .geofence-draw-hint { left:9px; right:9px; bottom:9px; }
-}
-
-
-/* Geofence manager and compact mobile admin app shell. */
-.operations-shell .geofences-page {
-  min-width: 0;
-}
-.operations-shell .geofence-overview {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0 0 18px;
-}
-.operations-shell .geofence-overview-card {
-  min-width: 0;
-  padding: 14px 16px;
-  border: 1px solid #e0e6ea;
-  border-radius: 13px;
-  background: #fff;
-  box-shadow: 0 3px 18px #142f5008;
-}
-.operations-shell .geofence-overview-card span {
-  display: block;
-  color: #74869a;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-}
-.operations-shell .geofence-overview-card strong {
-  display: block;
-  margin-top: 7px;
-  color: #142f50;
-  font: 800 20px "Manrope", sans-serif;
-  letter-spacing: -.4px;
-}
-.operations-shell .geofence-map-panel {
-  min-height: 0;
-  overflow: hidden;
-}
-.operations-shell .geofence-map {
-  position: relative;
-  min-height: 620px;
-  background: #e9eff2;
-}
-.operations-shell .geofence-map.is-drawing .map-host {
-  cursor: crosshair;
-}
-.operations-shell .geofence-map .map-host {
-  position: absolute;
-  inset: 0;
-}
-.operations-shell .geofence-map-toolbar {
-  min-height: 70px;
-  padding: 14px 16px;
-  background: rgba(255,255,255,.96);
-}
-.operations-shell .geofence-map-toolbar-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 6px 7px 10px;
 }
-.operations-shell .geofence-map-toolbar .secondary,
-.operations-shell .geofence-map-toolbar .primary {
-  min-height: 36px;
-  padding: 0 11px;
-  font-size: 11px;
-}
-.operations-shell .geofence-draw-hint {
-  left: 14px;
-  right: auto;
-  bottom: 14px;
-  max-width: calc(100% - 28px);
-  padding: 10px 12px;
-  border: 1px solid #dce4ea;
-  border-radius: 11px;
-  background: rgba(255,255,255,.96);
-  color: #3e5a72;
-  box-shadow: 0 10px 30px #142f5015;
-}
-.operations-shell .geofence-side {
-  gap: 14px;
-}
-.operations-shell .geofence-editor {
-  padding-bottom: 16px;
-}
-.operations-shell .geofence-editor .panel-heading {
-  padding-bottom: 14px;
-}
-.operations-shell .geofence-editor .panel-heading > svg {
-  color: #2464b8;
-}
-.operations-shell .admin-field-label {
-  padding: 0 16px 14px;
-}
-.operations-shell .admin-field-label input {
-  min-height: 44px;
-}
-.operations-shell .geofence-editor-actions {
-  padding: 0 16px;
-  align-items: stretch;
-}
-.operations-shell .geofence-editor-actions button {
-  min-width: 0;
-  flex: 1;
-}
-.operations-shell .geofence-editor-note {
-  margin: 12px 16px 0;
-  color: #7a8998;
-  font-size: 10px;
-  line-height: 1.5;
-}
-.operations-shell .geofence-list {
-  gap: 7px;
-  padding: 10px 12px 12px;
-}
-.operations-shell .geofence-list-item {
-  padding: 9px;
-  border-radius: 12px;
-  transition: background .15s ease, border-color .15s ease, transform .15s ease;
-}
-.operations-shell .geofence-list-item:hover {
-  transform: translateY(-1px);
-}
-.operations-shell .geofence-list-item.selected {
-  border-color: #cfe0f2;
-  background: #f4f8fc;
-}
-.operations-shell .geofence-list-main {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-  padding: 2px;
-  border: 0;
-  background: transparent;
-  text-align: left;
-}
-.operations-shell .geofence-list-icon {
-  width: 32px;
-  height: 32px;
-  flex: 0 0 32px;
+
+.operations-shell .avatar {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
   display: grid;
   place-items: center;
-  border-radius: 9px;
-  background: #eaf2fb;
-  color: #2464b8;
+  border-radius: 7px;
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent);
+  font-size: 9px;
+  font-weight: 800;
 }
-.operations-shell .geofence-list-copy {
+
+.operations-shell .user > div {
   min-width: 0;
 }
-.operations-shell .geofence-list-copy strong {
+
+.operations-shell .user strong {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--ui-text);
+  font-size: 10px;
+  font-weight: 750;
 }
-.operations-shell .icon-action {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
+
+.operations-shell .user span:not(.avatar) {
+  display: block;
+  margin-top: 2px;
+  color: var(--ui-text-faint);
+  font-size: 8px;
 }
-.operations-shell .buses-table-wrap {
+
+.operations-shell .signout {
+  width: 100%;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #7a8995;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.operations-shell .signout:hover {
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
+}
+
+.operations-shell .main-shell {
+  flex: 1;
+  min-width: 0;
+  min-height: 100dvh;
+  background: var(--ui-canvas);
+  overflow: auto;
+}
+
+.operations-shell .page {
+  width: min(1400px, 100%);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 28px 30px 40px;
+  outline: none;
+}
+
+.operations-shell .page-heading {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 0 0 20px;
+}
+
+.operations-shell .page-heading > div:first-child {
+  min-width: 0;
+}
+
+.operations-shell .page-heading .eyebrow {
+  margin-bottom: 6px;
+  color: #8b99a5;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: .16em;
+}
+
+.operations-shell .page-heading h1 {
+  margin: 0 0 4px;
+  color: var(--ui-text);
+  font-size: 25px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -.7px;
+}
+
+.operations-shell .page-heading p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--ui-text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.operations-shell .panel {
+  min-width: 0;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+  box-shadow: none;
+}
+
+.operations-shell .panel-heading {
+  min-height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--ui-border-muted);
+}
+
+.operations-shell .panel-heading > div {
+  min-width: 0;
+}
+
+.operations-shell .panel-heading h2 {
+  margin: 0;
+  color: var(--ui-text);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -.1px;
+}
+
+.operations-shell .panel-heading > span,
+.operations-shell .panel-heading div > span {
+  display: block;
+  margin-top: 3px;
+  color: var(--ui-text-muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.operations-shell .primary,
+.operations-shell .secondary {
+  min-height: var(--ui-control);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--ui-radius-sm);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: none;
+  transition: background .12s ease, color .12s ease;
+}
+
+.operations-shell .primary {
+  background: var(--ui-accent);
+  color: #fff;
+}
+
+.operations-shell .primary:hover {
+  background: #155d9d;
+}
+
+.operations-shell .secondary {
+  background: #eef2f5;
+  color: #3f596c;
+}
+
+.operations-shell .secondary:hover {
+  background: #e4eaee;
+  color: var(--ui-text);
+}
+
+.operations-shell .primary:disabled,
+.operations-shell .secondary:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.operations-shell .text-button,
+.operations-shell .back-link,
+.operations-shell .panel-footer-link,
+.operations-shell .sort-button {
+  border: 0;
+  background: transparent;
+  color: var(--ui-accent);
+  font-weight: 750;
+}
+
+.operations-shell .text-button:hover,
+.operations-shell .back-link:hover,
+.operations-shell .panel-footer-link:hover,
+.operations-shell .sort-button:hover {
+  color: #155d9d;
+}
+
+.operations-shell .overview-metrics,
+.operations-shell .metrics {
+  display: grid;
+  gap: 9px;
+  margin: 0 0 16px;
+}
+
+.operations-shell .overview-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.operations-shell .metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.operations-shell .summary-stat,
+.operations-shell .metric {
+  min-width: 0;
+  min-height: 88px;
+  padding: 13px 15px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+  box-shadow: none;
+}
+
+.operations-shell .summary-stat span,
+.operations-shell .metric span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ui-text-muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.operations-shell .summary-stat strong,
+.operations-shell .metric strong {
+  display: block;
+  margin-top: 9px;
+  color: var(--ui-text);
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.5px;
+}
+
+.operations-shell .status-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  display: inline-block;
+  border-radius: 50%;
+  background: #9aa6af;
+}
+
+.operations-shell .status-dot.green {
+  background: #26915f;
+}
+
+.operations-shell .status-dot.muted {
+  background: #aab4bc;
+}
+
+.operations-shell .status-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ui-text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.operations-shell .notice,
+.operations-shell .error-box {
+  margin: 0 0 14px;
+  padding: 9px 11px;
+  border: 0;
+  border-radius: var(--ui-radius-sm);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.operations-shell .notice {
+  background: var(--ui-success-soft);
+  color: var(--ui-success);
+}
+
+.operations-shell .error-box {
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
+}
+
+.operations-shell .empty {
+  padding: 28px 18px;
+  color: var(--ui-text-muted);
+  font-size: 10px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.operations-shell .fleet-panel,
+.operations-shell .buses-panel {
+  overflow: hidden;
+}
+
+.operations-shell .fleet-toolbar {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  background: var(--ui-surface-subtle);
+  border-bottom: 1px solid var(--ui-border-muted);
+}
+
+.operations-shell .fleet-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 0;
+  border-radius: 6px;
+  background: #edf1f3;
+}
+
+.operations-shell .fleet-tabs button {
+  min-height: 28px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #71818e;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.operations-shell .fleet-tabs button[aria-pressed="true"] {
+  background: #fff;
+  color: var(--ui-text);
+  box-shadow: 0 1px 2px rgba(23,43,61,.06);
+}
+
+.operations-shell .tab-count {
+  margin-left: 5px;
+  color: #99a4ad;
+}
+
+.operations-shell .search {
+  width: min(300px, 100%);
+  min-height: var(--ui-control);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--ui-radius-sm);
+  background: #eef2f4;
+  color: #7d8c97;
+}
+
+.operations-shell .search input {
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ui-text);
+  font-size: 10px;
+  box-shadow: none;
+}
+
+.operations-shell .search input::placeholder {
+  color: #9ca8b0;
+}
+
+.operations-shell .search:focus-within {
+  background: #eaf1f7;
+  box-shadow: 0 0 0 2px rgba(23,105,176,.10);
+}
+
+.operations-shell .table-wrap {
+  min-width: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
-.operations-shell .buses-table {
-  min-width: 900px;
+
+.operations-shell .fleet-table {
+  width: 100%;
+  border-collapse: collapse;
 }
-.operations-shell .bus-geofence-select {
-  width: min(190px, 100%);
-  min-width: 150px;
-  min-height: 36px;
-  padding: 0 9px;
-  border: 1px solid #dce4ea;
-  border-radius: 9px;
-  background: #fbfcfd;
-  color: #294761;
-  font-size: 11px;
+
+.operations-shell .fleet-table th {
+  height: 38px;
+  padding: 0 12px;
+  background: #fafbfc;
+  border-bottom: 1px solid var(--ui-border-muted);
+  color: #8b98a3;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
-.operations-shell .bus-geofence-select:disabled {
-  opacity: .62;
+
+.operations-shell .fleet-table td {
+  height: 49px;
+  padding: 0 12px;
+  border-bottom: 1px solid #f0f3f5;
+  color: var(--ui-text-secondary);
+  font-size: 10px;
+  vertical-align: middle;
+  white-space: nowrap;
 }
-.operations-shell .geofence-toast-stack {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 200;
-  display: grid;
-  gap: 9px;
-  width: min(380px, calc(100vw - 40px));
-  pointer-events: none;
+
+.operations-shell .fleet-table tbody tr:last-child td {
+  border-bottom: 0;
 }
-.operations-shell .geofence-toast-shell {
-  pointer-events: auto;
-  animation: geofence-toast-in .18s ease-out;
+
+.operations-shell .fleet-table tbody tr:hover {
+  background: #fafcfd;
 }
-.operations-shell .geofence-toast {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 11px;
-  align-items: start;
-  padding: 13px;
-  border: 1px solid #dce5eb;
-  border-left: 4px solid #2464b8;
-  border-radius: 14px;
-  background: rgba(255,255,255,.98);
-  box-shadow: 0 18px 46px #142f5024;
-  backdrop-filter: blur(12px);
-}
-.operations-shell .geofence-toast-icon {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  background: #eaf2fb;
-  color: #2464b8;
-}
-.operations-shell .geofence-toast-copy {
-  min-width: 0;
-}
-.operations-shell .geofence-toast-copy strong {
-  display: block;
-  color: #142f50;
-  font-size: 11px;
+
+.operations-shell .bus-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ui-text);
+  font-size: 10px;
   font-weight: 800;
 }
-.operations-shell .geofence-toast-copy p {
-  margin: 3px 0 4px;
-  color: #526c83;
-  font-size: 11px;
-  line-height: 1.45;
+
+.operations-shell .bus-link svg {
+  color: var(--ui-accent);
 }
-.operations-shell .geofence-toast-copy p b {
-  color: #294761;
+
+.operations-shell .sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  color: #83929d;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
 }
-.operations-shell .geofence-toast-copy span {
-  color: #8795a2;
+
+.operations-shell .admin-table-actions,
+.operations-shell .driver-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.operations-shell .admin-table-action {
+  min-height: 31px;
+  padding: 0 9px;
   font-size: 9px;
 }
-.operations-shell .geofence-toast > button {
-  width: 26px;
-  height: 26px;
+
+.operations-shell .admin-delete:hover {
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
+}
+
+.operations-shell .table-footer {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 12px;
+  border-top: 1px solid var(--ui-border-muted);
+  color: var(--ui-text-faint);
+  font-size: 9px;
+}
+
+.operations-shell .pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.operations-shell .pagination button {
+  width: 27px;
+  height: 27px;
   display: grid;
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: 7px;
+  border-radius: 5px;
   background: transparent;
-  color: #8593a0;
-}
-.operations-shell .geofence-toast > button:hover {
-  background: #f1f4f6;
-  color: #294761;
-}
-@keyframes geofence-toast-in {
-  from { opacity: 0; transform: translateY(8px) scale(.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-/* Phone layout: bottom navigation + full-width stacked app surfaces. */
-@media (max-width: 760px) {
-  .operations-shell .sidebar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    top: auto;
-    bottom: 0;
-    width: 100%;
-    min-width: 0;
-    height: calc(72px + env(safe-area-inset-bottom));
-    padding: 6px 7px env(safe-area-inset-bottom);
-    z-index: 100;
-    border-top: 1px solid #dce4ea;
-    border-right: 0;
-    background: rgba(255,255,255,.97);
-    box-shadow: 0 -10px 34px #142f5014;
-    backdrop-filter: blur(16px);
-  }
-  .operations-shell .admin-brand-logo,
-  .operations-shell .sidebar-bottom {
-    display: none;
-  }
-  .operations-shell .sidebar nav {
-    height: 100%;
-    display: flex;
-    align-items: stretch;
-    gap: 2px;
-    margin: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .operations-shell .sidebar nav::-webkit-scrollbar {
-    display: none;
-  }
-  .operations-shell .sidebar nav .admin-nav-button {
-    flex: 1 0 68px;
-    min-width: 68px;
-    min-height: 58px;
-    padding: 6px 5px;
-    flex-direction: column;
-    justify-content: center;
-    gap: 4px;
-    border: 0;
-    border-radius: 11px;
-    background: transparent;
-    color: #718196;
-    text-align: center;
-    font-size: 9px;
-    font-weight: 700;
-  }
-  .operations-shell .sidebar nav .admin-nav-button svg {
-    color: #8293a5;
-  }
-  .operations-shell .sidebar nav .admin-nav-button.active {
-    background: #edf4fc;
-    border-color: transparent;
-    box-shadow: none;
-    color: #2464b8;
-  }
-  .operations-shell .sidebar nav .admin-nav-button.active svg {
-    color: #2464b8;
-  }
-  .operations-shell .sidebar nav .admin-nav-button .nav-count {
-    display: none;
-  }
-  .operations-shell .main-shell {
-    margin-left: 0;
-    padding-bottom: calc(78px + env(safe-area-inset-bottom));
-  }
-  .operations-shell .page {
-    min-height: calc(100dvh - 78px);
-    padding: 18px 12px 24px;
-  }
-  .operations-shell .page-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 17px;
-  }
-  .operations-shell .page-heading > div:first-child {
-    width: 100%;
-  }
-  .operations-shell .page-heading .primary,
-  .operations-shell .page-heading .secondary {
-    width: 100%;
-  }
-  .operations-shell .page-heading h1 {
-    font-size: 24px;
-  }
-  .operations-shell .page-heading p {
-    font-size: 11px;
-    line-height: 1.55;
-  }
-  .operations-shell .geofence-overview {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 7px;
-    margin-bottom: 12px;
-  }
-  .operations-shell .geofence-overview-card {
-    padding: 11px 10px;
-    border-radius: 11px;
-  }
-  .operations-shell .geofence-overview-card span {
-    font-size: 8px;
-  }
-  .operations-shell .geofence-overview-card strong {
-    margin-top: 5px;
-    font-size: 16px;
-  }
-  .operations-shell .geofence-workspace {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  .operations-shell .geofence-map-panel {
-    order: 0;
-  }
-  .operations-shell .geofence-side {
-    order: 1;
-  }
-  .operations-shell .geofence-map {
-    min-height: 54vh;
-    height: 54vh;
-  }
-  .operations-shell .geofence-map-toolbar {
-    min-height: 62px;
-    padding: 11px 12px;
-  }
-  .operations-shell .geofence-map-toolbar strong {
-    font-size: 11px;
-  }
-  .operations-shell .geofence-map-toolbar span {
-    max-width: 58vw;
-    font-size: 9px;
-  }
-  .operations-shell .geofence-map-toolbar-actions .secondary {
-    width: auto;
-  }
-  .operations-shell .geofence-draw-hint {
-    right: 10px;
-    bottom: 10px;
-    left: 10px;
-    justify-content: center;
-    text-align: center;
-    padding: 9px 10px;
-    font-size: 9px;
-  }
-  .operations-shell .geofence-editor-actions {
-    flex-direction: column;
-  }
-  .operations-shell .geofence-editor-actions button {
-    width: 100%;
-  }
-  .operations-shell .geofence-toast-stack {
-    left: 10px;
-    right: 10px;
-    bottom: calc(82px + env(safe-area-inset-bottom));
-    width: auto;
-  }
-  .operations-shell .geofence-toast {
-    padding: 11px;
-    border-radius: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .operations-shell .geofence-overview {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-  .operations-shell .geofence-overview-card span {
-    min-height: 20px;
-  }
-  .operations-shell .geofence-map {
-    min-height: 50vh;
-    height: 50vh;
-  }
-  .operations-shell .geofence-list {
-    padding-left: 9px;
-    padding-right: 9px;
-  }
-  .operations-shell .geofence-toast {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 8px;
-  }
-}
-
-
-/* Current admin navigation and geofence detail layout. */
-.operations-shell .admin-nav-button.active {
-  box-shadow: none;
-  border-left: 0;
-}
-
-.operations-shell .admin-nav-button.active::before {
-  display: none;
-}
-
-.operations-shell .geofence-card-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.operations-shell .geofence-card {
-  min-height: 128px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 14px;
-  padding: 18px;
-  border: 1px solid #e2e9ee;
-  border-radius: 15px;
-  background: #fff;
-  color: #142f50;
-  text-align: left;
-  box-shadow: 0 10px 30px rgba(20,47,80,.045);
-  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
-}
-
-.operations-shell .geofence-card:hover {
-  transform: translateY(-2px);
-  border-color: #c9dceb;
-  box-shadow: 0 16px 35px rgba(20,47,80,.08);
-}
-
-.operations-shell .geofence-card-icon {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  background: #edf4fb;
-  color: #2464b8;
-}
-
-.operations-shell .geofence-card-copy {
-  min-width: 0;
-}
-
-.operations-shell .geofence-card-copy strong {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 14px;
-}
-
-.operations-shell .geofence-card-copy span {
-  display: block;
-  margin-top: 5px;
-  color: #536d83;
-  font-size: 11px;
-  font-weight: 650;
-}
-
-.operations-shell .geofence-card-copy small {
-  display: block;
-  margin-top: 5px;
-  color: #8996a2;
+  color: #7c8c99;
   font-size: 9px;
 }
 
-.operations-shell .geofence-card-arrow {
-  color: #8393a2;
-  font-size: 20px;
+.operations-shell .pagination button:hover:not(:disabled),
+.operations-shell .pagination button[aria-current="page"] {
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent);
 }
 
-.operations-shell .geofence-empty-panel {
-  padding: 20px;
+.operations-shell .badge {
+  min-height: 21px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 999px;
+  background: #eef2f4;
+  color: #758592;
+  font-size: 8px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.operations-shell .badge.online,
+.operations-shell .badge.enabled {
+  background: var(--ui-success-soft);
+  color: var(--ui-success);
+}
+
+.operations-shell .badge.offline,
+.operations-shell .badge.pending {
+  background: #f0f3f5;
+  color: #87949e;
+}
+
+.operations-shell .badge.late {
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+}
+
+.operations-shell .filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.operations-shell .filters select,
+.operations-shell .bus-geofence-select,
+.operations-shell .buses-add-form select,
+.operations-shell .driver-table select {
+  min-height: var(--ui-control);
+  padding: 0 10px;
+  border: 1px solid #dce4e9;
+  border-radius: var(--ui-radius-sm);
+  background: #fff;
+  color: var(--ui-text-secondary);
+  font-size: 10px;
+  outline: 0;
+}
+
+.operations-shell .filters select:focus,
+.operations-shell .bus-geofence-select:focus,
+.operations-shell .driver-table select:focus {
+  border-color: #9dbbd4;
+  box-shadow: 0 0 0 2px rgba(23,105,176,.08);
+}
+
+.operations-shell .map-layout,
+.operations-shell .overview-grid,
+.operations-shell .admin-bus-detail-grid,
+.operations-shell .bus-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, .85fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.operations-shell .map-layout > .panel,
+.operations-shell .overview-grid > .panel {
+  min-width: 0;
+}
+
+.operations-shell .map-host,
+.operations-shell .fleet-map {
+  position: absolute;
+  inset: 0;
+}
+
+.operations-shell .map-layout > section,
+.operations-shell .coverage-panel {
+  min-height: 620px;
+  overflow: hidden;
+}
+
+.operations-shell .map-layout .panel:not(.map-detail),
+.operations-shell .coverage-panel {
+  position: relative;
+}
+
+.operations-shell .map-detail {
+  min-height: 620px;
+  overflow: hidden;
+}
+
+.operations-shell .map-detail-body {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.operations-shell .map-info-summary {
+  display: grid;
+  gap: 6px;
+}
+
+.operations-shell .map-info-summary > div,
+.operations-shell .map-detail-section {
+  padding: 10px;
+  border: 1px solid var(--ui-border-muted);
+  border-radius: 7px;
+  background: var(--ui-surface-subtle);
+}
+
+.operations-shell .map-detail-section-title {
+  display: block;
+  margin-bottom: 5px;
+  color: #8796a2;
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.operations-shell .map-filters {
+  margin-bottom: 10px;
+}
+
+.operations-shell .map-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 21px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #eef2f4;
+  color: #6f8190;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.operations-shell .map-center {
+  position: absolute;
+  inset: 0;
+}
+
+.operations-shell .map-feedback {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 4;
+  padding: 9px 10px;
+  border-radius: 7px;
+  background: rgba(255,255,255,.96);
+  color: var(--ui-text-secondary);
+  font-size: 9px;
+  box-shadow: 0 4px 16px rgba(23,43,61,.10);
+}
+
+.operations-shell .fields {
+  display: grid;
+  gap: 1px;
+}
+
+.operations-shell .fields > div {
+  display: grid;
+  grid-template-columns: 105px minmax(0, 1fr);
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--ui-border-muted);
+}
+
+.operations-shell .fields > div:last-child {
+  border-bottom: 0;
+}
+
+.operations-shell .fields dt {
+  color: var(--ui-text-muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.operations-shell .fields dd {
+  margin: 0;
+  color: var(--ui-text-secondary);
+  font-size: 10px;
+  text-align: right;
+}
+
+.operations-shell .back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+  padding: 0;
+  font-size: 10px;
+}
+
+.operations-shell .bus-details-page,
+.operations-shell .buses-page,
+.operations-shell .geofences-page,
+.operations-shell .geofence-detail-page {
+  min-width: 0;
+}
+
+.operations-shell .bus-detail-heading-icon {
+  color: var(--ui-accent);
+}
+
+.operations-shell .bus-detail-status-panel {
+  margin-top: 12px;
+}
+
+.operations-shell .bus-detail-status-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  color: var(--ui-text-secondary);
+  font-size: 10px;
+}
+
+.operations-shell .bus-detail-location,
+.operations-shell .bus-detail-side > .panel {
+  overflow: hidden;
+}
+
+.operations-shell .admin-bus-detail-grid,
+.operations-shell .bus-detail-grid {
+  grid-template-columns: minmax(0, 1.6fr) minmax(290px, .8fr);
+}
+
+.operations-shell .driver-table .driver-identity,
+.operations-shell .driver-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.operations-shell .driver-avatar {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  border-radius: 7px;
+  background: #eef2f4;
+  color: #5c7284;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.operations-shell .driver-message,
+.operations-shell .driver-security-notice {
+  margin: 0 0 12px;
+}
+
+.operations-shell .driver-actions {
+  justify-content: flex-end;
+}
+
+.operations-shell .buses-add-panel {
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.operations-shell .buses-add-form {
+  display: grid;
+  grid-template-columns: 160px minmax(170px, 1fr) minmax(180px, 220px) auto;
+  gap: 9px;
+  padding: 12px 16px 16px;
+}
+
+.operations-shell .buses-add-form input,
+.operations-shell .buses-add-form select {
+  width: 100%;
+}
+
+.operations-shell .buses-add-geofence {
+  min-height: var(--ui-control);
+}
+
+.operations-shell .geofence-list-view {
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: #fff;
+}
+
+.operations-shell .geofence-list-row {
+  width: 100%;
+  min-height: 62px;
+  display: grid;
+  grid-template-columns: 34px minmax(170px, 1fr) 150px 105px 22px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  border: 0;
+  border-bottom: 1px solid var(--ui-border-muted);
+  background: #fff;
+  color: var(--ui-text);
+  text-align: left;
+}
+
+.operations-shell .geofence-list-row:last-child {
+  border-bottom: 0;
+}
+
+.operations-shell .geofence-list-row:hover {
+  background: #fafcfd;
+}
+
+.operations-shell .geofence-list-row-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent);
+}
+
+.operations-shell .geofence-list-row-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ui-text);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.operations-shell .geofence-list-row-meta {
+  color: var(--ui-text-muted);
+  font-size: 9px;
+}
+
+.operations-shell .geofence-list-row-arrow {
+  display: grid;
+  place-items: center;
+  color: #8795a0;
+}
+
+.operations-shell .geofence-detail-page {
+  min-width: 0;
 }
 
 .operations-shell .geofence-detail-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .operations-shell .geofence-detail-grid,
 .operations-shell .geofence-detail-bottom-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(340px, .9fr);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1.5fr) minmax(330px, .9fr);
+  gap: 14px;
   align-items: start;
 }
 
 .operations-shell .geofence-detail-bottom-grid {
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 .operations-shell .geofence-detail-map-panel,
-.operations-shell .geofence-detail-assigned-panel {
+.operations-shell .geofence-detail-assigned-panel,
+.operations-shell .geofence-detail-bottom-grid .panel {
   overflow: hidden;
 }
 
 .operations-shell .geofence-detail-map {
   position: relative;
-  height: min(64vh, 640px);
-  min-height: 430px;
-  background: #e9eff2;
+  min-height: 500px;
+  height: min(62vh, 640px);
+  background: #edf2f4;
 }
 
 .operations-shell .geofence-detail-map.drawing .map-host {
@@ -843,57 +1105,60 @@
 
 .operations-shell .geofence-detail-draw-hint {
   position: absolute;
-  left: 14px;
-  bottom: 14px;
+  left: 12px;
+  bottom: 12px;
   z-index: 4;
+  max-width: calc(100% - 24px);
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 9px 11px;
-  border: 1px solid #dce5eb;
-  border-radius: 10px;
+  padding: 8px 10px;
+  border-radius: 7px;
   background: rgba(255,255,255,.96);
-  color: #49677f;
-  font-size: 10px;
-  font-weight: 700;
-  box-shadow: 0 10px 28px rgba(20,47,80,.1);
+  color: var(--ui-text-secondary);
+  font-size: 9px;
+  font-weight: 750;
+  box-shadow: 0 4px 16px rgba(23,43,61,.10);
 }
 
 .operations-shell .geofence-detail-map-actions {
   display: flex;
-  gap: 8px;
-  padding: 11px 14px;
-  border-top: 1px solid #edf1f4;
+  gap: 7px;
+  padding: 9px 12px;
+  background: var(--ui-surface-subtle);
+  border-top: 1px solid var(--ui-border-muted);
 }
 
 .operations-shell .geofence-bus-picker {
-  display: grid;
-  gap: 7px;
-  padding: 10px 12px 14px;
   max-height: 560px;
   overflow: auto;
+  background: #fff;
 }
 
 .operations-shell .geofence-bus-option {
   position: relative;
+  min-height: 56px;
   display: grid;
-  grid-template-columns: 18px 30px minmax(0, 1fr) auto;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 9px;
-  padding: 10px;
-  border: 1px solid #e3e9ee;
-  border-radius: 11px;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--ui-border-muted);
   background: #fff;
   cursor: pointer;
 }
 
+.operations-shell .geofence-bus-option:last-of-type {
+  border-bottom: 0;
+}
+
 .operations-shell .geofence-bus-option:hover {
-  background: #f8fbfd;
+  background: #fafcfd;
 }
 
 .operations-shell .geofence-bus-option.checked {
-  border-color: #cfe0f2;
-  background: #f3f8fc;
+  background: #f2f7fb;
 }
 
 .operations-shell .geofence-bus-option input {
@@ -903,19 +1168,19 @@
 }
 
 .operations-shell .geofence-bus-check {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   display: grid;
   place-items: center;
-  border: 1px solid #d6e0e7;
-  border-radius: 8px;
-  color: transparent;
+  border: 1px solid #ced9e0;
+  border-radius: 6px;
   background: #fff;
+  color: transparent;
 }
 
 .operations-shell .geofence-bus-option.checked .geofence-bus-check {
-  border-color: #2464b8;
-  background: #2464b8;
+  border-color: var(--ui-accent);
+  background: var(--ui-accent);
   color: #fff;
 }
 
@@ -925,14 +1190,19 @@
 
 .operations-shell .geofence-bus-copy strong {
   display: block;
-  font-size: 11px;
+  color: var(--ui-text);
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .operations-shell .geofence-bus-copy span {
   display: block;
   margin-top: 2px;
-  color: #73889a;
-  font-size: 9px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ui-text-muted);
+  font-size: 8px;
 }
 
 .operations-shell .geofence-bus-copy small {
@@ -944,30 +1214,38 @@
 }
 
 .operations-shell .geofence-detail-note {
-  margin: 2px 2px 0;
-  color: #84929e;
+  margin: 0;
+  padding: 10px 12px 11px;
+  border-top: 1px solid var(--ui-border-muted);
+  background: var(--ui-surface-subtle);
+  color: var(--ui-text-muted);
   font-size: 9px;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .operations-shell .geofence-assigned-list,
 .operations-shell .geofence-alert-list,
 .operations-shell .geofence-order-list {
   display: grid;
-  gap: 7px;
-  padding: 10px 12px 14px;
 }
 
 .operations-shell .geofence-assigned-bus,
 .operations-shell .geofence-alert-row,
 .operations-shell .geofence-order-row {
   display: grid;
-  gap: 10px;
   align-items: center;
-  padding: 11px;
-  border: 1px solid #e7edf1;
-  border-radius: 10px;
-  background: #fbfcfd;
+  gap: 10px;
+  min-height: 52px;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--ui-border-muted);
+  background: #fff;
+}
+
+.operations-shell .geofence-assigned-bus:last-child,
+.operations-shell .geofence-alert-row:last-child,
+.operations-shell .geofence-order-row:last-child {
+  border-bottom: 0;
 }
 
 .operations-shell .geofence-assigned-bus {
@@ -977,114 +1255,504 @@
 .operations-shell .geofence-bus-number,
 .operations-shell .geofence-alert-row strong,
 .operations-shell .geofence-order-row strong {
-  font-size: 11px;
+  color: var(--ui-text);
+  font-size: 10px;
   font-weight: 800;
 }
 
 .operations-shell .geofence-assigned-bus > span:nth-child(2) {
-  color: #718496;
-  font-size: 10px;
+  color: var(--ui-text-muted);
+  font-size: 9px;
 }
 
 .operations-shell .geofence-alert-row {
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: 28px minmax(0, 1fr);
 }
 
 .operations-shell .geofence-alert-icon {
-  width: 29px;
-  height: 29px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
-  background: #eaf2fb;
-  color: #2464b8;
+  border-radius: 7px;
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent);
 }
 
 .operations-shell .geofence-alert-row div:last-child span,
 .operations-shell .geofence-order-row div span {
   display: block;
-  margin-top: 3px;
-  color: #84929e;
-  font-size: 9px;
+  margin-top: 2px;
+  color: var(--ui-text-faint);
+  font-size: 8px;
 }
 
 .operations-shell .geofence-order-row {
-  grid-template-columns: 30px minmax(0, 1fr) auto;
+  grid-template-columns: 28px minmax(0, 1fr);
 }
 
 .operations-shell .geofence-order-rank {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
-  background: #edf4fb;
-  color: #2464b8;
-  font-size: 10px;
+  border-radius: 7px;
+  background: #eef4f8;
+  color: var(--ui-accent);
+  font-size: 9px;
   font-weight: 850;
 }
 
 .operations-shell .geofence-detail-status {
-  margin: 12px 0 0;
-  color: #8b98a4;
-  font-size: 9px;
+  margin: 10px 0 0;
+  color: var(--ui-text-muted);
+  font-size: 8px;
 }
 
-.operations-shell .buses-add-panel {
-  margin-bottom: 16px;
-  overflow: hidden;
-}
-
-.operations-shell .buses-add-form {
+.operations-shell .geofence-toast-stack {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 200;
   display: grid;
-  grid-template-columns: 180px minmax(180px, 1fr) auto;
+  gap: 8px;
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.operations-shell .geofence-toast-shell {
+  pointer-events: auto;
+  animation: geofence-toast-in .14s ease-out;
+}
+
+.operations-shell .geofence-toast {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
   gap: 9px;
-  padding: 0 18px 18px;
+  align-items: start;
+  padding: 11px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 8px 26px rgba(23,43,61,.10);
 }
 
-.operations-shell .buses-add-form input {
+.operations-shell .geofence-toast-icon {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent);
+}
+
+.operations-shell .geofence-toast-copy {
   min-width: 0;
-  height: 42px;
+}
+
+.operations-shell .geofence-toast-copy strong {
+  display: block;
+  color: var(--ui-text);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.operations-shell .geofence-toast-copy p {
+  margin: 3px 0 2px;
+  color: var(--ui-text-secondary);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.operations-shell .geofence-toast-copy span {
+  color: var(--ui-text-faint);
+  font-size: 8px;
+}
+
+.operations-shell .geofence-toast > button {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #85939e;
+}
+
+.operations-shell .geofence-toast > button:hover {
+  background: #eef2f4;
+  color: var(--ui-text);
+}
+
+.operations-shell .map-tag,
+.operations-shell .map-center {
+  pointer-events: none;
+}
+
+.operations-shell .login {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr);
+  background: var(--ui-canvas);
+}
+
+.operations-shell .login-story,
+.operations-shell .login-form {
+  min-width: 0;
+}
+
+.operations-shell .login-story {
+  padding: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: #f0f4f7;
+  border-right: 1px solid var(--ui-border);
+}
+
+.operations-shell .login-form {
+  padding: 44px;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  background: #fff;
+}
+
+.operations-shell .login-story .admin-brand-logo {
+  width: min(440px, 100%);
+  min-height: auto;
+  padding: 0 0 16px;
+  border-bottom: 0;
+  background: transparent;
+}
+
+.operations-shell .login-points {
+  width: min(440px, 100%);
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.operations-shell .login-points > div {
+  padding: 11px 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: 7px;
+  background: rgba(255,255,255,.72);
+}
+
+.operations-shell .login-points strong {
+  display: block;
+  color: var(--ui-text);
+  font-size: 10px;
+}
+
+.operations-shell .login-points span {
+  display: block;
+  margin-top: 3px;
+  color: var(--ui-text-muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.operations-shell .login-form > * {
+  width: min(390px, 100%);
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.operations-shell .login-form .demo-label {
+  margin-bottom: 8px;
+  color: #8997a2;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+
+.operations-shell .login-form h1 {
+  margin: 0 0 6px;
+  color: var(--ui-text);
+  font-size: 25px;
+  letter-spacing: -.6px;
+}
+
+.operations-shell .login-form form {
+  display: grid;
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.operations-shell .login-form input {
+  width: 100%;
+  min-height: 42px;
   padding: 0 11px;
-  border: 1px solid #dce4e9;
-  border-radius: 9px;
-  background: #fbfcfd;
-  color: #142f50;
+  border: 1px solid #dbe3e8;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ui-text);
   font-size: 11px;
-  outline: none;
+  outline: 0;
 }
 
-.operations-shell .buses-add-form input:focus {
-  border-color: #6f98c3;
-  box-shadow: 0 0 0 3px #2464b812;
+.operations-shell .login-form input:focus {
+  border-color: #9dbbd4;
+  box-shadow: 0 0 0 2px rgba(23,105,176,.08);
 }
 
-@media (max-width: 1000px) {
-  .operations-shell .geofence-card-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.operations-shell .login-form .primary {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 3px;
+}
+
+.operations-shell .login-policy {
+  margin-top: 12px;
+  color: var(--ui-text-muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.operations-shell .spinner {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  margin-right: 7px;
+  border: 2px solid #dce4e9;
+  border-top-color: var(--ui-accent);
+  border-radius: 50%;
+  vertical-align: -3px;
+  animation: admin-spin .8s linear infinite;
+}
+
+@keyframes admin-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes geofence-toast-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.operations-shell .geofence-vertex {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--ui-accent);
+  box-shadow: 0 1px 5px rgba(23,43,61,.25);
+  cursor: grab;
+  touch-action: none;
+}
+
+.operations-shell .geofence-vertex:active {
+  cursor: grabbing;
+}
+
+.operations-shell .geofence-vertex:focus-visible {
+  outline: 2px solid rgba(23,105,176,.45);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1100px) {
+  .operations-shell .page {
+    padding: 24px 22px 34px;
   }
 
+  .operations-shell .sidebar {
+    width: 216px;
+    min-width: 216px;
+  }
+
+  .operations-shell .map-layout,
+  .operations-shell .overview-grid,
+  .operations-shell .admin-bus-detail-grid,
+  .operations-shell .bus-detail-grid,
   .operations-shell .geofence-detail-grid,
   .operations-shell .geofence-detail-bottom-grid {
     grid-template-columns: 1fr;
   }
+
+  .operations-shell .map-layout > section,
+  .operations-shell .coverage-panel,
+  .operations-shell .map-detail {
+    min-height: 560px;
+  }
 }
 
 @media (max-width: 760px) {
-  .operations-shell .geofence-card-grid {
-    grid-template-columns: 1fr;
+  .operations-shell {
+    display: block;
+  }
+
+  .operations-shell .sidebar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    min-width: 0;
+    height: calc(68px + env(safe-area-inset-bottom));
+    padding: 4px 6px env(safe-area-inset-bottom);
+    border-right: 0;
+    border-top: 1px solid var(--ui-border);
+    background: rgba(255,255,255,.97);
+  }
+
+  .operations-shell .admin-brand-logo,
+  .operations-shell .sidebar-bottom {
+    display: none;
+  }
+
+  .operations-shell .admin-nav {
+    height: 100%;
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    margin: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .operations-shell .admin-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .operations-shell .admin-nav-button,
+  .operations-shell .admin-nav-button.active,
+  .operations-shell .admin-nav-button:hover {
+    flex: 1 0 68px;
+    min-width: 68px;
+    min-height: 56px;
+    height: 56px;
+    padding: 5px 4px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    border: 0 !important;
+    border-radius: 6px;
+    background: transparent;
+    text-align: center;
+  }
+
+  .operations-shell .admin-nav-button.active {
+    background: var(--ui-accent-soft);
+  }
+
+  .operations-shell .nav-count {
+    display: none;
+  }
+
+  .operations-shell .main-shell {
+    min-height: 100dvh;
+    padding-bottom: calc(68px + env(safe-area-inset-bottom));
+  }
+
+  .operations-shell .page {
+    min-height: calc(100dvh - 68px);
+    padding: 17px 11px 24px;
+  }
+
+  .operations-shell .page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 11px;
+    margin-bottom: 15px;
+  }
+
+  .operations-shell .page-heading h1 {
+    font-size: 22px;
+  }
+
+  .operations-shell .page-heading p {
+    font-size: 10px;
+  }
+
+  .operations-shell .page-heading .primary,
+  .operations-shell .page-heading .secondary,
+  .operations-shell .geofence-detail-actions .primary,
+  .operations-shell .geofence-detail-actions .secondary {
+    width: 100%;
+  }
+
+  .operations-shell .overview-metrics,
+  .operations-shell .metrics {
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+  }
+
+  .operations-shell .summary-stat,
+  .operations-shell .metric {
+    min-height: 80px;
+    padding: 11px 12px;
+  }
+
+  .operations-shell .summary-stat strong,
+  .operations-shell .metric strong {
+    font-size: 19px;
+  }
+
+  .operations-shell .fleet-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 8px;
+  }
+
+  .operations-shell .fleet-tabs {
+    width: max-content;
+    max-width: 100%;
+  }
+
+  .operations-shell .search {
+    width: 100%;
+  }
+
+  .operations-shell .table-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    gap: 7px;
+    padding: 9px 11px;
+  }
+
+  .operations-shell .map-layout,
+  .operations-shell .overview-grid,
+  .operations-shell .admin-bus-detail-grid,
+  .operations-shell .bus-detail-grid {
+    gap: 10px;
+  }
+
+  .operations-shell .map-layout > section,
+  .operations-shell .coverage-panel,
+  .operations-shell .map-detail {
+    min-height: 460px;
+  }
+
+  .operations-shell .filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .operations-shell .filters select {
+    width: 100%;
+  }
+
+  .operations-shell .geofence-list-row {
+    grid-template-columns: 32px minmax(0, 1fr) 22px;
+    min-height: 57px;
     gap: 9px;
+    padding: 0 10px;
   }
 
-  .operations-shell .geofence-card {
-    min-height: 100px;
-    padding: 14px;
-    border-radius: 13px;
+  .operations-shell .geofence-list-row-meta {
+    display: none;
   }
 
-  .operations-shell .geofence-card-icon {
-    width: 38px;
-    height: 38px;
+  .operations-shell .geofence-list-row-name {
+    font-size: 10px;
   }
 
   .operations-shell .geofence-detail-actions {
@@ -1093,14 +1761,9 @@
     grid-template-columns: 1fr 1fr;
   }
 
-  .operations-shell .geofence-detail-actions .secondary,
-  .operations-shell .geofence-detail-actions .primary {
-    width: 100%;
-  }
-
   .operations-shell .geofence-detail-map {
-    height: 52vh;
-    min-height: 360px;
+    min-height: 350px;
+    height: 53vh;
   }
 
   .operations-shell .geofence-detail-map-actions {
@@ -1108,961 +1771,70 @@
     grid-template-columns: 1fr 1fr;
   }
 
-  .operations-shell .geofence-detail-map-actions button {
-    width: 100%;
-  }
-
-  .operations-shell .geofence-bus-picker {
-    max-height: none;
-  }
-
-  .operations-shell .buses-add-form {
-    grid-template-columns: 1fr;
-    padding: 0 13px 14px;
-  }
-}
-
-@media (max-width: 470px) {
-  .operations-shell .geofence-detail-actions,
-  .operations-shell .geofence-detail-map-actions {
-    grid-template-columns: 1fr;
-  }
-
-  .operations-shell .geofence-bus-option {
-    grid-template-columns: 18px 30px minmax(0, 1fr);
-  }
-
-  .operations-shell .geofence-bus-option .badge {
-    display: none;
-  }
-}
-
-
-.geofence-vertex {
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  border: 2px solid #ffffff;
-  border-radius: 50%;
-  background: #2464b8;
-  box-shadow: 0 1px 6px rgba(20, 47, 80, 0.32);
-  cursor: grab;
-  touch-action: none;
-  outline: none;
-}
-
-.geofence-vertex:active {
-  cursor: grabbing;
-}
-
-.geofence-vertex:focus-visible {
-  outline: 2px solid #142f50;
-  outline-offset: 2px;
-}
-
-
-/* Geofence list + editor cleanup. */
-.operations-shell .geofence-list-view {
-  display: grid;
-  border-top: 1px solid #e4eaee;
-  border-bottom: 1px solid #e4eaee;
-  background: #fff;
-}
-
-.operations-shell .geofence-list-row {
-  width: 100%;
-  min-height: 66px;
-  display: grid;
-  grid-template-columns: 36px minmax(170px, 1fr) 150px 110px 28px;
-  align-items: center;
-  gap: 12px;
-  padding: 0 14px;
-  border: 0;
-  border-bottom: 1px solid #edf1f4;
-  background: #fff;
-  color: #142f50;
-  text-align: left;
-  cursor: pointer;
-}
-
-.operations-shell .geofence-list-row:last-child {
-  border-bottom: 0;
-}
-
-.operations-shell .geofence-list-row:hover {
-  background: #f8fbfd;
-}
-
-.operations-shell .geofence-list-row-icon {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  background: #edf4fb;
-  color: #2464b8;
-}
-
-.operations-shell .geofence-list-row-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.operations-shell .geofence-list-row-meta {
-  color: #718496;
-  font-size: 10px;
-  font-weight: 650;
-}
-
-.operations-shell .geofence-list-row-arrow {
-  display: grid;
-  place-items: center;
-  color: #8998a5;
-}
-
-.operations-shell .geofence-bus-picker {
-  gap: 0;
-  padding: 0;
-  max-height: 560px;
-  overflow: auto;
-}
-
-.operations-shell .geofence-bus-option {
-  grid-template-columns: 30px minmax(0, 1fr) auto;
-  min-height: 58px;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border: 0;
-  border-bottom: 1px solid #edf1f4;
-  border-radius: 0;
-  background: #fff;
-}
-
-.operations-shell .geofence-bus-option:last-of-type {
-  border-bottom: 0;
-}
-
-.operations-shell .geofence-bus-option:hover {
-  background: #f8fbfd;
-}
-
-.operations-shell .geofence-bus-option.checked {
-  background: #f4f8fc;
-}
-
-.operations-shell .geofence-bus-check {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-}
-
-.operations-shell .geofence-bus-copy strong {
-  font-size: 11px;
-}
-
-.operations-shell .geofence-bus-copy span {
-  margin-top: 3px;
-  font-size: 9px;
-}
-
-.operations-shell .geofence-bus-copy small {
-  margin-top: 3px;
-  font-size: 8px;
-}
-
-.operations-shell .geofence-detail-note {
-  margin: 10px 12px 2px;
-  padding-top: 10px;
-  border-top: 1px solid #edf1f4;
-}
-
-.operations-shell .geofence-detail-map:not(.drawing) .map-host {
-  cursor: default;
-}
-
-@media (max-width: 760px) {
-  .operations-shell .geofence-list-row {
-    grid-template-columns: 34px minmax(0, 1fr) 28px;
-    gap: 9px;
-    padding: 0 11px;
-  }
-
-  .operations-shell .geofence-list-row-meta {
-    display: none;
-  }
-
-  .operations-shell .geofence-list-row-icon {
-    width: 32px;
-    height: 32px;
-  }
-
-  .operations-shell .geofence-list-row-name {
-    font-size: 11px;
-  }
-
-  .operations-shell .geofence-bus-option {
-    grid-template-columns: 30px minmax(0, 1fr) auto;
-    min-height: 56px;
-    padding: 8px 11px;
-  }
-
-  .operations-shell .geofence-bus-option .badge {
-    display: none;
-  }
-}
-
-@media (max-width: 470px) {
-  .operations-shell .geofence-bus-option {
-    grid-template-columns: 30px minmax(0, 1fr);
-  }
-}
-
-
-/* New bus form: four balanced fields on desktop. */
-.operations-shell .buses-add-form {
-  grid-template-columns: minmax(130px, 180px) minmax(180px, 1fr) minmax(180px, 220px) auto;
-  align-items: center;
-}
-
-.operations-shell .buses-add-geofence {
-  width: 100%;
-  min-width: 0;
-  min-height: 42px;
-}
-
-@media (max-width: 900px) {
   .operations-shell .buses-add-form {
     grid-template-columns: 1fr 1fr;
+    padding: 11px;
   }
 
   .operations-shell .buses-add-form > button {
     grid-column: 1 / -1;
   }
-}
 
-@media (max-width: 760px) {
-  .operations-shell .buses-add-form {
+  .operations-shell .login {
     grid-template-columns: 1fr;
   }
 
-  .operations-shell .buses-add-form > button {
-    grid-column: auto;
-  }
-}
-
-
-/* Final operations UI design system. */
-.operations-shell {
-  --ui-bg: #f5f7f9;
-  --ui-surface: #ffffff;
-  --ui-surface-soft: #f9fbfc;
-  --ui-border: #e2e8ed;
-  --ui-border-soft: #edf1f4;
-  --ui-text: #17324d;
-  --ui-muted: #718394;
-  --ui-muted-2: #93a0ab;
-  --ui-accent: #2464b8;
-  --ui-accent-soft: #edf4fb;
-  --ui-success: #277a59;
-  --ui-success-soft: #eef8f3;
-  --ui-danger: #9a4e43;
-  --ui-danger-soft: #fff6f4;
-  --ui-radius: 12px;
-  --ui-radius-sm: 9px;
-  --ui-control-h: 40px;
-
-  background: var(--ui-bg);
-  color: var(--ui-text);
-}
-
-.operations-shell,
-.operations-shell *,
-.operations-shell *::before,
-.operations-shell *::after {
-  border-color: var(--ui-border);
-}
-
-.operations-shell .sidebar {
-  width: 232px;
-  min-width: 232px;
-  padding: 16px 10px 12px;
-  background: rgba(255,255,255,.98);
-  border-right: 1px solid var(--ui-border);
-  box-shadow: none;
-}
-
-.operations-shell .admin-brand-logo {
-  min-height: 58px;
-  padding: 2px 9px 16px;
-  gap: 10px;
-  border-bottom: 1px solid var(--ui-border-soft);
-}
-
-.operations-shell .admin-school-logo {
-  width: 38px;
-  height: 38px;
-}
-
-.operations-shell .admin-brand-logo strong {
-  color: var(--ui-text);
-  font-size: 13px;
-  letter-spacing: -.2px;
-}
-
-.operations-shell .admin-brand-logo span {
-  margin-top: 2px;
-  color: var(--ui-muted-2);
-  font-size: 9px;
-  letter-spacing: .01em;
-}
-
-.operations-shell .admin-nav {
-  gap: 3px;
-  margin-top: 14px;
-}
-
-.operations-shell .admin-nav-button,
-.operations-shell .admin-nav-button:hover,
-.operations-shell .admin-nav-button:focus,
-.operations-shell .admin-nav-button:focus-visible {
-  min-height: 44px;
-  padding: 0 11px;
-  border: 0 !important;
-  border-left: 0 !important;
-  border-right: 0 !important;
-  outline: none;
-  border-radius: 9px;
-}
-
-.operations-shell .admin-nav-button {
-  gap: 10px;
-  color: #64778a;
-  font-size: 11px;
-  font-weight: 700;
-  background: transparent;
-  box-shadow: none !important;
-}
-
-.operations-shell .admin-nav-button svg {
-  color: #8494a2;
-}
-
-.operations-shell .admin-nav-button:hover {
-  background: #f5f8fa;
-  color: var(--ui-text);
-}
-
-.operations-shell .admin-nav-button.active,
-.operations-shell .admin-nav-button.active:hover,
-.operations-shell .admin-nav-button.active:focus,
-.operations-shell .admin-nav-button.active:focus-visible {
-  background: var(--ui-accent-soft);
-  color: var(--ui-accent);
-  border: 0 !important;
-  border-left: 0 !important;
-  box-shadow: none !important;
-  transform: none;
-}
-
-.operations-shell .admin-nav-button.active::before {
-  display: none !important;
-  content: none;
-}
-
-.operations-shell .admin-nav-button.active svg {
-  color: var(--ui-accent);
-}
-
-.operations-shell .nav-count {
-  min-width: 22px;
-  padding: 3px 6px;
-  background: #f3f6f8;
-  color: #7d8c99;
-  font-size: 9px;
-}
-
-.operations-shell .sidebar-bottom {
-  padding-top: 11px;
-  border-top: 1px solid var(--ui-border-soft);
-}
-
-.operations-shell .user {
-  padding: 7px 7px 10px;
-}
-
-.operations-shell .avatar {
-  width: 31px;
-  height: 31px;
-  flex-basis: 31px;
-  border-radius: 9px;
-  background: #eaf2fb;
-  color: var(--ui-accent);
-}
-
-.operations-shell .user strong {
-  color: var(--ui-text);
-  font-size: 10px;
-}
-
-.operations-shell .user span:not(.avatar) {
-  color: var(--ui-muted-2);
-  font-size: 8px;
-}
-
-.operations-shell .signout {
-  min-height: 38px;
-  padding: 0 8px;
-  border-radius: 8px;
-  color: #7d8b97;
-  font-size: 10px;
-}
-
-.operations-shell .signout:hover {
-  background: var(--ui-danger-soft);
-  color: var(--ui-danger);
-}
-
-.operations-shell .main-shell {
-  background: var(--ui-bg);
-}
-
-.operations-shell .page {
-  width: min(1400px, 100%);
-  padding: 28px 32px 40px;
-}
-
-.operations-shell .page-heading {
-  align-items: center;
-  gap: 24px;
-  margin-bottom: 20px;
-}
-
-.operations-shell .page-heading .eyebrow {
-  margin-bottom: 7px;
-  color: #8796a3;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: .16em;
-}
-
-.operations-shell .page-heading h1 {
-  margin: 0 0 5px;
-  color: var(--ui-text);
-  font-size: 27px;
-  font-weight: 800;
-  letter-spacing: -.8px;
-}
-
-.operations-shell .page-heading p {
-  max-width: 760px;
-  color: var(--ui-muted);
-  font-size: 11px;
-  line-height: 1.55;
-}
-
-.operations-shell .panel {
-  border: 1px solid var(--ui-border);
-  border-radius: var(--ui-radius);
-  background: var(--ui-surface);
-  box-shadow: 0 1px 2px rgba(20,47,80,.025);
-}
-
-.operations-shell .panel-heading {
-  min-height: 56px;
-  padding: 15px 17px;
-  border-bottom: 1px solid var(--ui-border-soft);
-}
-
-.operations-shell .panel-heading h2 {
-  color: var(--ui-text);
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: -.15px;
-}
-
-.operations-shell .panel-heading span {
-  display: block;
-  margin-top: 3px;
-  color: var(--ui-muted-2);
-  font-size: 9px;
-}
-
-.operations-shell .primary,
-.operations-shell .secondary,
-.operations-shell .panel-footer-link,
-.operations-shell .sort-button {
-  border-radius: var(--ui-radius-sm);
-  font-weight: 750;
-  transition: background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
-}
-
-.operations-shell .primary {
-  min-height: var(--ui-control-h);
-  padding: 0 13px;
-  border: 1px solid var(--ui-accent);
-  background: var(--ui-accent);
-  color: #fff;
-  box-shadow: 0 1px 2px rgba(36,100,184,.12);
-  font-size: 10px;
-}
-
-.operations-shell .primary:hover {
-  background: #20599f;
-  border-color: #20599f;
-}
-
-.operations-shell .secondary {
-  min-height: var(--ui-control-h);
-  padding: 0 13px;
-  border: 1px solid var(--ui-border);
-  background: #fff;
-  color: #486177;
-  font-size: 10px;
-}
-
-.operations-shell .secondary:hover {
-  border-color: #ccd8e0;
-  background: #f7fafb;
-  color: var(--ui-text);
-}
-
-.operations-shell input,
-.operations-shell select,
-.operations-shell textarea {
-  min-height: var(--ui-control-h);
-  border: 1px solid #dbe3e8;
-  border-radius: var(--ui-radius-sm);
-  background: #fff;
-  color: var(--ui-text);
-  box-shadow: none;
-  font-size: 11px;
-}
-
-.operations-shell input::placeholder,
-.operations-shell textarea::placeholder {
-  color: #a2adb6;
-}
-
-.operations-shell input:focus,
-.operations-shell select:focus,
-.operations-shell textarea:focus {
-  border-color: #94b5d3;
-  outline: 0;
-  box-shadow: 0 0 0 3px rgba(36,100,184,.08);
-}
-
-.operations-shell .search {
-  min-height: var(--ui-control-h);
-  border: 1px solid #dbe3e8;
-  border-radius: var(--ui-radius-sm);
-  background: #fff;
-}
-
-.operations-shell .search:focus-within {
-  border-color: #94b5d3;
-  box-shadow: 0 0 0 3px rgba(36,100,184,.08);
-}
-
-.operations-shell .overview-metrics {
-  gap: 9px;
-  margin-bottom: 16px;
-}
-
-.operations-shell .summary-stat {
-  min-height: 92px;
-  padding: 14px 15px;
-  border: 1px solid var(--ui-border);
-  border-radius: var(--ui-radius);
-  background: #fff;
-  box-shadow: none;
-}
-
-.operations-shell .summary-stat span {
-  color: var(--ui-muted);
-  font-size: 9px;
-  font-weight: 700;
-}
-
-.operations-shell .summary-stat strong {
-  margin-top: 8px;
-  color: var(--ui-text);
-  font-size: 22px;
-  letter-spacing: -.7px;
-}
-
-.operations-shell .fleet-toolbar {
-  padding: 10px 13px;
-  border-bottom: 1px solid var(--ui-border-soft);
-  background: #fbfcfd;
-}
-
-.operations-shell .fleet-tabs {
-  display: inline-flex;
-  gap: 3px;
-  padding: 3px;
-  border: 1px solid var(--ui-border);
-  border-radius: 9px;
-  background: #f5f7f9;
-}
-
-.operations-shell .fleet-tabs button {
-  min-height: 30px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: #718293;
-  font-size: 9px;
-  font-weight: 750;
-}
-
-.operations-shell .fleet-tabs button[aria-pressed="true"] {
-  background: #fff;
-  color: var(--ui-text);
-  box-shadow: 0 1px 2px rgba(20,47,80,.08);
-}
-
-.operations-shell .fleet-tabs .tab-count {
-  margin-left: 5px;
-  color: #98a4ae;
-}
-
-.operations-shell .fleet-table {
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.operations-shell .fleet-table th {
-  height: 38px;
-  padding: 0 13px;
-  border-bottom: 1px solid var(--ui-border-soft);
-  background: #fbfcfd;
-  color: #8997a3;
-  font-size: 8px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-}
-
-.operations-shell .fleet-table td {
-  height: 50px;
-  padding: 0 13px;
-  border-bottom: 1px solid #f0f3f5;
-  color: #4e6579;
-  font-size: 10px;
-}
-
-.operations-shell .fleet-table tbody tr {
-  transition: background .12s ease;
-}
-
-.operations-shell .fleet-table tbody tr:hover,
-.operations-shell .fleet-table tbody tr.selected-row {
-  background: #f8fbfd;
-}
-
-.operations-shell .fleet-table tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-.operations-shell .bus-link {
-  color: var(--ui-text);
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.operations-shell .bus-link svg {
-  color: var(--ui-accent);
-}
-
-.operations-shell .table-footer {
-  min-height: 50px;
-  padding: 0 13px;
-  border-top: 1px solid var(--ui-border-soft);
-  color: var(--ui-muted-2);
-  font-size: 9px;
-}
-
-.operations-shell .pagination button {
-  width: 28px;
-  height: 28px;
-  border: 1px solid transparent;
-  border-radius: 7px;
-  background: transparent;
-  color: #7d8e9c;
-}
-
-.operations-shell .pagination button:hover:not(:disabled),
-.operations-shell .pagination button[aria-current="page"] {
-  background: #edf4fb;
-  color: var(--ui-accent);
-}
-
-.operations-shell .badge {
-  min-height: 22px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 8px;
-  border: 1px solid #dfe7ec;
-  border-radius: 999px;
-  background: #f7f9fa;
-  color: #718294;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: .01em;
-}
-
-.operations-shell .badge.online {
-  border-color: #d6ebdf;
-  background: var(--ui-success-soft);
-  color: var(--ui-success);
-}
-
-.operations-shell .badge.offline {
-  border-color: #e3e8ec;
-  background: #f6f8f9;
-  color: #85939e;
-}
-
-.operations-shell .badge.late {
-  border-color: #efe0c8;
-  background: #fff8ec;
-  color: #95693d;
-}
-
-.operations-shell .notice,
-.operations-shell .error-box {
-  border-radius: var(--ui-radius-sm);
-  font-size: 10px;
-}
-
-.operations-shell .empty {
-  padding: 28px 20px;
-  color: #8897a4;
-  font-size: 10px;
-  line-height: 1.55;
-}
-
-.operations-shell .geofence-list-view {
-  border: 1px solid var(--ui-border);
-  border-radius: var(--ui-radius);
-  overflow: hidden;
-}
-
-.operations-shell .geofence-list-row {
-  min-height: 64px;
-  grid-template-columns: 34px minmax(180px, 1fr) 150px 110px 24px;
-  padding: 0 15px;
-  border-bottom: 1px solid var(--ui-border-soft);
-}
-
-.operations-shell .geofence-list-row:hover {
-  background: #f8fbfd;
-}
-
-.operations-shell .geofence-list-row-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-  background: var(--ui-accent-soft);
-  color: var(--ui-accent);
-}
-
-.operations-shell .geofence-list-row-name {
-  color: var(--ui-text);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.operations-shell .geofence-list-row-meta {
-  color: var(--ui-muted);
-  font-size: 9px;
-}
-
-.operations-shell .geofence-list-row-arrow {
-  color: #8b99a5;
-}
-
-.operations-shell .geofence-detail-grid,
-.operations-shell .geofence-detail-bottom-grid {
-  gap: 14px;
-}
-
-.operations-shell .geofence-detail-map,
-.operations-shell .geofence-detail-assigned-panel,
-.operations-shell .geofence-detail-bottom-grid .panel {
-  border-radius: var(--ui-radius);
-}
-
-.operations-shell .geofence-detail-map {
-  min-height: 420px;
-  background: #edf2f4;
-}
-
-.operations-shell .geofence-detail-map-actions {
-  padding: 10px 13px;
-  background: #fbfcfd;
-}
-
-.operations-shell .geofence-bus-picker {
-  padding: 0;
-  background: #fff;
-}
-
-.operations-shell .geofence-bus-option {
-  min-height: 56px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--ui-border-soft);
-}
-
-.operations-shell .geofence-bus-option.checked {
-  background: #f5f9fc;
-}
-
-.operations-shell .geofence-bus-check {
-  border-radius: 8px;
-}
-
-.operations-shell .geofence-detail-note {
-  margin: 0;
-  padding: 11px 12px 13px;
-  border-top: 1px solid var(--ui-border-soft);
-  background: #fbfcfd;
-}
-
-.operations-shell .geofence-alert-row,
-.operations-shell .geofence-order-row,
-.operations-shell .geofence-assigned-bus {
-  border: 0;
-  border-bottom: 1px solid var(--ui-border-soft);
-  border-radius: 0;
-  background: #fff;
-}
-
-.operations-shell .geofence-alert-row:last-child,
-.operations-shell .geofence-order-row:last-child,
-.operations-shell .geofence-assigned-bus:last-child {
-  border-bottom: 0;
-}
-
-.operations-shell .geofence-toast {
-  border: 1px solid var(--ui-border);
-  border-left: 0 !important;
-  border-radius: var(--ui-radius);
-  box-shadow: 0 12px 30px rgba(20,47,80,.10);
-}
-
-.operations-shell .geofence-toast-icon {
-  background: var(--ui-accent-soft);
-  color: var(--ui-accent);
-}
-
-.operations-shell .buses-add-panel {
-  margin-bottom: 14px;
-}
-
-.operations-shell .buses-add-form {
-  gap: 10px;
-  padding: 0 16px 16px;
-}
-
-.operations-shell .buses-add-form input,
-.operations-shell .buses-add-form select {
-  min-height: 42px;
-}
-
-.operations-shell .buses-add-geofence {
-  min-height: 42px;
-}
-
-.operations-shell .admin-delete:hover {
-  border-color: #efd7d2;
-  background: var(--ui-danger-soft);
-  color: var(--ui-danger);
-}
-
-.operations-shell button:disabled {
-  box-shadow: none;
-}
-
-@media (max-width: 1000px) {
-  .operations-shell .page {
-    padding: 24px 22px 34px;
-  }
-
-  .operations-shell .geofence-list-row {
-    grid-template-columns: 34px minmax(150px, 1fr) 125px 90px 24px;
-  }
-}
-
-@media (max-width: 760px) {
-  .operations-shell .sidebar {
-    width: 100%;
-    min-width: 0;
-    height: calc(70px + env(safe-area-inset-bottom));
-    padding: 5px 6px env(safe-area-inset-bottom);
-    border-top: 1px solid var(--ui-border);
-    box-shadow: none;
-    backdrop-filter: blur(16px);
-    background: rgba(255,255,255,.96);
-  }
-
-  .operations-shell .admin-nav-button,
-  .operations-shell .admin-nav-button.active {
-    min-height: 56px;
-    border: 0 !important;
-    box-shadow: none !important;
-    background: transparent;
-  }
-
-  .operations-shell .admin-nav-button.active {
-    background: var(--ui-accent-soft);
-    color: var(--ui-accent);
-  }
-
-  .operations-shell .page {
-    padding: 18px 12px 24px;
-  }
-
-  .operations-shell .page-heading {
-    margin-bottom: 16px;
-  }
-
-  .operations-shell .page-heading h1 {
-    font-size: 23px;
-  }
-
-  .operations-shell .overview-metrics {
-    gap: 8px;
-  }
-
-  .operations-shell .summary-stat {
-    min-height: 84px;
-  }
-
-  .operations-shell .fleet-toolbar {
-    gap: 8px;
-  }
-
-  .operations-shell .geofence-list-row {
-    grid-template-columns: 34px minmax(0, 1fr) 24px;
-    min-height: 60px;
-  }
-
-  .operations-shell .geofence-list-row-meta {
+  .operations-shell .login-story {
     display: none;
   }
 
-  .operations-shell .geofence-bus-option {
-    grid-template-columns: 30px minmax(0, 1fr) auto;
+  .operations-shell .login-form {
+    min-height: 100dvh;
+    padding: 28px 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .operations-shell .fields > div {
+    grid-template-columns: 90px minmax(0, 1fr);
   }
 
-  .operations-shell .geofence-detail-map {
-    min-height: 360px;
+  .operations-shell .admin-table-actions {
+    gap: 4px;
+  }
+
+  .operations-shell .admin-table-action {
+    min-height: 29px;
+    padding: 0 7px;
+  }
+
+  .operations-shell .geofence-bus-option {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .operations-shell .geofence-bus-option .badge {
+    display: none;
+  }
+
+  .operations-shell .geofence-toast-stack {
+    left: 9px;
+    right: 9px;
+    bottom: calc(78px + env(safe-area-inset-bottom));
+    width: auto;
+  }
+
+  .operations-shell .login-form h1 {
+    font-size: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .operations-shell *,
+  .operations-shell *::before,
+  .operations-shell *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
   }
 }
