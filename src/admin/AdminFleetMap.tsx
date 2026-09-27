@@ -42,13 +42,13 @@ export function FleetMap({
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<LibreMap | null>(null);
   const markers = useRef(new Map<string, Marker>());
-  const current = useRef({ onSelect });
+  const current = useRef<{ positions: MapPosition[]; onSelect?: (id: string) => void }>({ positions, onSelect });
 
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
 
-  current.current = { onSelect };
+  current.current = { positions, onSelect };
 
   useEffect(() => {
     if (!host.current) return;
@@ -240,17 +240,13 @@ export function FleetMap({
     const instance = map.current;
     if (!instance) return;
 
-    const points = current.current.positions?.length
-      ? current.current.positions
-      : line;
+    const rawPoints = current.current.positions.map(
+      (point) => [point.longitude, point.latitude] as [number, number],
+    );
 
-    const rawPoints = points
-      ? "longitude" in (points[0] ?? {})
-        ? (points as MapPosition[]).map(
-            (point) => [point.longitude, point.latitude] as [number, number],
-          )
-        : (points as [number, number][])
-      : [];
+    if (!rawPoints.length && line?.length) {
+      line.forEach((point) => rawPoints.push(point));
+    }
 
     if (!rawPoints.length) return;
 
@@ -265,10 +261,6 @@ export function FleetMap({
   };
 
   // Keep the latest marker positions accessible to the center handler.
-  current.current = {
-    onSelect,
-    positions: positions as never,
-  };
 
   useEffect(() => {
     if (ready) center();
