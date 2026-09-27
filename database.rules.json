@@ -39,7 +39,7 @@
       ".read": true,
       "$busId": {
         ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
-        ".validate": "newData.child('busNumber').isString() && newData.child('route').isString() && newData.child('enabled').isBoolean()"
+        ".validate": "newData.child('busNumber').isString() && newData.child('route').isString() && newData.child('enabled').isBoolean() && (!newData.child('geofenceId').exists() || newData.child('geofenceId').isString())"
       }
     }
   }
