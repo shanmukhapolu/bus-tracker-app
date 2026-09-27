@@ -9,9 +9,8 @@ import {
 } from "maplibre-gl";
 import { Crosshair } from "lucide-react";
 import busIconUrl from "../assets/bus-front.svg";
-import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
-// Explicit asset import preserves the worker in both Vite dev and production.
-setWorkerUrl(workerUrl);
+// The prebuild/predev hook copies MapLibre's worker and shared module into public/maplibre.
+setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 export interface MapPosition {
   id: string;
   label: string;
