@@ -1,17 +1,15 @@
 import { useEffect, useState } from "react";
 import adminStyles from "../admin-reference.css?raw";
+import modernAdminStyles from "../admin-modern.css?raw";
 import { AdminLogin } from "../admin/AdminLogin";
 import { AdminLayout, type AdminPageKey } from "../admin/AdminLayout";
 import { AdminDashboard } from "../admin/AdminDashboard";
 import { AdminLiveMap } from "../admin/AdminLiveMap";
-import { AdminDevices } from "../admin/AdminDevices";
+import { AdminBuses } from "../admin/AdminBuses";
 import { AdminDrivers } from "../admin/AdminDrivers";
 import { AdminBusDetails } from "../admin/AdminBusDetails";
 import { useAdminFleet } from "../admin/adminData";
-import {
-  loadAdminProfile,
-  signOutAdmin,
-} from "../services/adminAuthService";
+import { loadAdminProfile, signOutAdmin } from "../services/adminAuthService";
 import { getFirebaseRuntime } from "../config/firebase";
 
 function busIdFromPath(pathname: string) {
@@ -20,56 +18,38 @@ function busIdFromPath(pathname: string) {
 }
 
 function routeFromPath(pathname: string) {
-  return {
-    page: pageFromPath(pathname),
-    busId: busIdFromPath(pathname),
-  };
+  return { page: pageFromPath(pathname), busId: busIdFromPath(pathname) };
 }
 
 function pageFromPath(pathname: string): AdminPageKey {
   if (pathname === "/admin/map") return "map";
-  if (pathname === "/admin/devices") return "devices";
+  if (pathname === "/admin/buses" || pathname === "/admin/devices") return "buses";
   if (pathname === "/admin/drivers") return "drivers";
   return "dashboard";
 }
 
 export function AdminPage() {
-  const [route, setRoute] = useState(() =>
-    routeFromPath(window.location.pathname),
-  );
+  const [route, setRoute] = useState(() => routeFromPath(window.location.pathname));
   const page = route.page;
   const [authLoading, setAuthLoading] = useState(true);
   const [signedIn, setSignedIn] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [authError, setAuthError] = useState("");
-
   const fleet = useAdminFleet(signedIn);
 
   useEffect(() => {
     const style = document.createElement("style");
     style.id = "admin-reference-styles";
-    style.textContent = adminStyles;
-
-    const existing = document.getElementById(style.id);
-    existing?.remove();
+    style.textContent = adminStyles + "\n" + modernAdminStyles;
+    document.getElementById(style.id)?.remove();
     document.head.appendChild(style);
-
-    return () => {
-      document.getElementById(style.id)?.remove();
-    };
+    return () => document.getElementById(style.id)?.remove();
   }, []);
 
   useEffect(() => {
     const currentPath = window.location.pathname;
-    if (
-      !currentPath.startsWith("/admin") &&
-      !/^\/bus\/[^/]+$/.test(currentPath)
-    ) return;
-
-    const onPopState = () => {
-      setRoute(routeFromPath(window.location.pathname));
-    };
-
+    if (!currentPath.startsWith("/admin") && !/^\/bus\/[^/]+$/.test(currentPath)) return;
+    const onPopState = () => setRoute(routeFromPath(window.location.pathname));
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
@@ -81,68 +61,48 @@ export function AdminPage() {
     void getFirebaseRuntime()
       .then((runtime) => {
         if (stopped) return;
+        unsubscribe = runtime.onAuthStateChanged(runtime.auth, async (user) => {
+          if (!user) {
+            if (!stopped) {
+              setSignedIn(false);
+              setDisplayName("");
+              setAuthLoading(false);
+            }
+            return;
+          }
 
-        unsubscribe = runtime.onAuthStateChanged(
-          runtime.auth,
-          async (user) => {
-            if (!user) {
+          try {
+            const profile = await loadAdminProfile(user.uid);
+            if (!profile || profile.role !== "admin" || profile.enabled !== true) {
+              await signOutAdmin();
               if (!stopped) {
                 setSignedIn(false);
                 setDisplayName("");
-                setAuthLoading(false);
+                setAuthError("This account is not an enabled administrator.");
               }
               return;
             }
 
-            try {
-              const profile = await loadAdminProfile(user.uid);
-              if (
-                !profile ||
-                profile.role !== "admin" ||
-                profile.enabled !== true
-              ) {
-                await signOutAdmin();
-                if (!stopped) {
-                  setSignedIn(false);
-                  setDisplayName("");
-                  setAuthError(
-                    "This account is not an enabled administrator.",
-                  );
-                }
-                return;
-              }
-
-              if (!stopped) {
-                setSignedIn(true);
-                setDisplayName(
-                  profile.displayName ?? user.email ?? "Admin",
-                );
-                setAuthError("");
-              }
-            } catch (error) {
-              if (!stopped) {
-                setSignedIn(false);
-                setDisplayName("");
-                setAuthError(
-                  error instanceof Error
-                    ? error.message
-                    : "Could not verify administrator access.",
-                );
-              }
-            } finally {
-              if (!stopped) setAuthLoading(false);
+            if (!stopped) {
+              setSignedIn(true);
+              setDisplayName(profile.displayName ?? user.email ?? "Admin");
+              setAuthError("");
             }
-          },
-        );
+          } catch (error) {
+            if (!stopped) {
+              setSignedIn(false);
+              setDisplayName("");
+              setAuthError(error instanceof Error ? error.message : "Could not verify administrator access.");
+            }
+          } finally {
+            if (!stopped) setAuthLoading(false);
+          }
+        });
       })
       .catch((error) => {
         if (!stopped) {
           setAuthLoading(false);
-          setAuthError(
-            error instanceof Error
-              ? error.message
-              : "Could not connect to Firebase.",
-          );
+          setAuthError(error instanceof Error ? error.message : "Could not connect to Firebase.");
         }
       });
 
@@ -153,10 +113,12 @@ export function AdminPage() {
   }, []);
 
   const navigate = (next: AdminPageKey) => {
-    const paths: Record<AdminPageKey, string> = {
+    if (next === "geofences") return;
+
+    const paths: Record<Exclude<AdminPageKey, "geofences">, string> = {
       dashboard: "/admin",
       map: "/admin/map",
-      devices: "/admin/devices",
+      buses: "/admin/buses",
       drivers: "/admin/drivers",
     };
     window.history.pushState({}, "", paths[next]);
@@ -177,7 +139,7 @@ export function AdminPage() {
 
   const openBus = (busId: string) => {
     window.history.pushState({}, "", "/bus/" + encodeURIComponent(busId));
-    setRoute({ page: "dashboard", busId });
+    setRoute({ page: "buses", busId });
   };
 
   const signOut = async () => {
@@ -188,17 +150,12 @@ export function AdminPage() {
     window.history.replaceState({}, "", "/admin");
   };
 
-  if (authLoading) {
-    return <div className="empty">Checking administrator access…</div>;
-  }
+  if (authLoading) return <div className="empty">Checking administrator access…</div>;
 
   if (!signedIn) {
     return (
       <div className="admin-ui">
-        <AdminLogin
-          onSignedIn={handleSignedIn}
-          sessionMessage={authError}
-        />
+        <AdminLogin onSignedIn={handleSignedIn} sessionMessage={authError} />
       </div>
     );
   }
@@ -219,9 +176,9 @@ export function AdminPage() {
             drivers={fleet.drivers}
             connected={fleet.connected}
             error={fleet.connectionError}
-            onBack={() => navigate("dashboard")}
+            onBack={() => navigate("buses")}
           />
-        ) : page === "dashboard" && (
+        ) : page === "dashboard" ? (
           <AdminDashboard
             buses={fleet.buses}
             drivers={fleet.drivers}
@@ -230,24 +187,17 @@ export function AdminPage() {
             onRefreshHint={() => navigate("map")}
             onOpenBus={openBus}
           />
-        )}
-        {page === "map" && (
-          <AdminLiveMap
+        ) : page === "map" ? (
+          <AdminLiveMap buses={fleet.buses} drivers={fleet.drivers} connected={fleet.connected} error={fleet.connectionError} />
+        ) : page === "buses" ? (
+          <AdminBuses
             buses={fleet.buses}
             drivers={fleet.drivers}
             connected={fleet.connected}
             error={fleet.connectionError}
+            onOpenBus={openBus}
           />
-        )}
-        {page === "devices" && (
-          <AdminDevices
-            buses={fleet.buses}
-            drivers={fleet.drivers}
-            connected={fleet.connected}
-            error={fleet.connectionError}
-          />
-        )}
-        {page === "drivers" && (
+        ) : (
           <AdminDrivers
             drivers={fleet.drivers}
             buses={fleet.buses.map((bus) => ({
