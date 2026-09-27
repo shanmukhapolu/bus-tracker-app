@@ -12,6 +12,7 @@ export function AdminDashboard({
   connected,
   error,
   onRefreshHint,
+  onOpenBus,
 }: {
   buses: Bus[];
   drivers: FleetDriver[];
@@ -278,16 +279,26 @@ export function AdminDashboard({
                       <td>{bus.trackingActive ? bus.lastUpdated.toLocaleTimeString() : "Never"}</td>
                       <td>{driverByBus.get(bus.id) ?? "Not assigned"}</td>
                       <td>
-                        <button
-                          className="secondary admin-delete admin-table-action"
-                          type="button"
-                          disabled={Boolean(deleting)}
-                          onClick={() => void removeBus(bus)}
-                          aria-label={`Delete Bus ${bus.busNumber}`}
-                        >
-                          <Trash2 size={14} />
-                          {deleting === bus.id ? "Deleting…" : "Delete"}
-                        </button>
+                        <div className="admin-table-actions">
+                          <button
+                            className="secondary admin-table-action"
+                            type="button"
+                            onClick={() => onOpenBus?.(bus.id)}
+                            aria-label={"View Bus " + bus.busNumber + " details"}
+                          >
+                            Details
+                          </button>
+                          <button
+                            className="secondary admin-delete admin-table-action"
+                            type="button"
+                            disabled={Boolean(deleting)}
+                            onClick={() => void removeBus(bus)}
+                            aria-label={"Delete Bus " + bus.busNumber}
+                          >
+                            <Trash2 size={14} />
+                            {deleting === bus.id ? "Deleting…" : "Delete"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -346,6 +357,13 @@ export function AdminDashboard({
                 <div><dt>Status</dt><dd>{current.trackingActive ? "Online" : "Offline"}</dd></div>
                 <div><dt>Driver</dt><dd>{driverByBus.get(current.id) ?? "Not assigned"}</dd></div>
               </div>
+              <button
+                className="panel-footer-link admin-selected-details"
+                type="button"
+                onClick={() => onOpenBus?.(current.id)}
+              >
+                View bus details <ArrowRight size={15} />
+              </button>
             ) : (
               <Empty>No bus selected.</Empty>
             )}
