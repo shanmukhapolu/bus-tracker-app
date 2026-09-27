@@ -105,13 +105,15 @@ export function AdminDashboard({
   if (!connected && !buses.length) return <Loading text="Waiting for live fleet data…" />;
 
   const current = buses.find((bus) => bus.id === selected) ?? buses[0];
-  const positions = buses.map((bus) => ({
-    id: bus.id,
-    label: "Bus " + bus.busNumber,
-    latitude: bus.latitude,
-    longitude: bus.longitude,
-    offline: !bus.trackingActive,
-  }));
+  const positions = buses
+    .filter((bus) => bus.hasKnownLocation !== false)
+    .map((bus) => ({
+      id: bus.id,
+      label: "Bus " + bus.busNumber,
+      latitude: bus.latitude,
+      longitude: bus.longitude,
+      offline: !bus.trackingActive,
+    }));
 
   return (
     <div className="overview-workspace">
@@ -220,7 +222,11 @@ export function AdminDashboard({
                           ? Math.round(bus.speed * 0.621371) + " mph"
                           : "—"}
                       </td>
-                      <td>{bus.lastUpdated.toLocaleTimeString()}</td>
+                      <td>
+                        {bus.hasKnownLocation === false
+                          ? "—"
+                          : bus.lastUpdated.toLocaleTimeString()}
+                      </td>
                       <td>{driverByBus.get(bus.id) ?? "Not assigned"}</td>
                       <td>
                         <div className="admin-table-actions">
