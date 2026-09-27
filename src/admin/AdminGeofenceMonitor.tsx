@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BellRing, MapPinned, X } from "lucide-react";
+import { BellRing, X } from "lucide-react";
 import type { Bus } from "../types/bus";
 import type { Geofence } from "../types/geofence";
 
