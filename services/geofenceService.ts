@@ -65,9 +65,7 @@ export async function saveGeofence(
   const runtime = await getFirebaseRuntime();
   const name = geofence.name.trim();
   const points = geofence.points.filter(
-    (point) =>
-      Number.isFinite(point.latitude) &&
-      Number.isFinite(point.longitude),
+    (point) => Number.isFinite(point.latitude) && Number.isFinite(point.longitude),
   );
 
   if (!name) throw new Error("Enter a geofence name.");
@@ -98,13 +96,26 @@ export async function saveGeofence(
 export async function deleteGeofence(id: string): Promise<void> {
   const runtime = await getFirebaseRuntime();
   if (!id || /[.#$\[\]\/]/.test(id)) throw new Error("Invalid geofence.");
-  await runtime.remove(runtime.ref(runtime.db, `geofences/${id}`));
+
+  const busesSnapshot = await runtime.get(runtime.ref(runtime.db, "buses"));
+  const buses = busesSnapshot.val();
+
+  const updates: Record<string, unknown> = {
+    [`geofences/${id}`]: null,
+  };
+
+  if (buses && typeof buses === "object") {
+    Object.entries(buses as Record<string, unknown>).forEach(([busId, value]) => {
+      if (value && typeof value === "object" && (value as Record<string, unknown>).geofenceId === id) {
+        updates[`buses/${busId}/geofenceId`] = null;
+      }
+    });
+  }
+
+  await runtime.update(runtime.db, updates);
 }
 
-export async function assignGeofenceToBus(
-  busId: string,
-  geofenceId: string,
-): Promise<void> {
+export async function assignGeofenceToBus(busId: string, geofenceId: string): Promise<void> {
   const runtime = await getFirebaseRuntime();
   if (!busId) throw new Error("Bus is required.");
   await runtime.update(runtime.ref(runtime.db, `buses/${busId}`), {
@@ -139,24 +150,12 @@ export function useGeofences(enabled = true) {
             }
           },
           (firebaseError) => {
-            if (!stopped) {
-              setError(
-                firebaseError instanceof Error
-                  ? firebaseError.message
-                  : "Could not load geofences.",
-              );
-            }
+            if (!stopped) setError(firebaseError instanceof Error ? firebaseError.message : "Could not load geofences.");
           },
         );
       })
       .catch((firebaseError) => {
-        if (!stopped) {
-          setError(
-            firebaseError instanceof Error
-              ? firebaseError.message
-              : "Could not connect to Firebase.",
-          );
-        }
+        if (!stopped) setError(firebaseError instanceof Error ? firebaseError.message : "Could not connect to Firebase.");
       });
 
     return () => {
