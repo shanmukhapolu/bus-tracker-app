@@ -34,6 +34,13 @@
         ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
         ".validate": "newData.child('busNumber').isString() && newData.child('route').isString() && newData.child('enabled').isBoolean()"
       }
+    },
+    "geofences": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
+      "$geofenceId": {
+        ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
+        ".validate": "newData.child('name').isString() && newData.child('name').val().length >= 1 && newData.child('name').val().length <= 100 && newData.child('points').hasChildren() && newData.child('enabled').isBoolean()"
+      }
     }
   }
 }
