@@ -1708,6 +1708,21 @@
   }
 }
 
+@media (max-width: 900px) {
+  .admin-ui .login {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-ui .login-story {
+    display: none;
+  }
+
+  .admin-ui .login-form {
+    min-height: 100dvh;
+    padding: 32px 22px;
+  }
+}
+
 @media (max-width: 760px) {
   .operations-shell {
     display: block;
