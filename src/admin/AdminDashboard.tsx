@@ -25,6 +25,7 @@ export function AdminDashboard({
   const [ascending, setAscending] = useState(true);
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState(buses[0]?.id ?? "");
+  const [showAddForm, setShowAddForm] = useState(false);
   const [adding, setAdding] = useState(false);
   const [busNumber, setBusNumber] = useState("");
   const [route, setRoute] = useState("");
@@ -140,9 +141,9 @@ export function AdminDashboard({
     <div className="overview-workspace">
       <PageHeading title="Fleet overview" description="Monitor fleet activity and manage the registered bus fleet.">
         <div className="admin-actions">
-          <button className="secondary" type="button" onClick={() => setAdding((value) => !value)}>
+          <button className="secondary" type="button" onClick={() => setShowAddForm((value) => !value)}>
             <Plus size={16} />
-            {adding ? "Close" : "Add bus"}
+            {showAddForm ? "Close" : "Add bus"}
           </button>
           <button className="secondary overview-map-link" type="button" onClick={() => onRefreshHint?.()}>
             <Map size={16} />
@@ -157,7 +158,7 @@ export function AdminDashboard({
         <div className="summary-stat"><span><i className="status-dot muted" />Offline</span><strong>{offline}</strong></div>
       </div>
 
-      {adding && (
+      {showAddForm && (
         <section className="panel">
           <div className="panel-heading">
             <div>
