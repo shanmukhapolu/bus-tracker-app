@@ -267,3 +267,5 @@ export function FleetMap({
     </div>
   );
 }
+
+export { FleetMap as AdminFleetMap };
