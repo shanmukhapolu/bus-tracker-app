@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import type { Bus } from "../types/bus";
 import type { FleetDriver } from "../services/fleetService";
 import { AdminFleetMap } from "./AdminFleetMap";
@@ -103,9 +102,9 @@ export function AdminLiveMap({
                   ["Coordinates", current.trackingActive ? `${current.latitude.toFixed(5)}, ${current.longitude.toFixed(5)}` : "Last known position"],
                 ]}
               />
-              <Link className="primary full" to={"/"} onClick={(event) => event.preventDefault()}>
-                Bus {current.busNumber} selected
-              </Link>
+              <div className="notice">
+                Bus {current.busNumber} is selected on the live map.
+              </div>
             </>
           ) : (
             <Empty>Select a visible bus marker.</Empty>
