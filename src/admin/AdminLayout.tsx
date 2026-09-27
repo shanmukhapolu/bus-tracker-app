@@ -3,7 +3,8 @@ import {
   LayoutDashboard,
   LogOut,
   Map,
-  Smartphone,
+  MapPinned,
+  BusFront,
   UserCheck,
 } from "lucide-react";
 import { SchoolLogo } from "../components/SchoolLogo";
@@ -12,7 +13,8 @@ import type { Bus } from "../types/bus";
 const links = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { key: "map", label: "Live Map", icon: Map },
-  { key: "devices", label: "Devices", icon: Smartphone },
+  { key: "buses", label: "Buses", icon: BusFront },
+  { key: "geofences", label: "Geofences", icon: MapPinned },
   { key: "drivers", label: "Drivers", icon: UserCheck },
 ] as const;
 
@@ -49,35 +51,30 @@ export function AdminLayout({
 
   return (
     <div className="admin-shell operations-shell">
-      <a className="skip-link" href="#admin-main">
-        Skip to content
-      </a>
+      <a className="skip-link" href="#admin-main">Skip to content</a>
 
       <aside className="sidebar">
         <div className="admin-brand-logo">
           <SchoolLogo className="admin-school-logo" alt="" />
           <div>
             <strong>Admin Panel</strong>
+            <span>Transportation</span>
           </div>
         </div>
 
-        <nav aria-label="Admin navigation">
+        <nav className="admin-nav" aria-label="Admin navigation">
           {links.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
               type="button"
-              className={
-                page === key
-                  ? "admin-nav-button active"
-                  : "admin-nav-button"
-              }
-              onClick={() => onNavigate(key)}
+              className={page === key ? "admin-nav-button active" : "admin-nav-button"}
+              onClick={() => {
+                if (key !== "geofences") onNavigate(key);
+              }}
             >
               <Icon size={19} strokeWidth={1.8} />
               <span>{label}</span>
-              {key === "dashboard" && (
-                <span className="nav-count">{buses.length}</span>
-              )}
+              {key === "dashboard" && <span className="nav-count">{buses.length}</span>}
             </button>
           ))}
         </nav>
@@ -85,9 +82,7 @@ export function AdminLayout({
         <div className="sidebar-bottom">
           <div className="user">
             <span className="avatar">{initials}</span>
-            <div>
-              <strong>{displayName}</strong>
-            </div>
+            <div><strong>{displayName}</strong><span>Administrator</span></div>
           </div>
           <button className="signout" type="button" onClick={onSignOut}>
             <LogOut size={18} />
