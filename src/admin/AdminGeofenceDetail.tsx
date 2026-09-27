@@ -12,7 +12,6 @@ import {
 import {
   LngLatBounds,
   Map as LibreMap,
-  Marker,
   NavigationControl,
   type GeoJSONSource,
   type MapMouseEvent,
@@ -64,8 +63,9 @@ export function AdminGeofenceDetail({
   const isNew = !geofence;
   const mapHost = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LibreMap | null>(null);
-  const vertexMarkersRef = useRef<Map<number, Marker>>(new Map());
   const cameraInitializedRef = useRef(false);
+  const draggingVertexRef = useRef<number | null>(null);
+  const suppressMapClickRef = useRef(false);
 
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState("");
@@ -164,6 +164,21 @@ export function AdminGeofenceDetail({
         source: "geofence-detail",
         paint: { "line-color": "#142f50", "line-width": 3 },
       });
+      instance.addSource("geofence-detail-points", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      instance.addLayer({
+        id: "geofence-detail-points",
+        type: "circle",
+        source: "geofence-detail-points",
+        paint: {
+          "circle-radius": 7,
+          "circle-color": "#2464b8",
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 2,
+        },
+      });
     });
 
     const resizeObserver = new ResizeObserver(() => instance.resize());
@@ -172,8 +187,7 @@ export function AdminGeofenceDetail({
     return () => {
       window.clearTimeout(timeout);
       resizeObserver.disconnect();
-      vertexMarkersRef.current.forEach((marker) => marker.remove());
-      vertexMarkersRef.current.clear();
+      draggingVertexRef.current = null;
       instance.remove();
       mapRef.current = null;
       setMapReady(false);
@@ -191,6 +205,17 @@ export function AdminGeofenceDetail({
       features: feature ? [feature] : [],
     });
 
+    (map.getSource("geofence-detail-points") as GeoJSONSource).setData({
+      type: "FeatureCollection",
+      features: coordinates.map((point, index) => ({
+        type: "Feature" as const,
+        properties: { index },
+        geometry: {
+          type: "Point" as const,
+          coordinates: point,
+        },
+      })),
+    });
   }, [coordinates, mapReady]);
 
   useEffect(() => {
@@ -223,71 +248,94 @@ export function AdminGeofenceDetail({
     if (!mapReady || !mapRef.current) return;
 
     const map = mapRef.current;
-    const markers = vertexMarkersRef.current;
-    const activeIndexes = new Set<number>();
 
-    if (editing) {
-      coordinates.forEach((point, index) => {
-        activeIndexes.add(index);
-
-        let marker = markers.get(index);
-        if (!marker) {
-          const element = document.createElement("button");
-          element.type = "button";
-          element.className = "geofence-vertex";
-          element.setAttribute(
-            "aria-label",
-            "Geofence point " + String(index + 1),
-          );
-
-          const stopMapInteraction = (event: Event) => {
-            event.stopPropagation();
-          };
-          element.addEventListener("pointerdown", stopMapInteraction);
-          element.addEventListener("mousedown", stopMapInteraction);
-          element.addEventListener("touchstart", stopMapInteraction);
-          element.addEventListener("click", stopMapInteraction);
-
-          marker = new Marker({
-            element,
-            draggable: true,
-          })
-            .setLngLat(point)
-            .addTo(map);
-
-          marker.on("dragend", () => {
-            const position = marker!.getLngLat();
-            setCoordinates((current) =>
-              current.map((currentPoint, currentIndex) =>
-                currentIndex === index
-                  ? [position.lng, position.lat]
-                  : currentPoint,
-              ),
-            );
-            setSaveError("");
-            setMessage("");
-          });
-
-          markers.set(index, marker);
-        } else {
-          marker.setLngLat(point);
-        }
+    const getVertexIndex = (event: MapMouseEvent) => {
+      const features = map.queryRenderedFeatures(event.point, {
+        layers: ["geofence-detail-points"],
       });
-    }
+      const rawIndex = features[0]?.properties?.index;
+      const index = Number(rawIndex);
+      return Number.isInteger(index) &&
+        index >= 0 &&
+        index < coordinates.length
+        ? index
+        : null;
+    };
 
-    markers.forEach((marker, index) => {
-      if (!activeIndexes.has(index)) {
-        marker.remove();
-        markers.delete(index);
+    const handleMouseDown = (event: MapMouseEvent) => {
+      if (!editing) return;
+      const index = getVertexIndex(event);
+      if (index === null) return;
+
+      draggingVertexRef.current = index;
+      suppressMapClickRef.current = true;
+      map.dragPan.disable();
+      map.getCanvas().style.cursor = "grabbing";
+      event.preventDefault();
+    };
+
+    const handleMouseMove = (event: MapMouseEvent) => {
+      const index = draggingVertexRef.current;
+      if (index === null || !editing) return;
+
+      const point = map.unproject(event.point);
+      setCoordinates((current) =>
+        current.map((currentPoint, currentIndex) =>
+          currentIndex === index
+            ? [point.lng, point.lat]
+            : currentPoint,
+        ),
+      );
+      setSaveError("");
+      setMessage("");
+    };
+
+    const finishDrag = () => {
+      if (draggingVertexRef.current === null) return;
+      draggingVertexRef.current = null;
+      map.dragPan.enable();
+      map.getCanvas().style.cursor = drawing ? "crosshair" : "";
+      setSaveError("");
+      setMessage("");
+    };
+
+    const handleMouseUp = () => {
+      finishDrag();
+    };
+
+    const handleMouseLeave = () => {
+      if (draggingVertexRef.current !== null) {
+        finishDrag();
       }
-    });
-  }, [coordinates, editing, mapReady]);
+    };
+
+    map.on("mousedown", handleMouseDown);
+    map.on("mousemove", handleMouseMove);
+    map.on("mouseup", handleMouseUp);
+    map.on("mouseleave", handleMouseLeave);
+
+    return () => {
+      map.off("mousedown", handleMouseDown);
+      map.off("mousemove", handleMouseMove);
+      map.off("mouseup", handleMouseUp);
+      map.off("mouseleave", handleMouseLeave);
+      if (draggingVertexRef.current !== null) {
+        draggingVertexRef.current = null;
+        map.dragPan.enable();
+      }
+      map.getCanvas().style.cursor = "";
+    };
+  }, [coordinates.length, drawing, editing, mapReady]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
 
     const map = mapRef.current;
     const handleClick = (event: MapMouseEvent) => {
+      if (suppressMapClickRef.current) {
+        suppressMapClickRef.current = false;
+        return;
+      }
       if (!editing || !drawing || coordinates.length >= MAX_POINTS) return;
 
       setCoordinates((current) => [
@@ -527,7 +575,7 @@ export function AdminGeofenceDetail({
             {editing && drawing && (
               <div className="geofence-detail-draw-hint">
                 <MapPinned size={15} />
-                Click the map to place each corner.
+                Click the map to place a corner. Drag any existing point to reposition it.
               </div>
             )}
 
