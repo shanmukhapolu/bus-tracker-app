@@ -149,3 +149,216 @@ export async function assignBusGeofence(busId: string, geofenceId: string) {
     geofenceId: normalizedGeofenceId,
   });
 }
+
+export interface GeofenceEntryEvent {
+  id: string;
+  busId: string;
+  busNumber: string;
+  geofenceId: string;
+  geofenceName: string;
+  createdAt: number;
+}
+
+export interface GeofenceBusOrderEntry {
+  busId: string;
+  busNumber: string;
+  firstEntryAt: number;
+}
+
+function normalizeEntryEvents(value: unknown): GeofenceEntryEvent[] {
+  if (!value || typeof value !== "object") return [];
+
+  return Object.entries(value as Record<string, unknown>).flatMap(
+    ([geofenceId, rawGeofence]) => {
+      if (!rawGeofence || typeof rawGeofence !== "object") return [];
+
+      return Object.entries(
+        rawGeofence as Record<string, unknown>,
+      ).flatMap(([eventId, rawEvent]) => {
+        if (!rawEvent || typeof rawEvent !== "object") return [];
+
+        const record = rawEvent as Record<string, unknown>;
+        const busId = String(record.busId ?? "").trim();
+        const busNumber = String(record.busNumber ?? "").trim();
+        const eventGeofenceId = String(record.geofenceId ?? geofenceId).trim();
+        const geofenceName = String(record.geofenceName ?? "").trim();
+        const createdAt = Number(record.createdAt);
+
+        if (
+          !busId ||
+          !busNumber ||
+          !eventGeofenceId ||
+          !geofenceName ||
+          !Number.isFinite(createdAt)
+        ) {
+          return [];
+        }
+
+        return [{
+          id: String(record.id ?? eventId),
+          busId,
+          busNumber,
+          geofenceId: eventGeofenceId,
+          geofenceName,
+          createdAt,
+        }];
+      });
+    },
+  );
+}
+
+function normalizeBusOrder(
+  value: unknown,
+): Record<string, GeofenceBusOrderEntry[]> {
+  if (!value || typeof value !== "object") return {};
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).flatMap(
+      ([geofenceId, rawGeofence]) => {
+        if (!rawGeofence || typeof rawGeofence !== "object") return [];
+
+        const entries = Object.entries(
+          rawGeofence as Record<string, unknown>,
+        ).flatMap(([busId, rawEntry]) => {
+          if (!rawEntry || typeof rawEntry !== "object") return [];
+
+          const record = rawEntry as Record<string, unknown>;
+          const busNumber = String(record.busNumber ?? "").trim();
+          const firstEntryAt = Number(record.firstEntryAt);
+
+          if (!busNumber || !Number.isFinite(firstEntryAt)) return [];
+
+          return [{
+            busId,
+            busNumber,
+            firstEntryAt,
+          }];
+        });
+
+        return entries.length ? [[geofenceId, entries]] : [];
+      },
+    ),
+  );
+}
+
+export function subscribeGeofenceAlerts(
+  onAlerts: (alerts: GeofenceEntryEvent[]) => void,
+  onError: (message: string) => void,
+) {
+  let cancelled = false;
+  let stop: (() => void) | undefined;
+
+  void getFirebaseRuntime()
+    .then((runtime) => {
+      if (cancelled) return;
+
+      stop = runtime.onValue(
+        runtime.ref(runtime.db, "geofenceAlerts"),
+        (snapshot) => onAlerts(normalizeEntryEvents(snapshot.val())),
+        (error) =>
+          onError(
+            error instanceof Error
+              ? error.message
+              : "Could not load geofence alerts.",
+          ),
+      );
+    })
+    .catch((error) => {
+      if (!cancelled) {
+        onError(
+          error instanceof Error
+            ? error.message
+            : "Could not connect to Firebase.",
+        );
+      }
+    });
+
+  return () => {
+    cancelled = true;
+    stop?.();
+  };
+}
+
+export function subscribeGeofenceBusOrder(
+  onOrder: (order: Record<string, GeofenceBusOrderEntry[]>) => void,
+  onError: (message: string) => void,
+) {
+  let cancelled = false;
+  let stop: (() => void) | undefined;
+
+  void getFirebaseRuntime()
+    .then((runtime) => {
+      if (cancelled) return;
+
+      stop = runtime.onValue(
+        runtime.ref(runtime.db, "geofenceBusOrder"),
+        (snapshot) => onOrder(normalizeBusOrder(snapshot.val())),
+        (error) =>
+          onError(
+            error instanceof Error
+              ? error.message
+              : "Could not load geofence bus order.",
+          ),
+      );
+    })
+    .catch((error) => {
+      if (!cancelled) {
+        onError(
+          error instanceof Error
+            ? error.message
+            : "Could not connect to Firebase.",
+        );
+      }
+    });
+
+  return () => {
+    cancelled = true;
+    stop?.();
+  };
+}
+
+export async function recordGeofenceEntry(
+  event: GeofenceEntryEvent,
+): Promise<void> {
+  const runtime = await getFirebaseRuntime();
+
+  const alertPath =
+    "geofenceAlerts/" +
+    event.geofenceId +
+    "/" +
+    event.id;
+
+  await runtime.update(runtime.ref(runtime.db, alertPath), {
+    id: event.id,
+    busId: event.busId,
+    busNumber: event.busNumber,
+    geofenceId: event.geofenceId,
+    geofenceName: event.geofenceName,
+    createdAt: event.createdAt,
+  });
+
+  const orderPath =
+    "geofenceBusOrder/" +
+    event.geofenceId +
+    "/" +
+    event.busId;
+
+  await runtime.runTransaction(
+    runtime.ref(runtime.db, orderPath),
+    (currentData) => {
+      if (
+        currentData &&
+        typeof currentData === "object" &&
+        Number.isFinite(Number(currentData.firstEntryAt))
+      ) {
+        return currentData;
+      }
+
+      return {
+        busId: event.busId,
+        busNumber: event.busNumber,
+        firstEntryAt: event.createdAt,
+      };
+    },
+  );
+}
