@@ -10,7 +10,7 @@ import {
   Database,
 } from "lucide-react";
 import { SchoolLogo } from "../components/SchoolLogo";
-import { relativeTime } from "../utils";
+import { relativeTime } from "./utils";
 import type { Bus } from "../types/bus";
 
 const links = [
