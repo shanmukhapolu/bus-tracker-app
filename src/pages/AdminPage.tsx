@@ -8,9 +8,13 @@ import { AdminLiveMap } from "../admin/AdminLiveMap";
 import { AdminBuses } from "../admin/AdminBuses";
 import { AdminDrivers } from "../admin/AdminDrivers";
 import { AdminBusDetails } from "../admin/AdminBusDetails";
+import { AdminGeofences } from "../admin/AdminGeofences";
+import { AdminGeofenceMonitor } from "../admin/AdminGeofenceMonitor";
 import { useAdminFleet } from "../admin/adminData";
 import { loadAdminProfile, signOutAdmin } from "../services/adminAuthService";
 import { getFirebaseRuntime } from "../config/firebase";
+import { subscribeGeofences } from "../services/geofenceService";
+import type { Geofence } from "../types/geofence";
 
 function busIdFromPath(pathname: string) {
   const match = pathname.match(/^\/bus\/([^/]+)$/);
@@ -25,6 +29,7 @@ function pageFromPath(pathname: string): AdminPageKey {
   if (pathname === "/admin/map") return "map";
   if (pathname === "/admin/buses" || pathname === "/admin/devices") return "buses";
   if (pathname === "/admin/drivers") return "drivers";
+  if (pathname === "/admin/geofences") return "geofences";
   return "dashboard";
 }
 
@@ -35,6 +40,8 @@ export function AdminPage() {
   const [signedIn, setSignedIn] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [authError, setAuthError] = useState("");
+  const [geofences, setGeofences] = useState<Geofence[]>([]);
+  const [geofenceError, setGeofenceError] = useState("");
   const fleet = useAdminFleet(signedIn);
 
   useEffect(() => {
@@ -53,6 +60,22 @@ export function AdminPage() {
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
+
+  useEffect(() => {
+    if (!signedIn) {
+      setGeofences([]);
+      setGeofenceError("");
+      return;
+    }
+
+    return subscribeGeofences(
+      (next) => {
+        setGeofences(next);
+        setGeofenceError("");
+      },
+      setGeofenceError,
+    );
+  }, [signedIn]);
 
   useEffect(() => {
     let stopped = false;
@@ -113,12 +136,11 @@ export function AdminPage() {
   }, []);
 
   const navigate = (next: AdminPageKey) => {
-    if (next === "geofences") return;
-
-    const paths: Record<Exclude<AdminPageKey, "geofences">, string> = {
+    const paths: Record<AdminPageKey, string> = {
       dashboard: "/admin",
       map: "/admin/map",
       buses: "/admin/buses",
+      geofences: "/admin/geofences",
       drivers: "/admin/drivers",
     };
     window.history.pushState({}, "", paths[next]);
@@ -193,9 +215,18 @@ export function AdminPage() {
           <AdminBuses
             buses={fleet.buses}
             drivers={fleet.drivers}
+            geofences={geofences}
+            geofenceError={geofenceError}
             connected={fleet.connected}
             error={fleet.connectionError}
             onOpenBus={openBus}
+          />
+        ) : page === "geofences" ? (
+          <AdminGeofences
+            geofences={geofences}
+            buses={fleet.buses}
+            connected={fleet.connected}
+            error={geofenceError}
           />
         ) : (
           <AdminDrivers
@@ -210,6 +241,7 @@ export function AdminPage() {
           />
         )}
       </AdminLayout>
+      <AdminGeofenceMonitor buses={fleet.buses} geofences={geofences} />
     </div>
   );
 }
