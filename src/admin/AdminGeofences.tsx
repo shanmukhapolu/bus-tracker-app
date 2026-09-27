@@ -4,6 +4,7 @@ import {
   NavigationControl,
   LngLatBounds,
   type GeoJSONSource,
+  type MapMouseEvent,
 } from "maplibre-gl";
 import { MapPinned, MousePointer2, Pencil, Plus, Save, Trash2, Undo2 } from "lucide-react";
 import { CARMEL_CENTER, MAP_STYLE_URL } from "../config/map";
@@ -175,7 +176,7 @@ export function AdminGeofences({ geofences, buses, connected, error }: Props) {
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
     const map = mapRef.current;
-    const handleClick = (event: { lngLat: { lng: number; lat: number } }) => {
+    const handleClick = (event: MapMouseEvent) => {
       if (!drawing || draft.length >= MAX_POINTS) return;
       setDraft((points) => [...points, [event.lngLat.lng, event.lngLat.lat]]);
       setMessage("");
