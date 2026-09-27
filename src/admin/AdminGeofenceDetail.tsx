@@ -48,6 +48,7 @@ export function AdminGeofenceDetail({
   connected,
   error,
   onBack,
+  onOpenGeofence,
 }: {
   geofence: Geofence | null;
   buses: Bus[];
@@ -55,6 +56,7 @@ export function AdminGeofenceDetail({
   connected: boolean;
   error?: string;
   onBack: () => void;
+  onOpenGeofence: (id: string) => void;
 }) {
   const isNew = !geofence;
   const mapHost = useRef<HTMLDivElement>(null);
@@ -383,6 +385,7 @@ export function AdminGeofenceDetail({
       setEditing(false);
       setDrawing(false);
       setMessage(isNew ? "Geofence created." : "Geofence updated.");
+      onOpenGeofence(savedId);
     } catch (caught) {
       setSaveError(
         caught instanceof Error
