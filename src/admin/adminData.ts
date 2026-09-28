@@ -147,6 +147,47 @@ export async function updateAdminDriverAccess(
     {
       assignedBus: normalizedBus,
       enabled,
+      approvalStatus:
+        enabled || driverSnapshot.val()?.approvalStatus === "approved"
+          ? "approved"
+          : "pending",
     },
   );
+}
+
+export async function deleteDriverAccount(driverId: string) {
+  const normalizedUid = String(driverId ?? "").trim();
+
+  if (!normalizedUid) {
+    throw new Error("Driver account is required.");
+  }
+
+  const runtime = await getFirebaseRuntime();
+  const functions = runtime.getFunctions(runtime.app, "us-central1");
+  const callable = runtime.httpsCallable(functions, "deleteDriver");
+
+  try {
+    await callable({ uid: normalizedUid });
+  } catch (caught) {
+    const code =
+      typeof caught === "object" &&
+      caught !== null &&
+      "code" in caught &&
+      typeof (caught as { code?: unknown }).code === "string"
+        ? String((caught as { code: string }).code)
+        : "";
+
+    const message =
+      typeof caught === "object" &&
+      caught !== null &&
+      "message" in caught
+        ? String((caught as { message?: unknown }).message)
+        : "";
+
+    if (code === "functions/failed-precondition" && message) {
+      throw new Error(message);
+    }
+
+    throw new Error(message || "Could not delete the driver account.");
+  }
 }
