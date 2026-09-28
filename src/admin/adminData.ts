@@ -198,9 +198,9 @@ export async function deleteDriverAccount(driverId: string) {
     }
   }
 
-  const updates: Record<string, unknown> = {
-    [`drivers/${normalizedUid}`]: null,
-  };
+  await runtime.remove(
+    runtime.ref(runtime.db, `drivers/${normalizedUid}`),
+  );
 
   if (assignedBus) {
     const activeDriverSnapshot = await runtime.get(
@@ -208,9 +208,9 @@ export async function deleteDriverAccount(driverId: string) {
     );
 
     if (activeDriverSnapshot.val() === normalizedUid) {
-      updates[`activeDrivers/${assignedBus}`] = null;
+      await runtime.remove(
+        runtime.ref(runtime.db, `activeDrivers/${assignedBus}`),
+      );
     }
   }
-
-  await runtime.update(runtime.ref(runtime.db, ""), updates);
 }
