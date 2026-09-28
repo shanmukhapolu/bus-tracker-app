@@ -72,12 +72,12 @@ export function AdminDrivers({
   const remove = async (driver: FleetDriver) => {
     const confirmed = window.confirm(
       driver.approvalStatus === "approved"
-        ? "Delete " +
+        ? "Remove " +
             driver.displayName +
-            "'s driver account? This permanently removes the Firebase Authentication account and driver record."
-        : "Delete " +
+            "'s driver profile? This removes the driver record and access from this application. The Firebase Authentication account cannot be deleted from the browser."
+        : "Remove " +
             driver.displayName +
-            "'s pending request? This permanently removes the Firebase Authentication account and request record.",
+            "'s pending request? This removes the driver record and access from this application. The Firebase Authentication account cannot be deleted from the browser.",
     );
 
     if (!confirmed) return;
@@ -89,8 +89,8 @@ export function AdminDrivers({
       await deleteDriverAccount(driver.uid);
       setMessage(
         driver.approvalStatus === "approved"
-          ? driver.displayName + "'s driver account was deleted."
-          : driver.displayName + "'s request was deleted.",
+          ? driver.displayName + "'s driver profile was removed."
+          : driver.displayName + "'s request was removed.",
       );
     } catch (caught) {
       setMessage(
@@ -271,7 +271,7 @@ export function AdminDrivers({
                             className="secondary admin-delete driver-delete"
                             disabled={busy}
                             onClick={() => void remove(driver)}
-                            title="Delete driver account"
+                            title="Remove driver from this application"
                           >
                             <Trash2 size={15} />
                             Delete
