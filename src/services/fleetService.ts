@@ -76,7 +76,11 @@ export function normalizeFleetDrivers(value: unknown): FleetDriver[] {
               ? ""
               : String(record.assignedBus).trim(),
           approvalStatus:
-            record.approvalStatus === "approved" || record.enabled === true
+            record.approvalStatus === "approved" ||
+            record.enabled === true ||
+            (record.enabled === false &&
+              typeof record.assignedBus === "string" &&
+              record.assignedBus.trim() !== "")
               ? "approved"
               : "pending",
         },
