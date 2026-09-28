@@ -19,8 +19,8 @@
       ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || (root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true))",
-        ".write": "auth != null && ((auth.uid === $uid && !data.exists() && newData.child('enabled').val() === false && newData.child('displayName').isString() && newData.child('assignedBus').val() === '' && !newData.child('allowedBuses').exists()) || (root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true))",
-        ".validate": "newData.hasChildren(['displayName', 'enabled', 'assignedBus']) && newData.child('displayName').isString() && newData.child('displayName').val().length >= 2 && newData.child('displayName').val().length <= 100 && newData.child('enabled').isBoolean() && newData.child('assignedBus').isString() && (newData.child('assignedBus').val() === '' || root.child('buses').child(newData.child('assignedBus').val()).child('enabled').val() === true)",
+        ".write": "auth != null && ((auth.uid === $uid && !data.exists() && newData.child('enabled').val() === false && newData.child('displayName').isString() && newData.child('assignedBus').val() === '' && newData.child('approvalStatus').val() === 'pending' && (!newData.child('email').exists() || newData.child('email').isString()) && !newData.child('allowedBuses').exists()) || (root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true))",
+        ".validate": "newData.hasChildren(['displayName', 'enabled', 'assignedBus']) && newData.child('displayName').isString() && newData.child('displayName').val().length >= 2 && newData.child('displayName').val().length <= 100 && newData.child('enabled').isBoolean() && newData.child('assignedBus').isString() && (newData.child('assignedBus').val() === '' || root.child('buses').child(newData.child('assignedBus').val()).child('enabled').val() === true) && (!newData.child('email').exists() || newData.child('email').isString()) && (!newData.child('approvalStatus').exists() || newData.child('approvalStatus').val() === 'pending' || newData.child('approvalStatus').val() === 'approved')",
         "allowedBuses": {
           "$busId": {
             ".validate": "!newData.exists() || (newData.val() === true && root.child('buses').child($busId).child('enabled').val() === true)"
@@ -91,7 +91,9 @@
             ".validate": "newData.hasChildren(['authorId', 'text', 'timestamp']) && newData.child('authorId').val() === auth.uid && newData.child('text').isString() && newData.child('text').val().length >= 1 && newData.child('text').val().length <= 2000 && newData.child('timestamp').isNumber()"
           }
         },
-        "$other": { ".write": false }
+        "$other": {
+          ".write": false
+        }
       }
     },
     "incidentSensors": {
