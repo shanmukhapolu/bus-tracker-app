@@ -41,6 +41,8 @@ export interface FirebaseRuntime {
   initializeApp: (config: object) => any;
   getAuth: (app: any) => any;
   getDatabase: (app: any, url?: string) => any;
+  getFunctions: (app: any, regionOrCustomDomain?: string) => any;
+  httpsCallable: (functions: any, name: string) => any;
   onAuthStateChanged: (
     auth: any,
     callback: (user: any) => void,
@@ -94,7 +96,8 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
       loadFirebaseModule("app"),
       loadFirebaseModule("auth"),
       loadFirebaseModule("database"),
-    ]).then(([appModule, authModule, databaseModule]) => {
+      loadFirebaseModule("functions"),
+    ]).then(([appModule, authModule, databaseModule, functionsModule]) => {
       const app = appModule.initializeApp(firebaseConfig);
       const auth = authModule.getAuth(app);
       const db = databaseModule.getDatabase(
@@ -109,6 +112,8 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
         initializeApp: appModule.initializeApp,
         getAuth: authModule.getAuth,
         getDatabase: databaseModule.getDatabase,
+        getFunctions: functionsModule.getFunctions,
+        httpsCallable: functionsModule.httpsCallable,
         onAuthStateChanged: authModule.onAuthStateChanged,
         signInWithEmailAndPassword: authModule.signInWithEmailAndPassword,
         createUserWithEmailAndPassword:
