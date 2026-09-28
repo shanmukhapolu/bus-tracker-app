@@ -14,6 +14,7 @@ export interface FleetDriver {
   email?: string;
   enabled: boolean;
   assignedBus: string;
+  approvalStatus: "pending" | "approved";
 }
 
 export function mergeFleetBuses(buses: FleetBus[]) {
@@ -74,6 +75,10 @@ export function normalizeFleetDrivers(value: unknown): FleetDriver[] {
             record.assignedBus === undefined
               ? ""
               : String(record.assignedBus).trim(),
+          approvalStatus:
+            record.approvalStatus === "approved" || record.enabled === true
+              ? "approved"
+              : "pending",
         },
       ];
     },
