@@ -212,5 +212,5 @@ export async function deleteDriverAccount(driverId: string) {
     }
   }
 
-  await runtime.update(runtime.db, updates);
+  await runtime.update(runtime.ref(runtime.db, ""), updates);
 }
