@@ -70,16 +70,3 @@ export async function loadDriverProfile(
   return snapshot.exists() ? (snapshot.val() as DriverProfile) : null;
 }
 
-export async function deleteDriverAccount(uid: string) {
-  const normalizedUid = String(uid ?? "").trim();
-
-  if (!normalizedUid) {
-    throw new Error("Driver account is required.");
-  }
-
-  const runtime = await getFirebaseRuntime();
-  const functions = runtime.getFunctions(runtime.app, "us-central1");
-  const callable = runtime.httpsCallable(functions, "deleteDriver");
-
-  await callable({ uid: normalizedUid });
-}
