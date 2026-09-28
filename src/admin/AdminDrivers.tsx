@@ -7,6 +7,8 @@ import {
   updateAdminDriverAccess,
 } from "./adminData";
 
+type DriverView = "active" | "pending" | "disabled";
+
 export function AdminDrivers({
   drivers,
   buses,
@@ -19,28 +21,43 @@ export function AdminDrivers({
   const [assignments, setAssignments] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState("");
   const [message, setMessage] = useState("");
-  const [view, setView] = useState<"drivers" | "requests">("drivers");
+  const [view, setView] = useState<DriverView>("active");
 
-  const requests = useMemo(
+  const pending = useMemo(
     () =>
       drivers
-        .filter((driver) => driver.approvalStatus !== "approved")
+        .filter((driver) => driver.approvalStatus === "pending")
         .sort((a, b) => a.displayName.localeCompare(b.displayName)),
     [drivers],
   );
 
-  const currentDrivers = useMemo(
+  const active = useMemo(
     () =>
       drivers
-        .filter((driver) => driver.approvalStatus === "approved")
+        .filter(
+          (driver) =>
+            driver.approvalStatus === "approved" && driver.enabled,
+        )
         .sort((a, b) => a.displayName.localeCompare(b.displayName)),
     [drivers],
   );
 
-  const pending = requests.length;
-  const enabled = currentDrivers.filter((driver) => driver.enabled).length;
+  const disabled = useMemo(
+    () =>
+      drivers
+        .filter(
+          (driver) =>
+            driver.approvalStatus === "approved" && !driver.enabled,
+        )
+        .sort((a, b) => a.displayName.localeCompare(b.displayName)),
+    [drivers],
+  );
 
-  const save = async (driver: FleetDriver, enabledNext: boolean) => {
+  const save = async (
+    driver: FleetDriver,
+    enabledNext: boolean,
+    action: "approve" | "enable" | "save" | "disable",
+  ) => {
     const selected = assignments[driver.uid] ?? driver.assignedBus;
     setSaving(driver.uid);
     setMessage("");
@@ -48,15 +65,17 @@ export function AdminDrivers({
     try {
       await updateAdminDriverAccess(driver.uid, selected, enabledNext);
       setMessage(
-        enabledNext
-          ? driver.approvalStatus === "approved"
-            ? "Driver access and bus assignment saved."
-            : "Driver approved and added to the drivers list."
-          : "Driver disabled.",
+        action === "approve"
+          ? "Driver approved and moved to Active."
+          : action === "enable"
+            ? "Driver enabled and moved to Active."
+            : action === "disable"
+              ? "Driver disabled and moved to Disabled."
+              : "Driver access and bus assignment saved.",
       );
 
-      if (driver.approvalStatus !== "approved" && enabledNext) {
-        setView("drivers");
+      if (action === "approve" || action === "enable") {
+        setView("active");
       }
     } catch (caught) {
       setMessage(
@@ -71,13 +90,9 @@ export function AdminDrivers({
 
   const remove = async (driver: FleetDriver) => {
     const confirmed = window.confirm(
-      driver.approvalStatus === "approved"
-        ? "Remove " +
-            driver.displayName +
-            "'s driver profile? This removes the driver record and access from this application. The Firebase Authentication account cannot be deleted from the browser."
-        : "Remove " +
-            driver.displayName +
-            "'s pending request? This removes the driver record and access from this application. The Firebase Authentication account cannot be deleted from the browser.",
+      "Remove " +
+        driver.displayName +
+        "'s driver profile from this application? This removes the Firebase database record. The Firebase Authentication account must be removed separately because browser Firebase credentials cannot delete another user's Auth account.",
     );
 
     if (!confirmed) return;
@@ -87,53 +102,61 @@ export function AdminDrivers({
 
     try {
       await deleteDriverAccount(driver.uid);
-      setMessage(
-        driver.approvalStatus === "approved"
-          ? driver.displayName + "'s driver profile was removed."
-          : driver.displayName + "'s request was removed.",
-      );
+      setMessage(driver.displayName + "'s driver profile was removed.");
     } catch (caught) {
       setMessage(
         caught instanceof Error
           ? caught.message
-          : "Could not delete the driver account.",
+          : "Could not remove the driver profile.",
       );
     } finally {
       setSaving("");
     }
   };
 
-  const displayed = view === "requests" ? requests : currentDrivers;
+  const displayed =
+    view === "pending" ? pending : view === "disabled" ? disabled : active;
+
+  const tabCounts = {
+    active: active.length,
+    pending: pending.length,
+    disabled: disabled.length,
+  };
 
   return (
     <>
       <PageHeading
         title="Driver access"
-        description="Review driver requests, manage approved drivers, and control which bus each driver may track."
+        description="Manage active drivers, review new account requests, and restore disabled driver accounts."
       />
       <div className="metrics driver-metrics">
-        <Metric label="Driver accounts" value={currentDrivers.length} />
-        <Metric label="Pending requests" value={pending} tone="amber" />
-        <Metric label="Enabled drivers" value={enabled} tone="green" />
+        <Metric label="Active drivers" value={active.length} tone="green" />
+        <Metric label="Pending requests" value={pending.length} tone="amber" />
+        <Metric label="Disabled drivers" value={disabled.length} />
       </div>
       <div className="notice driver-security-notice">
         <ShieldCheck size={18} />
-        Approval grants permission to publish live GPS only for the assigned bus.
-        Confirm the person and assignment before enabling access.
+        Approved drivers can publish live GPS only for their assigned bus.
+        Pending accounts cannot sign in until approved.
       </div>
 
       <section className="panel">
         <div className="panel-heading">
           <div>
-            <h2>{view === "requests" ? "Driver requests" : "Current drivers"}</h2>
+            <h2>
+              {view === "pending"
+                ? "Driver requests"
+                : view === "disabled"
+                  ? "Disabled drivers"
+                  : "Active drivers"}
+            </h2>
             <span>
-              {view === "requests"
-                ? requests.length +
-                  " pending request" +
-                  (requests.length === 1 ? "" : "s")
-                : currentDrivers.length +
-                  " approved driver" +
-                  (currentDrivers.length === 1 ? "" : "s")}
+              {displayed.length}{" "}
+              {view === "pending"
+                ? "pending request" + (displayed.length === 1 ? "" : "s")
+                : view === "disabled"
+                  ? "disabled driver" + (displayed.length === 1 ? "" : "s")
+                  : "active driver" + (displayed.length === 1 ? "" : "s")}
             </span>
           </div>
         </div>
@@ -143,24 +166,23 @@ export function AdminDrivers({
           role="tablist"
           aria-label="Driver access views"
         >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={view === "drivers"}
-            aria-pressed={view === "drivers"}
-            onClick={() => setView("drivers")}
-          >
-            Drivers <span className="tab-count">{currentDrivers.length}</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={view === "requests"}
-            aria-pressed={view === "requests"}
-            onClick={() => setView("requests")}
-          >
-            Requests <span className="tab-count">{requests.length}</span>
-          </button>
+          {(["active", "pending", "disabled"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              role="tab"
+              aria-selected={view === tab}
+              aria-pressed={view === tab}
+              onClick={() => setView(tab)}
+            >
+              {tab === "active"
+                ? "Active"
+                : tab === "pending"
+                  ? "Pending"
+                  : "Disabled"}{" "}
+              <span className="tab-count">{tabCounts[tab]}</span>
+            </button>
+          ))}
         </div>
 
         {error ? (
@@ -173,7 +195,9 @@ export function AdminDrivers({
                   <th>Driver</th>
                   <th>Status</th>
                   <th>Assigned bus</th>
-                  <th><span className="sr-only">Actions</span></th>
+                  <th className="driver-actions-header">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -202,7 +226,7 @@ export function AdminDrivers({
                       <td>
                         <Badge
                           value={
-                            driver.approvalStatus !== "approved"
+                            driver.approvalStatus === "pending"
                               ? "pending"
                               : driver.enabled
                                 ? "enabled"
@@ -236,23 +260,38 @@ export function AdminDrivers({
                           ))}
                         </select>
                       </td>
-                      <td>
+                      <td className="driver-actions-cell">
                         <div className="driver-actions">
-                          {driver.approvalStatus !== "approved" ? (
+                          {view === "pending" ? (
                             <button
                               className="primary"
                               disabled={busy || !selected}
-                              onClick={() => void save(driver, true)}
+                              onClick={() =>
+                                void save(driver, true, "approve")
+                              }
                             >
                               <UserCheck size={16} />
                               {busy ? "Approving…" : "Approve"}
+                            </button>
+                          ) : view === "disabled" ? (
+                            <button
+                              className="primary"
+                              disabled={busy || !selected}
+                              onClick={() =>
+                                void save(driver, true, "enable")
+                              }
+                            >
+                              <UserCheck size={16} />
+                              {busy ? "Enabling…" : "Enable"}
                             </button>
                           ) : (
                             <>
                               <button
                                 className="primary"
                                 disabled={busy || !selected}
-                                onClick={() => void save(driver, true)}
+                                onClick={() =>
+                                  void save(driver, true, "save")
+                                }
                               >
                                 <UserCheck size={16} />
                                 Save assignment
@@ -260,7 +299,9 @@ export function AdminDrivers({
                               <button
                                 className="secondary"
                                 disabled={busy}
-                                onClick={() => void save(driver, false)}
+                                onClick={() =>
+                                  void save(driver, false, "disable")
+                                }
                               >
                                 <UserX size={16} />
                                 Disable
@@ -274,7 +315,7 @@ export function AdminDrivers({
                             title="Remove driver from this application"
                           >
                             <Trash2 size={15} />
-                            Delete
+                            Remove
                           </button>
                         </div>
                       </td>
@@ -286,9 +327,11 @@ export function AdminDrivers({
           </div>
         ) : (
           <Empty>
-            {view === "requests"
-              ? "No driver requests are waiting for approval."
-              : "No approved driver accounts are available yet."}
+            {view === "pending"
+              ? "No new driver requests are waiting for approval."
+              : view === "disabled"
+                ? "No drivers are currently disabled."
+                : "No active driver accounts are available yet."}
           </Empty>
         )}
 
