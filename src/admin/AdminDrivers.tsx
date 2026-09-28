@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
-import { UserCheck, UserX, ShieldCheck } from "lucide-react";
+import { Trash2, UserCheck, UserX, ShieldCheck } from "lucide-react";
 import type { FleetBus, FleetDriver } from "../services/fleetService";
 import { Empty, ErrorState, Metric, PageHeading, Badge } from "./UI";
-import { updateAdminDriverAccess } from "./adminData";
+import {
+  deleteDriverAccount,
+  updateAdminDriverAccess,
+} from "./adminData";
 
 export function AdminDrivers({
   drivers,
@@ -16,9 +19,26 @@ export function AdminDrivers({
   const [assignments, setAssignments] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState("");
   const [message, setMessage] = useState("");
+  const [view, setView] = useState<"drivers" | "requests">("drivers");
 
-  const pending = drivers.filter((driver) => !driver.enabled).length;
-  const enabled = drivers.filter((driver) => driver.enabled).length;
+  const requests = useMemo(
+    () =>
+      drivers
+        .filter((driver) => driver.approvalStatus !== "approved")
+        .sort((a, b) => a.displayName.localeCompare(b.displayName)),
+    [drivers],
+  );
+
+  const currentDrivers = useMemo(
+    () =>
+      drivers
+        .filter((driver) => driver.approvalStatus === "approved")
+        .sort((a, b) => a.displayName.localeCompare(b.displayName)),
+    [drivers],
+  );
+
+  const pending = requests.length;
+  const enabled = currentDrivers.filter((driver) => driver.enabled).length;
 
   const save = async (driver: FleetDriver, enabledNext: boolean) => {
     const selected = assignments[driver.uid] ?? driver.assignedBus;
@@ -27,32 +47,73 @@ export function AdminDrivers({
 
     try {
       await updateAdminDriverAccess(driver.uid, selected, enabledNext);
-      setMessage("Driver access and bus assignment saved.");
+      setMessage(
+        enabledNext
+          ? driver.approvalStatus === "approved"
+            ? "Driver access and bus assignment saved."
+            : "Driver approved and added to the drivers list."
+          : "Driver disabled.",
+      );
+
+      if (driver.approvalStatus !== "approved" && enabledNext) {
+        setView("drivers");
+      }
     } catch (caught) {
-      setMessage(caught instanceof Error ? caught.message : "Could not update driver access.");
+      setMessage(
+        caught instanceof Error
+          ? caught.message
+          : "Could not update driver access.",
+      );
     } finally {
       setSaving("");
     }
   };
 
-  const sorted = useMemo(
-    () =>
-      [...drivers].sort((a, b) => {
-        if (a.enabled !== b.enabled) return a.enabled ? 1 : -1;
-        return a.displayName.localeCompare(b.displayName);
-      }),
-    [drivers],
-  );
+  const remove = async (driver: FleetDriver) => {
+    const confirmed = window.confirm(
+      driver.approvalStatus === "approved"
+        ? "Delete " +
+            driver.displayName +
+            "'s driver account? This permanently removes the Firebase Authentication account and driver record."
+        : "Delete " +
+            driver.displayName +
+            "'s pending request? This permanently removes the Firebase Authentication account and request record.",
+    );
+
+    if (!confirmed) return;
+
+    setSaving(driver.uid);
+    setMessage("");
+
+    try {
+      await deleteDriverAccount(driver.uid);
+      setMessage(
+        driver.approvalStatus === "approved"
+          ? driver.displayName + "'s driver account was deleted."
+          : driver.displayName + "'s request was deleted.",
+      );
+    } catch (caught) {
+      setMessage(
+        caught instanceof Error
+          ? caught.message
+          : "Could not delete the driver account.",
+      );
+    } finally {
+      setSaving("");
+    }
+  };
+
+  const displayed = view === "requests" ? requests : currentDrivers;
 
   return (
     <>
       <PageHeading
         title="Driver access"
-        description="Review driver accounts and control which bus each approved driver may track."
+        description="Review driver requests, manage approved drivers, and control which bus each driver may track."
       />
       <div className="metrics driver-metrics">
-        <Metric label="Driver accounts" value={drivers.length} />
-        <Metric label="Pending approval" value={pending} tone="amber" />
+        <Metric label="Driver accounts" value={currentDrivers.length} />
+        <Metric label="Pending requests" value={pending} tone="amber" />
         <Metric label="Enabled drivers" value={enabled} tone="green" />
       </div>
       <div className="notice driver-security-notice">
@@ -64,14 +125,47 @@ export function AdminDrivers({
       <section className="panel">
         <div className="panel-heading">
           <div>
-            <h2>Driver accounts</h2>
-            <span>{drivers.length} registered accounts</span>
+            <h2>{view === "requests" ? "Driver requests" : "Current drivers"}</h2>
+            <span>
+              {view === "requests"
+                ? requests.length +
+                  " pending request" +
+                  (requests.length === 1 ? "" : "s")
+                : currentDrivers.length +
+                  " approved driver" +
+                  (currentDrivers.length === 1 ? "" : "s")}
+            </span>
           </div>
+        </div>
+
+        <div
+          className="fleet-tabs driver-view-tabs"
+          role="tablist"
+          aria-label="Driver access views"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "drivers"}
+            aria-pressed={view === "drivers"}
+            onClick={() => setView("drivers")}
+          >
+            Drivers <span className="tab-count">{currentDrivers.length}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "requests"}
+            aria-pressed={view === "requests"}
+            onClick={() => setView("requests")}
+          >
+            Requests <span className="tab-count">{requests.length}</span>
+          </button>
         </div>
 
         {error ? (
           <ErrorState message={error} />
-        ) : sorted.length ? (
+        ) : displayed.length ? (
           <div className="table-wrap">
             <table className="fleet-table driver-table">
               <thead>
@@ -83,9 +177,11 @@ export function AdminDrivers({
                 </tr>
               </thead>
               <tbody>
-                {sorted.map((driver) => {
-                  const selected = assignments[driver.uid] ?? driver.assignedBus;
+                {displayed.map((driver) => {
+                  const selected =
+                    assignments[driver.uid] ?? driver.assignedBus;
                   const busy = saving === driver.uid;
+
                   return (
                     <tr key={driver.uid}>
                       <td>
@@ -95,13 +191,30 @@ export function AdminDrivers({
                           </span>
                           <span>
                             <strong>{driver.displayName}</strong>
-                            <small>Account {driver.uid.slice(0, 8).toUpperCase()}</small>
+                            <small>
+                              {driver.email ??
+                                "Account " +
+                                  driver.uid.slice(0, 8).toUpperCase()}
+                            </small>
                           </span>
                         </div>
                       </td>
-                      <td><Badge value={driver.enabled ? "enabled" : "pending"} /></td>
                       <td>
-                        <label className="sr-only" htmlFor={"bus-" + driver.uid}>
+                        <Badge
+                          value={
+                            driver.approvalStatus !== "approved"
+                              ? "pending"
+                              : driver.enabled
+                                ? "enabled"
+                                : "disabled"
+                          }
+                        />
+                      </td>
+                      <td>
+                        <label
+                          className="sr-only"
+                          htmlFor={"bus-" + driver.uid}
+                        >
                           Bus assigned to {driver.displayName}
                         </label>
                         <select
@@ -125,24 +238,44 @@ export function AdminDrivers({
                       </td>
                       <td>
                         <div className="driver-actions">
-                          <button
-                            className="primary"
-                            disabled={busy || !selected}
-                            onClick={() => void save(driver, true)}
-                          >
-                            <UserCheck size={16} />
-                            {driver.enabled ? "Save assignment" : "Approve"}
-                          </button>
-                          {driver.enabled && (
+                          {driver.approvalStatus !== "approved" ? (
                             <button
-                              className="secondary"
-                              disabled={busy}
-                              onClick={() => void save(driver, false)}
+                              className="primary"
+                              disabled={busy || !selected}
+                              onClick={() => void save(driver, true)}
                             >
-                              <UserX size={16} />
-                              Disable
+                              <UserCheck size={16} />
+                              {busy ? "Approving…" : "Approve"}
                             </button>
+                          ) : (
+                            <>
+                              <button
+                                className="primary"
+                                disabled={busy || !selected}
+                                onClick={() => void save(driver, true)}
+                              >
+                                <UserCheck size={16} />
+                                Save assignment
+                              </button>
+                              <button
+                                className="secondary"
+                                disabled={busy}
+                                onClick={() => void save(driver, false)}
+                              >
+                                <UserX size={16} />
+                                Disable
+                              </button>
+                            </>
                           )}
+                          <button
+                            className="secondary admin-delete driver-delete"
+                            disabled={busy}
+                            onClick={() => void remove(driver)}
+                            title="Delete driver account"
+                          >
+                            <Trash2 size={15} />
+                            Delete
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -152,10 +285,18 @@ export function AdminDrivers({
             </table>
           </div>
         ) : (
-          <Empty>No driver accounts are waiting for review.</Empty>
+          <Empty>
+            {view === "requests"
+              ? "No driver requests are waiting for approval."
+              : "No approved driver accounts are available yet."}
+          </Empty>
         )}
 
-        {message && <p className="driver-message" role="status">{message}</p>}
+        {message && (
+          <p className="driver-message" role="status">
+            {message}
+          </p>
+        )}
       </section>
     </>
   );
