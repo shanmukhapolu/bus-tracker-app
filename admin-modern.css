@@ -2916,3 +2916,31 @@
     min-height: 390px;
   }
 }
+ 
+.operations-shell .driver-table th.driver-actions-header,
+.operations-shell .driver-table td.driver-actions-cell {
+  width: 1%;
+  min-width: 250px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.operations-shell .driver-table td.driver-actions-cell {
+  padding-left: 18px;
+}
+
+.operations-shell .driver-actions {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.operations-shell .driver-delete {
+  margin-left: 2px;
+}
+
+@media (max-width: 760px) {
+  .operations-shell .driver-table th.driver-actions-header,
+  .operations-shell .driver-table td.driver-actions-cell {
+    min-width: 230px;
+  }
+}
