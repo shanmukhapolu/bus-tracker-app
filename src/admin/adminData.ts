@@ -162,32 +162,55 @@ export async function deleteDriverAccount(driverId: string) {
     throw new Error("Driver account is required.");
   }
 
-  const runtime = await getFirebaseRuntime();
-  const functions = runtime.getFunctions(runtime.app, "us-central1");
-  const callable = runtime.httpsCallable(functions, "deleteDriver");
-
-  try {
-    await callable({ uid: normalizedUid });
-  } catch (caught) {
-    const code =
-      typeof caught === "object" &&
-      caught !== null &&
-      "code" in caught &&
-      typeof (caught as { code?: unknown }).code === "string"
-        ? String((caught as { code: string }).code)
-        : "";
-
-    const message =
-      typeof caught === "object" &&
-      caught !== null &&
-      "message" in caught
-        ? String((caught as { message?: unknown }).message)
-        : "";
-
-    if (code === "functions/failed-precondition" && message) {
-      throw new Error(message);
-    }
-
-    throw new Error(message || "Could not delete the driver account.");
+  if (!/^[A-Za-z0-9_-]{10,128}$/.test(normalizedUid)) {
+    throw new Error("Invalid driver account.");
   }
+
+  const runtime = await getFirebaseRuntime();
+  const driverRef = runtime.ref(runtime.db, `drivers/${normalizedUid}`);
+  const driverSnapshot = await runtime.get(driverRef);
+
+  if (!driverSnapshot.exists()) {
+    throw new Error("Driver account not found.");
+  }
+
+  const driver = driverSnapshot.val() as Record<string, unknown>;
+  const assignedBus =
+    driver.assignedBus === null || driver.assignedBus === undefined
+      ? ""
+      : String(driver.assignedBus).trim();
+
+  if (assignedBus) {
+    const activeDriverSnapshot = await runtime.get(
+      runtime.ref(runtime.db, `activeDrivers/${assignedBus}`),
+    );
+    const liveSnapshot = await runtime.get(
+      runtime.ref(runtime.db, `liveBuses/${assignedBus}`),
+    );
+    const activeDriverUid = activeDriverSnapshot.val();
+    const live = liveSnapshot.val() as Record<string, unknown> | null;
+
+    if (
+      activeDriverUid === normalizedUid ||
+      (live?.active === true && live.driverUid === normalizedUid)
+    ) {
+      throw new Error("Stop tracking for this driver before deleting the account.");
+    }
+  }
+
+  const updates: Record<string, unknown> = {
+    [`drivers/${normalizedUid}`]: null,
+  };
+
+  if (assignedBus) {
+    const activeDriverSnapshot = await runtime.get(
+      runtime.ref(runtime.db, `activeDrivers/${assignedBus}`),
+    );
+
+    if (activeDriverSnapshot.val() === normalizedUid) {
+      updates[`activeDrivers/${assignedBus}`] = null;
+    }
+  }
+
+  await runtime.update(runtime.db, updates);
 }
