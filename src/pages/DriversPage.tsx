@@ -260,7 +260,9 @@ export function DriversPage() {
       setSession(nextSession);
       setStatus("tracking");
       setMessage(
-        `Bus ${selectedBus.busNumber} is live. Firebase is saving the latest GPS position every second.`,
+        nextSession.transport === "trusted_backend"
+          ? `Bus ${selectedBus.busNumber} is live. The secure telemetry service is recording this trip.`
+          : `Bus ${selectedBus.busNumber} is live. Firebase is saving the latest GPS position every second.`,
       );
     } catch (error) {
       setStatus("error");
@@ -519,7 +521,11 @@ export function DriversPage() {
             </div>
             <div>
               <span>Database</span>
-              <strong>Saving every second</strong>
+              <strong>
+                {session.transport === "trusted_backend"
+                  ? `Trusted upload every ${Math.round(session.uploadIntervalMs / 1000)} sec`
+                  : "Saving every second"}
+              </strong>
             </div>
             <div>
               <span>Bus</span>

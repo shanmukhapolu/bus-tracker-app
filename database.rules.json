@@ -4,7 +4,7 @@
       ".read": true,
       "$busId": {
         ".read": true,
-        ".write": "auth != null && root.child('drivers').child(auth.uid).child('enabled').val() === true && (root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true || root.child('drivers').child(auth.uid).child('assignedBus').val() === $busId) && ((!data.exists() && root.child('activeDrivers').child($busId).val() === auth.uid) || (data.exists() && data.child('driverUid').val() === auth.uid))",
+        ".write": "auth != null && root.child('drivers').child(auth.uid).child('enabled').val() === true && (root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true || root.child('drivers').child(auth.uid).child('assignedBus').val() === $busId) && root.child('activeDrivers').child($busId).val() === auth.uid",
         ".validate": "newData.hasChildren(['busNumber', 'route', 'latitude', 'longitude', 'active', 'lastUpdated', 'driverUid']) && newData.child('busNumber').isString() && newData.child('route').isString() && newData.child('latitude').isNumber() && newData.child('longitude').isNumber() && newData.child('latitude').val() >= -90 && newData.child('latitude').val() <= 90 && newData.child('longitude').val() >= -180 && newData.child('longitude').val() <= 180 && (!newData.child('geofenceId').exists() || newData.child('geofenceId').isString()) && newData.child('active').isBoolean() && newData.child('lastUpdated').isNumber() && newData.child('driverUid').val() === auth.uid"
       }
     },
@@ -80,6 +80,7 @@
     },
     "safetyEvents": {
       ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
+      ".indexOn": ["busId", "tripId", "timestamp", "type", "status"],
       "$eventId": {
         "status": {
           ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
@@ -102,6 +103,23 @@
     },
     "tripHistory": {
       ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
+      ".write": false
+    },
+    "activeTrips": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
+      ".write": false
+    },
+    "trips": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
+      ".write": false,
+      ".indexOn": ["busId", "driverUid", "startedAt", "status"]
+    },
+    "tripPoints": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
+      ".write": false
+    },
+    "processingState": {
+      ".read": false,
       ".write": false
     },
     "devices": {

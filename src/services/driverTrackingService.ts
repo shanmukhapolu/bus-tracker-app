@@ -1,5 +1,9 @@
 import type { FirebaseRuntime } from "../config/firebase";
 import { getFirebaseRuntime } from "../config/firebase";
+import {
+  createBackendTelemetryClient,
+  trustedTelemetryEnabled,
+} from "./telemetryClient";
 
 export interface DriverProfile {
   enabled?: boolean;
@@ -18,6 +22,8 @@ export interface DriverLocation {
 
 export interface DriverTrackingSession {
   busId: string;
+  transport: "trusted_backend" | "legacy_firebase";
+  uploadIntervalMs: number;
   stop: () => Promise<void>;
 }
 
@@ -32,7 +38,13 @@ export interface DriverTrackingOptions {
 const initialLocationOptions: PositionOptions = {
   enableHighAccuracy: true,
   maximumAge: 0,
-  timeout: 20_000,
+  timeout: 15_000,
+};
+
+const fallbackLocationOptions: PositionOptions = {
+  enableHighAccuracy: false,
+  maximumAge: 120_000,
+  timeout: 30_000,
 };
 
 const watchLocationOptions: PositionOptions = {
@@ -81,14 +93,50 @@ function toLocation(position: GeolocationPosition): DriverLocation {
  * operation in the tracking flow so the browser sees the same native
  * geolocation request as the working standalone HTML test.
  */
-function requestInitialLocation(): Promise<DriverLocation> {
+function getLocation(
+  geolocation: Geolocation,
+  options: PositionOptions,
+): Promise<DriverLocation> {
   return new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(
+    geolocation.getCurrentPosition(
       (position) => resolve(toLocation(position)),
-      (error) => reject(new Error(readableGeolocationError(error))),
-      initialLocationOptions,
+      reject,
+      options,
     );
   });
+}
+
+export async function requestInitialLocation(
+  geolocation: Geolocation = navigator.geolocation,
+): Promise<DriverLocation> {
+  try {
+    return await getLocation(geolocation, initialLocationOptions);
+  } catch (firstError) {
+    const error = firstError as GeolocationPositionError;
+    if (error.code === error.PERMISSION_DENIED) {
+      throw new Error(readableGeolocationError(error));
+    }
+
+    try {
+      return await getLocation(geolocation, fallbackLocationOptions);
+    } catch (fallbackError) {
+      const fallback = fallbackError as GeolocationPositionError;
+      if (fallback.code === fallback.PERMISSION_DENIED) {
+        throw new Error(readableGeolocationError(fallback));
+      }
+      throw new Error(
+        "Could not get a location fix. Make sure Location Services and Precise Location are enabled, then try again near a window or outdoors.",
+      );
+    }
+  }
+}
+
+function readableTrackingError(error: unknown, busNumber: string) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (/permission[_ -]?denied/i.test(message)) {
+    return `Firebase denied tracking access for Bus ${busNumber}. Sign out and back in after an administrator assigns this bus, then try again.`;
+  }
+  return message || "Could not start tracking.";
 }
 
 export function getLocationSupportMessage() {
@@ -152,6 +200,119 @@ async function publishPosition(
   });
 }
 
+async function startTrustedBackendTracking(
+  runtime: FirebaseRuntime,
+  options: DriverTrackingOptions,
+  firstLocation: DriverLocation,
+): Promise<DriverTrackingSession> {
+  const client = createBackendTelemetryClient(runtime);
+  const trip = await client.startTrip(options.busId);
+  let latestPosition: DriverLocation | null = firstLocation;
+  let sequence = 0;
+  let activePublish: Promise<void> | null = null;
+  let stopped = false;
+  let publishTimer: ReturnType<typeof setInterval> | undefined;
+  let watchId: number | undefined;
+  let wakeLock: any = null;
+
+  const publishLatest = () => {
+    if (stopped || !latestPosition) return Promise.resolve();
+    if (activePublish) return activePublish;
+    const location = latestPosition;
+    const nextSequence = sequence++;
+    activePublish = client
+      .sendTelemetry(options.busId, trip.tripId, nextSequence, location)
+      .catch((error) => {
+        options.onError(
+          error instanceof Error
+            ? `Telemetry upload failed: ${error.message}`
+            : "The telemetry service could not save the latest position.",
+        );
+      })
+      .finally(() => {
+        activePublish = null;
+      });
+    return activePublish;
+  };
+
+  const requestWakeLock = async () => {
+    if (!("wakeLock" in navigator)) return;
+    try {
+      wakeLock = await (
+        navigator as Navigator & {
+          wakeLock: { request: (type: "screen") => Promise<any> };
+        }
+      ).wakeLock.request("screen");
+    } catch {
+      // The backend continues to detect a missing heartbeat if the device sleeps.
+    }
+  };
+
+  const onVisible = () => {
+    if (!stopped && document.visibilityState === "visible") {
+      void requestWakeLock();
+      void publishLatest();
+    }
+  };
+
+  try {
+    await client.sendTelemetry(
+      options.busId,
+      trip.tripId,
+      sequence++,
+      firstLocation,
+    );
+    watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        if (stopped) return;
+        latestPosition = toLocation(position);
+        options.onPosition(latestPosition);
+      },
+      (error) => {
+        if (!stopped) options.onError(readableGeolocationError(error));
+      },
+      watchLocationOptions,
+    );
+    publishTimer = setInterval(
+      () => void publishLatest(),
+      trip.uploadIntervalMs,
+    );
+    document.addEventListener("visibilitychange", onVisible);
+    await requestWakeLock();
+
+    return {
+      busId: options.busId,
+      transport: "trusted_backend",
+      uploadIntervalMs: trip.uploadIntervalMs,
+      stop: async () => {
+        if (stopped) return;
+        stopped = true;
+        if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
+        if (publishTimer) clearInterval(publishTimer);
+        document.removeEventListener("visibilitychange", onVisible);
+        try {
+          await wakeLock?.release?.();
+        } catch {
+          // Wake locks may already be released by the browser.
+        }
+        await activePublish;
+        await client.stopTrip(options.busId, trip.tripId);
+      },
+    };
+  } catch (error) {
+    stopped = true;
+    if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
+    if (publishTimer) clearInterval(publishTimer);
+    document.removeEventListener("visibilitychange", onVisible);
+    try {
+      await client.stopTrip(options.busId, trip.tripId);
+    } catch {
+      // A scheduled backend check will close out an abandoned active session.
+    }
+    throw error;
+  }
+}
+
 export async function startDriverTracking(
   options: DriverTrackingOptions,
 ): Promise<DriverTrackingSession> {
@@ -170,6 +331,10 @@ export async function startDriverTracking(
 
   if (!user) {
     throw new Error("Sign in as a driver before starting tracking.");
+  }
+
+  if (trustedTelemetryEnabled()) {
+    return startTrustedBackendTracking(runtime, options, firstLocation);
   }
 
   const lockRef = runtime.ref(runtime.db, `activeDrivers/${options.busId}`);
@@ -348,6 +513,8 @@ export async function startDriverTracking(
 
     return {
       busId: options.busId,
+      transport: "legacy_firebase",
+      uploadIntervalMs: 1_000,
       stop,
     };
   } catch (error) {
@@ -358,14 +525,13 @@ export async function startDriverTracking(
     try {
       await runtime.onDisconnect(lockRef).cancel();
       await runtime.onDisconnect(liveRef).cancel();
-      await runtime.remove(liveRef);
       await runtime.remove(lockRef);
     } catch {
       // Best-effort cleanup.
     }
 
     throw new Error(
-      error instanceof Error ? error.message : "Could not start tracking.",
+      readableTrackingError(error, options.busNumber),
     );
   }
 }
