@@ -1678,6 +1678,61 @@ h1 {
   margin-bottom: 14px;
 }
 
+.simple-driver-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #8390a3;
+  font-size: 12px;
+  margin: 14px 0;
+}
+
+.simple-driver-auth-divider::before,
+.simple-driver-auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #dce3ea;
+}
+
+.simple-driver-google-button {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #cfd8e3;
+  border-radius: 10px;
+  background: #fff;
+  color: #17395e;
+  font: inherit;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.simple-driver-google-button:hover:not(:disabled) {
+  border-color: #9fb1c5;
+  background: #f8fafc;
+}
+
+.simple-driver-google-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.google-mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #174ea6;
+  border: 1px solid #d6dce5;
+  font-weight: 800;
+  background: #fff;
+}
+
 .simple-driver-form label,
 .simple-driver-bus {
   display: grid;

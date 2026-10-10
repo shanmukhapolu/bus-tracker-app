@@ -3,8 +3,47 @@ import { getFirebaseRuntime } from "../config/firebase";
 export interface DriverProfile {
   enabled?: boolean;
   displayName?: string;
+  email?: string;
   assignedBus?: string | number | null;
   allowedBuses?: Record<string, boolean>;
+  approvalStatus?: "pending" | "approved";
+}
+
+interface FirebaseDriverUser {
+  uid: string;
+  displayName?: string | null;
+  email?: string | null;
+}
+
+function driverDisplayName(user: FirebaseDriverUser, preferredName = "") {
+  const value =
+    preferredName.trim() ||
+    String(user.displayName ?? "").trim() ||
+    String(user.email ?? "")
+      .split("@")[0]
+      ?.trim() ||
+    "Driver account";
+  return value.length >= 2 ? value.slice(0, 100) : "Driver account";
+}
+
+export async function ensureDriverProfile(
+  user: FirebaseDriverUser,
+  preferredName = "",
+): Promise<DriverProfile> {
+  const runtime = await getFirebaseRuntime();
+  const reference = runtime.ref(runtime.db, `drivers/${user.uid}`);
+  const pendingProfile: DriverProfile = {
+    displayName: driverDisplayName(user, preferredName),
+    enabled: false,
+    assignedBus: "",
+    approvalStatus: "pending",
+  };
+  if (user.email) pendingProfile.email = user.email;
+  const result = await runtime.runTransaction(
+    reference,
+    (current) => current ?? pendingProfile,
+  );
+  return result.snapshot.val() as DriverProfile;
 }
 
 export async function signInDriver(email: string, password: string) {
@@ -27,6 +66,13 @@ export async function signInDriver(email: string, password: string) {
   );
 }
 
+export async function signInDriverWithGoogle() {
+  const runtime = await getFirebaseRuntime();
+  const provider = new runtime.GoogleAuthProvider();
+  provider.setCustomParameters?.({ prompt: "select_account" });
+  return runtime.signInWithPopup(runtime.auth, provider);
+}
+
 export async function signUpDriver(
   displayName: string,
   email: string,
@@ -43,13 +89,7 @@ export async function signUpDriver(
     normalizedPassword,
   );
 
-  await runtime.update(runtime.ref(runtime.db, `drivers/${result.user.uid}`), {
-    displayName: normalizedName,
-    email: result.user.email ?? normalizedEmail,
-    enabled: false,
-    assignedBus: "",
-    approvalStatus: "pending",
-  });
+  await ensureDriverProfile(result.user, normalizedName);
 
   return result;
 }
@@ -63,10 +103,7 @@ export async function loadDriverProfile(
   uid: string,
 ): Promise<DriverProfile | null> {
   const runtime = await getFirebaseRuntime();
-  const snapshot = await runtime.get(
-    runtime.ref(runtime.db, `drivers/${uid}`),
-  );
+  const snapshot = await runtime.get(runtime.ref(runtime.db, `drivers/${uid}`));
 
   return snapshot.exists() ? (snapshot.val() as DriverProfile) : null;
 }
-

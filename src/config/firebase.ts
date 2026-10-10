@@ -15,7 +15,8 @@ export const firebaseConfig = {
     (env.VITE_FIREBASE_STORAGE_BUCKET as string | undefined) ??
     "chsbustracker2.firebasestorage.app",
   messagingSenderId:
-    (env.VITE_FIREBASE_MESSAGING_SENDER_ID as string | undefined) ?? "343059758295",
+    (env.VITE_FIREBASE_MESSAGING_SENDER_ID as string | undefined) ??
+    "343059758295",
   appId:
     (env.VITE_FIREBASE_APP_ID as string | undefined) ??
     "1:343059758295:web:0ac65d6cf2ddb389a0c492",
@@ -28,10 +29,10 @@ export const firebaseConfig = {
 
 export const firebaseConfigured = Boolean(
   firebaseConfig.apiKey &&
-    firebaseConfig.authDomain &&
-    firebaseConfig.projectId &&
-    firebaseConfig.appId &&
-    firebaseConfig.databaseURL,
+  firebaseConfig.authDomain &&
+  firebaseConfig.projectId &&
+  firebaseConfig.appId &&
+  firebaseConfig.databaseURL,
 );
 
 export interface FirebaseRuntime {
@@ -41,10 +42,7 @@ export interface FirebaseRuntime {
   initializeApp: (config: object) => any;
   getAuth: (app: any) => any;
   getDatabase: (app: any, url?: string) => any;
-  onAuthStateChanged: (
-    auth: any,
-    callback: (user: any) => void,
-  ) => () => void;
+  onAuthStateChanged: (auth: any, callback: (user: any) => void) => () => void;
   signInWithEmailAndPassword: (
     auth: any,
     email: string,
@@ -55,6 +53,10 @@ export interface FirebaseRuntime {
     email: string,
     password: string,
   ) => Promise<{ user: any }>;
+  GoogleAuthProvider: new () => {
+    setCustomParameters?: (parameters: Record<string, string>) => void;
+  };
+  signInWithPopup: (auth: any, provider: any) => Promise<{ user: any }>;
   signOut: (auth: any) => Promise<void>;
   get: (reference: any) => Promise<any>;
   ref: (db: any, path: string) => any;
@@ -97,10 +99,7 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
     ]).then(([appModule, authModule, databaseModule]) => {
       const app = appModule.initializeApp(firebaseConfig);
       const auth = authModule.getAuth(app);
-      const db = databaseModule.getDatabase(
-        app,
-        firebaseConfig.databaseURL,
-      );
+      const db = databaseModule.getDatabase(app, firebaseConfig.databaseURL);
 
       return {
         app,
@@ -113,6 +112,8 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
         signInWithEmailAndPassword: authModule.signInWithEmailAndPassword,
         createUserWithEmailAndPassword:
           authModule.createUserWithEmailAndPassword,
+        GoogleAuthProvider: authModule.GoogleAuthProvider,
+        signInWithPopup: authModule.signInWithPopup,
         signOut: authModule.signOut,
         get: databaseModule.get,
         ref: databaseModule.ref,

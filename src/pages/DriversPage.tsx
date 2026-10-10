@@ -2,8 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { LogIn, MapPin, Radio, ShieldCheck, UserPlus } from "lucide-react";
 import { SchoolLogo } from "../components/SchoolLogo";
 import {
+  ensureDriverProfile,
   loadDriverProfile,
   signInDriver,
+  signInDriverWithGoogle,
   signOutDriver,
   signUpDriver,
   type DriverProfile,
@@ -121,6 +123,43 @@ export function DriversPage() {
     setStatus("idle");
   };
 
+  const completeSignIn = async (user: {
+    uid: string;
+    displayName?: string | null;
+    email?: string | null;
+  }) => {
+    let nextProfile = await loadDriverProfile(user.uid);
+    if (!nextProfile) {
+      nextProfile = await ensureDriverProfile(user);
+    }
+
+    if (!nextProfile.enabled) {
+      await signOutDriver();
+      throw new Error(
+        "Your driver request was sent and is waiting for administrator approval.",
+      );
+    }
+
+    const nextBusIds = getDriverBusIds(nextProfile);
+    setProfile(nextProfile);
+    setDriverUid(user.uid);
+    setEmail(user.email ?? email);
+    setSelectedBusId((current) =>
+      current && nextBusIds.includes(current) ? current : (nextBusIds[0] ?? ""),
+    );
+    setSignedIn(true);
+    setPassword("");
+    setStatus("idle");
+
+    if (nextBusIds.length === 0) {
+      setMessage(
+        "Signed in. No bus is assigned to your account yet. Contact the administrator before starting tracking.",
+      );
+    } else {
+      setMessage("");
+    }
+  };
+
   const login = async () => {
     setLoginError("");
     setMessage("");
@@ -128,41 +167,36 @@ export function DriversPage() {
 
     try {
       const result = await signInDriver(email, password);
-      const nextProfile = await loadDriverProfile(result.user.uid);
-
-      if (!nextProfile?.enabled) {
-        await signOutDriver();
-        throw new Error(
-          "This driver account is waiting for administrator approval.",
-        );
-      }
-
-      const nextBusIds = getDriverBusIds(nextProfile);
-
-      setProfile(nextProfile);
-      setDriverUid(result.user.uid);
-      setSelectedBusId((current) =>
-        current && nextBusIds.includes(current)
-          ? current
-          : (nextBusIds[0] ?? ""),
-      );
-      setSignedIn(true);
-      setPassword("");
-      setStatus("idle");
-
-      if (nextBusIds.length === 0) {
-        setMessage(
-          "Signed in. No bus is assigned to your account yet. Contact the administrator before starting tracking.",
-        );
-      } else {
-        setMessage("");
-      }
+      await completeSignIn(result.user);
     } catch (error) {
       setStatus("error");
       setLoginError(
         error instanceof Error
           ? error.message
           : "Could not sign in as a driver.",
+      );
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    setLoginError("");
+    setMessage("");
+    setStatus("signing-in");
+
+    try {
+      const result = await signInDriverWithGoogle();
+      await completeSignIn(result.user);
+    } catch (error) {
+      try {
+        await signOutDriver();
+      } catch {
+        // Best-effort cleanup after a pending or interrupted Google sign-in.
+      }
+      setStatus("error");
+      setLoginError(
+        error instanceof Error
+          ? error.message
+          : "Could not sign in with Google.",
       );
     }
   };
@@ -406,6 +440,22 @@ export function DriversPage() {
                 : authMode === "login"
                   ? "Sign in"
                   : "Create account"}
+          </button>
+
+          <div className="simple-driver-auth-divider" aria-hidden="true">
+            <span>or</span>
+          </div>
+
+          <button
+            className="simple-driver-google-button"
+            type="button"
+            disabled={status === "signing-in" || status === "signing-up"}
+            onClick={() => void loginWithGoogle()}
+          >
+            <span className="google-mark" aria-hidden="true">
+              G
+            </span>
+            Continue with Google
           </button>
 
           <div className="simple-driver-note">
