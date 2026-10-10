@@ -15,6 +15,16 @@ interface FirebaseDriverUser {
   email?: string | null;
 }
 
+interface FirebaseAuthError {
+  code?: string;
+}
+
+function firebaseAuthErrorCode(error: unknown) {
+  return typeof error === "object" && error !== null
+    ? String((error as FirebaseAuthError).code ?? "")
+    : "";
+}
+
 function driverDisplayName(user: FirebaseDriverUser, preferredName = "") {
   const value =
     preferredName.trim() ||
@@ -83,15 +93,48 @@ export async function signUpDriver(
   const normalizedEmail = String(email ?? "").trim();
   const normalizedPassword = String(password ?? "");
 
-  const result = await runtime.createUserWithEmailAndPassword(
-    runtime.auth,
-    normalizedEmail,
-    normalizedPassword,
-  );
+  let recoveredExistingAccount = false;
+  let result;
 
-  await ensureDriverProfile(result.user, normalizedName);
+  try {
+    result = await runtime.createUserWithEmailAndPassword(
+      runtime.auth,
+      normalizedEmail,
+      normalizedPassword,
+    );
+  } catch (error) {
+    if (firebaseAuthErrorCode(error) !== "auth/email-already-in-use") {
+      throw error;
+    }
 
-  return result;
+    // A previous registration can create the Firebase Auth user before the
+    // pending driver profile is written. Re-authenticate that same account and
+    // finish the pending request instead of leaving the driver stuck.
+    try {
+      result = await runtime.signInWithEmailAndPassword(
+        runtime.auth,
+        normalizedEmail,
+        normalizedPassword,
+      );
+      recoveredExistingAccount = true;
+    } catch (signInError) {
+      const code = firebaseAuthErrorCode(signInError);
+      if (
+        code === "auth/invalid-credential" ||
+        code === "auth/wrong-password" ||
+        code === "auth/user-not-found"
+      ) {
+        throw new Error(
+          "This email already has an account, but that password did not match. Use Log in with the existing password or Continue with Google.",
+        );
+      }
+      throw signInError;
+    }
+  }
+
+  const profile = await ensureDriverProfile(result.user, normalizedName);
+
+  return { ...result, profile, recoveredExistingAccount };
 }
 
 export async function signOutDriver() {

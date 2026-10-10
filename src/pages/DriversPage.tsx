@@ -229,7 +229,11 @@ export function DriversPage() {
     setStatus("signing-up");
 
     try {
-      await signUpDriver(name, normalizedEmail, password);
+      const registration = await signUpDriver(
+        name,
+        normalizedEmail,
+        password,
+      );
       await signOutDriver();
 
       setDisplayName("");
@@ -237,7 +241,11 @@ export function DriversPage() {
       setAuthMode("login");
       setStatus("idle");
       setMessage(
-        "Account created. An administrator must enable your account and assign a bus before you can start tracking.",
+        registration.profile.enabled
+          ? "This driver account is already approved. Log in to start tracking."
+          : registration.recoveredExistingAccount
+            ? "We found your existing sign-in and completed its driver request. It is now waiting for administrator approval."
+            : "Account created. An administrator must enable your account and assign a bus before you can start tracking.",
       );
     } catch (error) {
       try {
