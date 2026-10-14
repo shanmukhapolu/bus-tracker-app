@@ -1,3 +1,4 @@
+import { auditedAdminUpdate } from "./adminAudit";
 import { getFirebaseRuntime } from "../config/firebase";
 import type { Geofence, GeofenceCoordinate } from "../types/geofence";
 
@@ -98,12 +99,12 @@ export async function saveGeofence(id: string | null, name: string, coordinates:
   const existing = await runtime.get(runtime.ref(runtime.db, "geofences/" + geofenceId));
   const existingValue = existing.val();
 
-  await runtime.update(runtime.ref(runtime.db, "geofences/" + geofenceId), {
+  await auditedAdminUpdate(runtime, id ? "geofence_updated" : "geofence_created", "geofences/" + geofenceId, { ["geofences/" + geofenceId]: {
     name: normalizedName,
     coordinates: normalizedCoordinates,
     createdAt: isFiniteNumber(existingValue?.createdAt) ? existingValue.createdAt : Date.now(),
     updatedAt: Date.now(),
-  });
+  } });
 
   return geofenceId;
 }
@@ -116,8 +117,7 @@ export async function deleteGeofence(geofenceId: string) {
   const busesSnapshot = await runtime.get(runtime.ref(runtime.db, "buses"));
   const updates: Record<string, unknown> = {};
   updates["geofences/" + normalizedId] = null;
-  updates["geofenceAlerts/" + normalizedId] = null;
-  updates["geofenceBusOrder/" + normalizedId] = null;
+  // Removing a zone must not remove its recorded entries or historical order.
 
   const buses = busesSnapshot.val();
   if (buses && typeof buses === "object") {
@@ -130,7 +130,7 @@ export async function deleteGeofence(geofenceId: string) {
     });
   }
 
-  await runtime.update(runtime.db, updates);
+  await auditedAdminUpdate(runtime, "geofence_removed", "geofences/" + normalizedId, updates);
 }
 
 export async function assignBusGeofence(busId: string, geofenceId: string) {
@@ -147,9 +147,7 @@ export async function assignBusGeofence(busId: string, geofenceId: string) {
     if (!geofenceSnapshot.exists()) throw new Error("That geofence does not exist.");
   }
 
-  await runtime.update(runtime.ref(runtime.db, "buses/" + normalizedBusId), {
-    geofenceId: normalizedGeofenceId,
-  });
+  await auditedAdminUpdate(runtime, "bus_geofence_assignment_changed", "buses/" + normalizedBusId, { ["buses/" + normalizedBusId + "/geofenceId"]: normalizedGeofenceId });
 }
 
 export interface GeofenceEntryEvent {

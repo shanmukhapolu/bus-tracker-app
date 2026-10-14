@@ -11,7 +11,10 @@
     "test:rules": "npx --yes firebase-tools@15.31.0 emulators:exec --config ../bus-safety-admin/firebase.json --project demo-ccs-bus-security --only database \"vitest run --config vitest.rules.config.ts\"",
     "format": "prettier --write src index.html vite.config.ts tsconfig.json package.json README.md",
     "firebase:deploy": "firebase deploy --only hosting",
-    "firebase:serve": "firebase serve --only hosting"
+    "firebase:serve": "firebase serve --only hosting",
+    "dev:staging": "vite --host 127.0.0.1 --mode staging",
+    "build:staging": "tsc -b && vite build --mode staging",
+    "configure:staging": "node scripts/configure-staging.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

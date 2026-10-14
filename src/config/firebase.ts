@@ -1,31 +1,10 @@
+import { resolveFirebaseEnvironment } from "./deploymentEnvironment";
 export const FIREBASE_SDK_VERSION = "12.19.0";
-
-const env = import.meta.env;
-
-export const firebaseConfig = {
-  apiKey:
-    (env.VITE_FIREBASE_API_KEY as string | undefined) ??
-    "AIzaSyCmAOZY6xyCtXDh8nu8qdG4YcAd4_hiz0k",
-  authDomain:
-    (env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined) ??
-    "chsbustracker2.firebaseapp.com",
-  projectId:
-    (env.VITE_FIREBASE_PROJECT_ID as string | undefined) ?? "chsbustracker2",
-  storageBucket:
-    (env.VITE_FIREBASE_STORAGE_BUCKET as string | undefined) ??
-    "chsbustracker2.firebasestorage.app",
-  messagingSenderId:
-    (env.VITE_FIREBASE_MESSAGING_SENDER_ID as string | undefined) ??
-    "343059758295",
-  appId:
-    (env.VITE_FIREBASE_APP_ID as string | undefined) ??
-    "1:343059758295:web:0ac65d6cf2ddb389a0c492",
-  measurementId:
-    (env.VITE_FIREBASE_MEASUREMENT_ID as string | undefined) ?? "G-R4GTR1CDC3",
-  databaseURL:
-    (env.VITE_FIREBASE_DATABASE_URL as string | undefined) ??
-    "https://chsbustracker2-default-rtdb.firebaseio.com",
-};
+export const firebaseConfig = resolveFirebaseEnvironment(
+  import.meta.env,
+  import.meta.env.MODE,
+  "public",
+).config;
 
 export const firebaseConfigured = Boolean(
   firebaseConfig.apiKey &&
@@ -87,6 +66,10 @@ async function loadFirebaseModule(service: string) {
 }
 
 export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
+  if (import.meta.env.MODE === "test")
+    throw new Error(
+      "Unit tests must mock Firebase; cloud access is forbidden.",
+    );
   if (!firebaseConfigured) {
     throw new Error(
       "Firebase Realtime Database is not configured. Create the database and set VITE_FIREBASE_DATABASE_URL.",

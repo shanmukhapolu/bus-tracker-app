@@ -9,3 +9,7 @@ test-results/
 .firebase/
 firebase-debug.log
 database-debug.log
+
+dist-staging/
+firebase.staging.json
+!.env.staging.example

@@ -1,3 +1,4 @@
+import { auditedAdminUpdate } from "./adminAudit";
 import { getFirebaseRuntime } from "../config/firebase";
 
 export interface FleetBus {
@@ -97,48 +98,8 @@ export async function loadFleetDrivers(): Promise<FleetDriver[]> {
   return normalizeFleetDrivers(snapshot.val());
 }
 
-export async function addFleetBus(
-  busNumber: string,
-  route: string,
-  geofenceId = "",
-): Promise<FleetBus> {
-  const runtime = await getFirebaseRuntime();
-  const normalizedBusNumber = String(busNumber ?? "").trim();
-  const normalizedRoute = String(route ?? "").trim();
-
-  if (!normalizedBusNumber || !normalizedRoute) {
-    throw new Error("Bus number and route are required.");
-  }
-
-  const id = normalizedBusNumber;
-  const busRef = runtime.ref(runtime.db, `buses/${id}`);
-  const existing = await runtime.get(busRef);
-  if (existing.exists()) {
-    throw new Error(`Bus ${normalizedBusNumber} already exists.`);
-  }
-
-  await runtime.update(runtime.ref(runtime.db, ""), {
-    [`buses/${id}`]: {
-      busNumber: normalizedBusNumber,
-      route: normalizedRoute,
-      enabled: true,
-      ...(geofenceId.trim() ? { geofenceId: geofenceId.trim() } : {}),
-    },
-    [`publicBuses/${id}`]: {
-      busNumber: normalizedBusNumber,
-      route: normalizedRoute,
-      enabled: true,
-      active: false,
-    },
-  });
-
-  return {
-    id,
-    busNumber: normalizedBusNumber,
-    route: normalizedRoute,
-    enabled: true,
-    geofenceId: geofenceId.trim(),
-  };
+export async function addFleetBus(_busNumber: string, _route: string, _geofenceId = ""): Promise<FleetBus> {
+  throw new Error("Register buses in the official Transportation admin Buses page.");
 }
 
 export async function assignDriverToBus(
@@ -149,9 +110,7 @@ export async function assignDriverToBus(
   const normalizedBusNumber = String(busNumber ?? "").trim();
 
   if (!normalizedBusNumber) {
-    await runtime.update(runtime.ref(runtime.db, `drivers/${driverUid}`), {
-      assignedBus: "",
-    });
+    await auditedAdminUpdate(runtime, "bus_assignment_changed", "drivers/" + driverUid, { ["drivers/" + driverUid + "/assignedBus"]: "" });
     return;
   }
 
@@ -162,9 +121,7 @@ export async function assignDriverToBus(
     throw new Error("That bus does not exist.");
   }
 
-  await runtime.update(runtime.ref(runtime.db, `drivers/${driverUid}`), {
-    assignedBus: normalizedBusNumber,
-  });
+  await auditedAdminUpdate(runtime, "bus_assignment_changed", "drivers/" + driverUid, { ["drivers/" + driverUid + "/assignedBus"]: normalizedBusNumber });
 }
 
 export async function deleteFleetBus(busNumber: string): Promise<void> {

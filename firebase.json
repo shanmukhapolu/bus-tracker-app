@@ -1,15 +1,30 @@
 {
   "hosting": {
     "public": "dist",
-    "predeploy": ["npm run build"],
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "predeploy": [
+      "node scripts/deployment-guard.mjs production hosting"
+    ],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "headers": [
       {
         "source": "**",
         "headers": [
-          { "key": "X-Content-Type-Options", "value": "nosniff" },
-          { "key": "Referrer-Policy", "value": "no-referrer" },
-          { "key": "X-Frame-Options", "value": "DENY" },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "Referrer-Policy",
+            "value": "no-referrer"
+          },
+          {
+            "key": "X-Frame-Options",
+            "value": "DENY"
+          },
           {
             "key": "Permissions-Policy",
             "value": "camera=(), microphone=(), geolocation=(self)"

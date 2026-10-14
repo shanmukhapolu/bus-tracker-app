@@ -26,8 +26,8 @@ Do not put passwords, service-account credentials, tracker secrets, database sec
 | ---------------------------------------- | ----------- | ------------------------------------------ | -------------------------------------------------------------- |
 | `publicBuses`                            | Yes         | Everyone                                   | Assigned active driver; enabled admin for fleet initialization |
 | `buses`                                  | No          | Enabled drivers and admins                 | Enabled admin                                                  |
-| `liveBuses`                              | No          | Assigned driver for own bus; enabled admin | Assigned driver holding that bus lock                          |
-| `activeDrivers`                          | No          | Enabled drivers/admins                     | Assigned driver                                                |
+| `liveBuses`                              | No          | Assigned driver for own bus; enabled admin | Assigned driver holding that bus lock; narrowly validated admin session closure |
+| `activeDrivers`                          | No          | Enabled drivers/admins                     | Assigned driver; admin cleanup of the revoked driver's own lock |
 | `drivers`                                | No          | Own profile; enabled admin                 | Pending self-registration or enabled admin                     |
 | `safetyEvents`, `tripHistory`, `devices` | No          | Enabled admin                              | Restricted by collection rules                                 |
 | `auditLogs`                              | No          | Enabled admin                              | Append-only enabled admin records                              |
@@ -71,15 +71,71 @@ The suite covers anonymous users, enabled and disabled drivers, wrong-bus writes
 
 ## Local configuration
 
-Copy `.env.example` to `.env.local`. Firebase web identifiers may be present in client configuration. Never add server credentials or secrets.
-
-```powershell
-npm install
-npm run dev
-```
+Use the separate staging setup below: copy `.env.staging.example` to `.env.staging.local`, supply an approved staging project's own configuration, and run `npm.cmd run dev:staging`. Development deliberately rejects production configuration. `.env.example` documents production build settings; do not use it as a local-development shortcut. Never add server credentials or secrets.
 
 Browser GPS requires HTTPS outside localhost and explicit location permission. Mobile browsers can suspend background tabs; a managed native application remains the recommended production tracker.
 
 ## Known production decisions
 
 CCS Transportation, IT, and legal still need to decide route/VersaTrans integration, route and stop visibility, public GPS delay/generalization, retention periods, MFA and Workspace enforcement, final staff roles, managed-phone requirements, and approved vendors. This phase does not decide or implement those items.
+
+## Phase 2A — isolated development and release safeguards
+
+Phase 2A publication to GitHub and Firebase was explicitly approved on October 14, 2026. Release verification is recorded below. Separate cloud-staging and real-phone acceptance are still pending; publication does not establish district production readiness. The admin repository remains the sole rules owner; the public copy is a test fixture. The old /admin remains available, but bus registration must use the standalone admin's Buses page. Driver signup/onboarding is unchanged.
+
+### Configure a separate staging project
+
+Cloud project creation, enabling Authentication/Realtime Database/Hosting, seeding records and deployments each require approval. No staging cloud project has been provisioned by this work. Use a separate CCS-approved Firebase project, never a second Hosting site on the production database. No production Auth users, passwords, tokens, database exports or protected records may be copied.
+
+After approval, configure that project's own web apps (public/driver and admin), default Realtime Database, Authentication providers and authorized staging domains. Register a staging public Hosting site and a separate admin site; use site IDs prefixed by the staging project ID. Configure Google sign-in/email-password as needed to match the current onboarding flow. Use synthetic accounts, not district/production credentials.
+
+In EACH repository, copy `.env.staging.example` to ignored `.env.staging.local`. Replace every placeholder with the STAGING project's web configuration. Required keys: VITE_ENVIRONMENT=staging, VITE_FIREBASE_PROJECT_ID, VITE_FIREBASE_AUTH_DOMAIN, VITE_FIREBASE_DATABASE_URL, VITE_FIREBASE_API_KEY, VITE_FIREBASE_APP_ID, and VITE_FIREBASE_HOSTING_SITE. The project/database/auth/app must all belong to staging. Public Firebase web configuration is not a private credential. Never add private credentials to VITE variables.
+
+Auth domain must be `<stage-project>.firebaseapp.com`; the default RTDB URL must be `https://<stage-project>-default-rtdb.firebaseio.com` or its regional `firebasedatabase.app` equivalent. The current staging setup deliberately rejects trusted-backend telemetry mode until a separate staging telemetry backend is reviewed. Leave VITE_TELEMETRY_MODE=legacy and VITE_TELEMETRY_API_BASE_URL empty.
+
+Local-only commands:
+
+```powershell
+npm.cmd run configure:staging
+npm.cmd run build:staging
+npm.cmd run dev:staging
+```
+
+`configure:staging` writes ignored `firebase.staging.json`; it creates NO cloud resources. Staging builds go to `dist-staging`, have a [STAGING] page title and a deployment manifest. Production builds remain in `dist`. Plain development without explicit staging configuration fails closed; localhost is no longer a shortcut to production. Unit tests use mocked/loopback Firebase and rule tests require a loopback emulator, with demo-only project IDs.
+
+The generated staging config replaces the public portal's Google-auth CSP frame domain with the staging auth domain. Both configs run a predeploy guard: the CLI project, build environment, Hosting site and artifact directory must match. These prevent accidental cross-environment deployment through the repository workflow; they are not a defense against a privileged operator deliberately bypassing scripts. Production Hosting no longer implicitly rebuilds during deploy: explicitly run `npm.cmd run build` and tests first. Production defaults are accepted only by production-mode builds.
+
+Manual cloud commands below are examples for AFTER staging approval, never run automatically:
+
+```powershell
+# bus-safety-admin only: deploy canonical rules to the approved staging project.
+npx.cmd --yes firebase-tools@15.31.0 deploy --config firebase.staging.json --project <STAGING_PROJECT_ID> --only database
+# Each repo: publish only its independently configured staging Hosting site.
+npx.cmd --yes firebase-tools@15.31.0 deploy --config firebase.staging.json --project <STAGING_PROJECT_ID> --only hosting
+```
+
+The checked generated configs/builds currently use fictional `ccs-synthetic-stage` identifiers to verify build isolation. They do not represent an existing cloud project and must be regenerated with the approved configuration before browser staging. Neither the generated config nor build output is tracked in Git.
+
+### Synthetic test data and checks
+
+The admin repository contains `scripts/staging-seed.example.json`, exclusively synthetic metadata. After cloud-staging approval, create fresh synthetic Auth accounts in staging, put their staging UIDs into a LOCAL copy of that fixture, then seed only the approved staging project through its console. Never paste production UIDs/passwords or use a production database export. The test driver starts pending/disabled, preserving the ordinary approval workflow. Use synthetic buses and no student records. Do not seed or run phone tests in production during staging.
+
+From admin, run `npm.cmd test`, `npm.cmd run test:rules`, `npm.cmd run test:phase2`, and `npm.cmd run build`. From public, run `npm.cmd test`, `npm.cmd run test:rules`, and `npm.cmd run build`. Java 21+ must be on PATH for Firebase emulator tests. The public rule suite reads the admin's canonical Firebase configuration; keep the repositories as siblings.
+
+Staging browser acceptance: Google/email signup produces one pending driver; approve/assign a synthetic bus; start stationary test tracking; disable while GPS is arriving; confirm GPS denial, inactive public state, matching-lock cleanup and audit; assign another approved synthetic driver and restart. Verify backfill under a simultaneous start never removes GPS. Create/deactivate/retire/reactivate synthetic buses and verify history retention. Test geofence edit/assignment, incident note/status audits, sign-out/session expiry, keyboard navigation and map fallback. No routing or VersaTrans changes are part of this work.
+
+### Conditional writes, session closure and audits
+
+- Backfill commits the sanitized missing projection, a private `publicBackfillClaims/{busId}` receipt containing auditId, and its append-only audit in ONE root update. Rules check the public record is absent at COMMIT. A concurrent publisher wins; an existing record is never replaced. Repeated/concurrent initialization is idempotent. No protected telemetry is copied into backfill.
+- Driver disable normally commits enabled=false, the owned lock removal, active=false/endedAt on the owned last telemetry/public record, a private `sessionClosures/{busId}` receipt (driverUid + auditId), and the audit together. GPS coordinates and their sample timestamp are preserved. Rules constrain closure to the revoked driver's session and a fresh successful audit; admins do not gain general telemetry-write permission.
+- A pre-commit lock acquired on an additional legacy allowed bus can miss the first snapshot. After revocation (when further driver writes are denied), bounded reconciliation closes such sessions with an additional atomic audited commit. Another driver's lock is never removed. Failures are reported as incomplete, not successful. The disabled-driver tab's **Finish disabling** retries cleanup; re-enabling also requires cleanup to finish first. If a different driver has already won the lock, its session is left untouched.
+- Active assignment changes are rejected until tracking stops. Driver profile removal requires disablement first; records for buses/trips/incidents/audits are not removed. Legacy administrative mutations use the same atomic audit contract. Legacy geofence removal retains recorded entries and order.
+- Driver management, incident status/notes, geofence edits/assignments, bus lifecycle and backfill commit their required audit with the mutation. Trip export awaits its audit before returning data to the UI. Audit rejection rolls back mutations and propagates an error. New receipt paths are private; existing geofence/bus/history schemas remain intact. Receipt records are operational metadata, not a substitute for retained audit records.
+
+### Remaining trust boundaries
+
+Browser clients cannot provide authoritative auditing of every read, login failure, offline access, malicious direct SDK call or completed file download. RTDB admin write permission is not proof that an operator used these audited helpers. A future trusted API must enforce mutation+audit centrally and record request identity/results, sensitive reads, authentication events and exports; a download's audit records release of data, not proof the user's filesystem saved it. Service-account/IAM access also requires provider audit controls and district policy. This limitation is explicit; no blanket write grants were added.
+
+Geofence entry detection remains browser-dependent; always-on deduplication/monitoring requires the future trusted service. No new backend or billing resources were provisioned. These changes apply to the current Firebase GPS transport; any future trusted telemetry backend must enforce the same revocation/session-close contract. Real-phone background GPS, OAuth provider setup and manual WCAG checks remain staging acceptance items, not claims proven by unit tests.
+
+For each future release, complete staging acceptance and obtain explicit deployment approval. Deploy the reviewed canonical rules from bus-safety-admin before relying on new admin closure/backfill operations. Older admin clients cannot safely close an active driver under the tightened rules and must use the updated official admin. Do not weaken rules to accommodate an old UI. Follow the backup, compatibility and rollback runbook in the admin VALIDATION.md. Publishing Hosting and rules does not run a bulk data migration; authorized fleet loads can conditionally initialize missing public projections as documented above.

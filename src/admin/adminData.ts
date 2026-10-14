@@ -1,3 +1,4 @@
+import { auditedAdminUpdate } from "../services/adminAudit";
 import { useEffect, useMemo, useState } from "react";
 import { useBuses } from "../hooks/useBuses";
 import { getFirebaseRuntime } from "../config/firebase";
@@ -142,17 +143,17 @@ export async function updateAdminDriverAccess(
     }
   }
 
-  await runtime.update(
-    runtime.ref(runtime.db, `drivers/${driverId}`),
-    {
-      assignedBus: normalizedBus,
-      enabled,
-      approvalStatus:
-        enabled || driverSnapshot.val()?.approvalStatus === "approved"
-          ? "approved"
-          : "pending",
-    },
-  );
+  if (!enabled || driverSnapshot.val()?.assignedBus !== normalizedBus) {
+    const locks = (await runtime.get(runtime.ref(runtime.db, "activeDrivers"))).val() || {};
+    const live = (await runtime.get(runtime.ref(runtime.db, "liveBuses"))).val() || {};
+    if (Object.values(locks).includes(driverId) || Object.values(live).some((record: any) => record.driverUid === driverId && record.active === true))
+      throw new Error("Use the official Transportation admin to disable an active driver safely; stop tracking before changing assignments.");
+  }
+  await auditedAdminUpdate(runtime, enabled ? "driver_access_updated" : "driver_disabled", "drivers/" + driverId, {
+    ["drivers/" + driverId + "/assignedBus"]: normalizedBus,
+    ["drivers/" + driverId + "/enabled"]: enabled,
+    ["drivers/" + driverId + "/approvalStatus"]: enabled || driverSnapshot.val()?.approvalStatus === "approved" ? "approved" : "pending",
+  });
 }
 
 export async function deleteDriverAccount(driverId: string) {
@@ -198,19 +199,11 @@ export async function deleteDriverAccount(driverId: string) {
     }
   }
 
-  await runtime.remove(
-    runtime.ref(runtime.db, `drivers/${normalizedUid}`),
-  );
+  if (driver.enabled !== false) throw new Error("Disable this driver before removing the account.");
+  const locks = (await runtime.get(runtime.ref(runtime.db, "activeDrivers"))).val() || {};
+  const live = (await runtime.get(runtime.ref(runtime.db, "liveBuses"))).val() || {};
+  if (Object.values(locks).includes(normalizedUid) || Object.values(live).some((record: any) => record.driverUid === normalizedUid && record.active === true))
+    throw new Error("Finish disabling this driver in the official admin before removing the account.");
+  await auditedAdminUpdate(runtime, "driver_removed", "drivers/" + normalizedUid, { ["drivers/" + normalizedUid]: null });
 
-  if (assignedBus) {
-    const activeDriverSnapshot = await runtime.get(
-      runtime.ref(runtime.db, `activeDrivers/${assignedBus}`),
-    );
-
-    if (activeDriverSnapshot.val() === normalizedUid) {
-      await runtime.remove(
-        runtime.ref(runtime.db, `activeDrivers/${assignedBus}`),
-      );
-    }
-  }
 }

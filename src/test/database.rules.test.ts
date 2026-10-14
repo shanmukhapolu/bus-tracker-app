@@ -35,6 +35,7 @@ const validPublicTelemetry = () => ({
 });
 
 beforeAll(async () => {
+  if (!/^(127\.0\.0\.1|localhost):\d+$/.test(process.env.FIREBASE_DATABASE_EMULATOR_HOST ?? "")) throw new Error("Loopback emulator required; production tests are forbidden.");
   environment = await initializeTestEnvironment({
     projectId: "demo-ccs-bus-security",
     database: { rules: readFileSync("database.rules.json", "utf8") },
