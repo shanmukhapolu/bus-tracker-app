@@ -139,3 +139,20 @@ Browser clients cannot provide authoritative auditing of every read, login failu
 Geofence entry detection remains browser-dependent; always-on deduplication/monitoring requires the future trusted service. No new backend or billing resources were provisioned. These changes apply to the current Firebase GPS transport; any future trusted telemetry backend must enforce the same revocation/session-close contract. Real-phone background GPS, OAuth provider setup and manual WCAG checks remain staging acceptance items, not claims proven by unit tests.
 
 For each future release, complete staging acceptance and obtain explicit deployment approval. Deploy the reviewed canonical rules from bus-safety-admin before relying on new admin closure/backfill operations. Older admin clients cannot safely close an active driver under the tightened rules and must use the updated official admin. Do not weaken rules to accommodate an old UI. Follow the backup, compatibility and rollback runbook in the admin VALIDATION.md. Publishing Hosting and rules does not run a bulk data migration; authorized fleet loads can conditionally initialize missing public projections as documented above.
+
+## Verified Phase 2A release — October 14, 2026
+
+Published with explicit owner approval. The deployment included canonical RTDB rules from bus-safety-admin, then public/driver Hosting, then admin Hosting.
+
+| Component | Source commit | Live Hosting version | Released (UTC) |
+| --- | --- | --- | --- |
+| Public website and driver portal (working-gps-version) | f03864b62a8ae04759740127635a212deccfd691 | dd3e951a56fd1a1c | 2026-10-14 17:07:15 |
+| Standalone admin (main) | 258fd69ed9e8d805514111bedcdd8b3c7080a3c9 | 52e075ccb3d2fb6e | 2026-10-14 17:07:29 |
+
+Live sites: [public map](https://chsbustracker2.web.app/), [driver portal](https://chsbustracker2.web.app/drivers), [official admin](https://chsbustracker2-admin.web.app/). Subsequent documentation-only commits do not change these build artifacts.
+
+All 146 tests were rerun successfully, including synthetic Firebase Emulator concurrency and authorization tests. Both production builds passed. Read-only post-release verification at 2026-10-14T17:07:45.827Z confirmed all 15 hosted files match the local build hashes, both production deployment manifests name chsbustracker2, security headers are present, and deployed rules match the canonical admin rules and synchronized public test fixture. Canonical rules SHA-256: 51e563de92af2d8b4b6c69162bc9e1dfca94a09723f91d5f27002b16d111eaf2. Anonymous publicBuses reads returned HTTP 200; all 11 checked protected collection reads returned HTTP 401.
+
+No bulk database migration, data import/export, production test records, Auth changes or staging cloud resources were created by this release. The normal admin fleet-load initializer remains conditional and audited. Previous Hosting versions and exact pre-release rules were captured for recovery reference; a protected full-database backup/restore rehearsal was not performed.
+
+Separate cloud-staging acceptance, real-device tracking, OAuth/session smoke tests and manual WCAG verification remain outstanding. This is a published prototype release, not a claim of district production certification. Follow the remaining trust boundaries and the admin VALIDATION.md recovery runbook.
