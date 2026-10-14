@@ -116,7 +116,7 @@
   display: block;
   margin-top: 2px;
   color: var(--ui-text-faint);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .operations-shell .admin-nav {
@@ -181,7 +181,7 @@
   border-radius: 5px;
   background: #eef2f5;
   color: #7d8b96;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1;
   text-align: center;
 }
@@ -208,7 +208,7 @@
   border-radius: 7px;
   background: var(--ui-accent-soft);
   color: var(--ui-accent);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -222,7 +222,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--ui-text);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 750;
 }
 
@@ -230,7 +230,7 @@
   display: block;
   margin-top: 2px;
   color: var(--ui-text-faint);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .operations-shell .signout {
@@ -244,7 +244,7 @@
   border-radius: 7px;
   background: transparent;
   color: #7a8995;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -287,7 +287,7 @@
 .operations-shell .page-heading .eyebrow {
   margin-bottom: 6px;
   color: #8b99a5;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1;
   letter-spacing: .16em;
@@ -345,7 +345,7 @@
   display: block;
   margin-top: 3px;
   color: var(--ui-text-muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.4;
 }
 
@@ -359,7 +359,7 @@
   padding: 0 12px;
   border: 0;
   border-radius: var(--ui-radius-sm);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
   box-shadow: none;
@@ -463,7 +463,7 @@
   align-items: center;
   gap: 6px;
   color: #607889;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 750;
 }
 
@@ -484,7 +484,7 @@
   align-items: center;
   gap: 6px;
   color: var(--ui-text-muted);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -521,7 +521,7 @@
   align-items: center;
   gap: 7px;
   color: var(--ui-text-secondary);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -531,7 +531,7 @@
   padding: 9px 11px;
   border: 0;
   border-radius: var(--ui-radius-sm);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -548,7 +548,7 @@
 .operations-shell .empty {
   padding: 28px 18px;
   color: var(--ui-text-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.55;
   text-align: center;
 }
@@ -599,7 +599,7 @@
   border-radius: 6px;
   background: transparent;
   color: #71818e;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 750;
 }
 
@@ -652,7 +652,7 @@
   outline: 0;
   background: transparent;
   color: var(--ui-text);
-  font-size: 10px;
+  font-size: 12px;
   box-shadow: none;
 }
 
@@ -682,7 +682,7 @@
   background: #fafbfc;
   border-bottom: 1px solid var(--ui-border-muted);
   color: #8b98a3;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: .06em;
   text-align: left;
@@ -695,7 +695,7 @@
   padding: 0 12px;
   border-bottom: 1px solid #f0f3f5;
   color: var(--ui-text-secondary);
-  font-size: 10px;
+  font-size: 12px;
   vertical-align: middle;
   white-space: nowrap;
 }
@@ -716,7 +716,7 @@
   border: 0;
   background: transparent;
   color: var(--ui-text);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -730,7 +730,7 @@
   gap: 5px;
   padding: 0;
   color: #83929d;
-  font-size: 8px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: .06em;
 }
@@ -745,7 +745,7 @@
 .operations-shell .admin-table-action {
   min-height: 31px;
   padding: 0 9px;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .operations-shell .admin-delete:hover {
@@ -762,7 +762,7 @@
   padding: 0 12px;
   border-top: 1px solid var(--ui-border-muted);
   color: var(--ui-text-faint);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .operations-shell .pagination {
@@ -781,7 +781,7 @@
   border-radius: 5px;
   background: transparent;
   color: #7c8c99;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .operations-shell .pagination button:hover:not(:disabled),
@@ -799,7 +799,7 @@
   border-radius: 999px;
   background: #eef2f4;
   color: #758592;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -838,7 +838,7 @@
   border-radius: var(--ui-radius-sm);
   background: #fff;
   color: var(--ui-text-secondary);
-  font-size: 10px;
+  font-size: 12px;
   outline: 0;
 }
 
@@ -929,7 +929,7 @@
 .operations-shell .map-info-summary span {
   min-width: 0;
   color: #607789;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.4;
 }
 
@@ -957,7 +957,7 @@
   display: block;
   margin-bottom: 5px;
   color: #8796a2;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: .06em;
@@ -975,7 +975,7 @@
   border-radius: 999px;
   background: #eef2f4;
   color: #6f8190;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -994,7 +994,7 @@
   border-radius: 7px;
   background: rgba(255,255,255,.96);
   color: var(--ui-text-secondary);
-  font-size: 9px;
+  font-size: 12px;
   box-shadow: 0 4px 16px rgba(23,43,61,.10);
 }
 
@@ -1018,7 +1018,7 @@
 
 .operations-shell .fields dt {
   color: #6b8190;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 750;
   line-height: 1.35;
 }
@@ -1027,7 +1027,7 @@
   min-width: 0;
   margin: 0;
   color: #29465b;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.4;
   text-align: left;
   overflow-wrap: anywhere;
@@ -1062,7 +1062,7 @@
   gap: 5px;
   margin-bottom: 6px;
   padding: 0;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .operations-shell .bus-details-page,
@@ -1086,7 +1086,7 @@
   gap: 8px;
   padding: 12px 16px;
   color: var(--ui-text-secondary);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .operations-shell .bus-detail-location,
@@ -1115,7 +1115,7 @@
   border-radius: 7px;
   background: #eef2f4;
   color: #5c7284;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -1141,7 +1141,7 @@
 .operations-shell .driver-view-tabs button {
   min-height: 34px;
   padding: 0 12px;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .operations-shell .driver-view-tabs button:hover {
@@ -1250,7 +1250,7 @@
 
 .operations-shell .geofence-list-row-meta {
   color: var(--ui-text-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .operations-shell .geofence-list-row-arrow {
@@ -1316,7 +1316,7 @@
   border-radius: 7px;
   background: rgba(255,255,255,.96);
   color: var(--ui-text-secondary);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 750;
   box-shadow: 0 4px 16px rgba(23,43,61,.10);
 }
@@ -1391,7 +1391,7 @@
 .operations-shell .geofence-bus-copy strong {
   display: block;
   color: var(--ui-text);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -1402,14 +1402,14 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--ui-text-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .operations-shell .geofence-bus-copy small {
   display: block;
   margin-top: 3px;
   color: #9a6746;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -1419,7 +1419,7 @@
   border-top: 1px solid var(--ui-border-muted);
   background: var(--ui-surface-subtle);
   color: var(--ui-text-muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -1456,13 +1456,13 @@
 .operations-shell .geofence-alert-row strong,
 .operations-shell .geofence-order-row strong {
   color: var(--ui-text);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 }
 
 .operations-shell .geofence-assigned-bus > span:nth-child(2) {
   color: var(--ui-text-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .operations-shell .geofence-alert-row {
@@ -1484,7 +1484,7 @@
   display: block;
   margin-top: 2px;
   color: var(--ui-text-faint);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .operations-shell .geofence-order-row {
@@ -1499,14 +1499,14 @@
   border-radius: 7px;
   background: #eef4f8;
   color: var(--ui-accent);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 850;
 }
 
 .operations-shell .geofence-detail-status {
   margin: 10px 0 0;
   color: var(--ui-text-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .operations-shell .geofence-toast-stack {
@@ -1554,20 +1554,20 @@
 .operations-shell .geofence-toast-copy strong {
   display: block;
   color: var(--ui-text);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 }
 
 .operations-shell .geofence-toast-copy p {
   margin: 3px 0 2px;
   color: var(--ui-text-secondary);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.4;
 }
 
 .operations-shell .geofence-toast-copy span {
   color: var(--ui-text-faint);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .operations-shell .geofence-toast > button {
@@ -1675,7 +1675,7 @@
   display: block;
   margin-bottom: 14px;
   color: #9fc1dd;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1;
   letter-spacing: .16em;
@@ -1716,7 +1716,7 @@
   border-radius: 7px;
   background: rgba(255,255,255,.06);
   color: #e2ebf2;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -1730,7 +1730,7 @@
   display: block;
   width: min(560px, 100%);
   color: #8ea6ba;
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -1751,7 +1751,7 @@
 .admin-ui .login-form .demo-label {
   margin-bottom: 9px;
   color: #7d8c98;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: .14em;
 }
@@ -1768,7 +1768,7 @@
 .admin-ui .login-form > p:not(.login-policy) {
   margin: 7px auto 0;
   color: var(--ui-text-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -1781,7 +1781,7 @@
 .admin-ui .login-form form label {
   margin-top: 6px;
   color: #5c6f7f;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 750;
 }
 
@@ -1821,13 +1821,13 @@
   padding: 0;
   color: var(--ui-accent);
   text-align: left;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .admin-ui .login-policy {
   margin-top: 14px;
   color: var(--ui-text-muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -2000,7 +2000,7 @@
   }
 
   .operations-shell .page-heading p {
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .operations-shell .page-heading .primary,
@@ -2084,7 +2084,7 @@
   }
 
   .operations-shell .geofence-list-row-name {
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .operations-shell .geofence-detail-actions {
@@ -2242,7 +2242,7 @@
   align-items: center;
   min-height: var(--ui-control);
   color: #607889;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -2511,7 +2511,7 @@
 
 .operations-shell .panel-heading > span,
 .operations-shell .panel-heading div > span {
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .operations-shell .overview-metrics,
@@ -2535,20 +2535,20 @@
 
 .operations-shell .summary-stat span,
 .operations-shell .metric span {
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .operations-shell .primary,
 .operations-shell .secondary {
   min-height: 40px;
   padding: 0 13px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .operations-shell .admin-table-action {
   min-height: 36px;
   padding: 0 11px;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .operations-shell .panel-footer-link {
@@ -2557,7 +2557,7 @@
   justify-content: space-between;
   background: #f9fcff;
   color: #1769b0;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   border-top: 1px solid var(--ui-border-muted);
 }
@@ -2570,7 +2570,7 @@
 .operations-shell .fleet-tabs button {
   min-height: 32px;
   padding: 0 11px;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .operations-shell .fleet-tabs button[aria-pressed="true"] {
@@ -2596,7 +2596,7 @@
 }
 
 .operations-shell .search input {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .operations-shell .search:focus-within {
@@ -2635,11 +2635,11 @@
 }
 
 .operations-shell .overview-support .fields dt {
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .operations-shell .overview-support .fields dd {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .operations-shell .admin-selected-details {
@@ -2679,7 +2679,7 @@
 }
 
 .operations-shell .map-info-summary span {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .operations-shell .map-detail-section {
@@ -2696,7 +2696,7 @@
 
 .operations-shell .map-detail-section-title {
   margin-bottom: 7px;
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .operations-shell .map-detail-section .fields > div {
@@ -2710,7 +2710,7 @@
 }
 
 .operations-shell .map-detail-section .fields dd {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -2752,7 +2752,7 @@
 }
 
 .operations-shell .buses-table .bus-link {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .operations-shell .driver-table td,
@@ -2788,7 +2788,7 @@
 
 .operations-shell .bus-detail-location > .fields dd,
 .operations-shell .bus-detail-side .fields dd {
-  font-size: 10px;
+  font-size: 12px;
   overflow-wrap: anywhere;
 }
 
@@ -2803,7 +2803,7 @@
 
 .operations-shell .bus-detail-status-content p {
   margin-top: 4px;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 @media (max-width: 1100px) {
@@ -2944,3 +2944,4 @@
     min-width: 230px;
   }
 }
+

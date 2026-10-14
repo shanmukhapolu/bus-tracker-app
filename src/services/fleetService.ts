@@ -21,10 +21,7 @@ export function mergeFleetBuses(buses: FleetBus[]) {
   return buses;
 }
 
-export function normalizeBus(
-  value: unknown,
-  id: string,
-): FleetBus | null {
+export function normalizeBus(value: unknown, id: string): FleetBus | null {
   if (!value || typeof value !== "object") return null;
 
   const record = value as Record<string, unknown>;
@@ -38,7 +35,8 @@ export function normalizeBus(
     busNumber,
     route,
     enabled: record.enabled !== false,
-    geofenceId: typeof record.geofenceId === "string" ? record.geofenceId.trim() : "",
+    geofenceId:
+      typeof record.geofenceId === "string" ? record.geofenceId.trim() : "",
   };
 }
 
@@ -67,12 +65,10 @@ export function normalizeFleetDrivers(value: unknown): FleetDriver[] {
         {
           uid,
           displayName: displayName || "Unnamed driver",
-          email:
-            typeof record.email === "string" ? record.email : undefined,
+          email: typeof record.email === "string" ? record.email : undefined,
           enabled: record.enabled === true,
           assignedBus:
-            record.assignedBus === null ||
-            record.assignedBus === undefined
+            record.assignedBus === null || record.assignedBus === undefined
               ? ""
               : String(record.assignedBus).trim(),
           approvalStatus:
@@ -121,11 +117,19 @@ export async function addFleetBus(
     throw new Error(`Bus ${normalizedBusNumber} already exists.`);
   }
 
-  await runtime.update(busRef, {
-    busNumber: normalizedBusNumber,
-    route: normalizedRoute,
-    enabled: true,
-    ...(geofenceId.trim() ? { geofenceId: geofenceId.trim() } : {}),
+  await runtime.update(runtime.ref(runtime.db, ""), {
+    [`buses/${id}`]: {
+      busNumber: normalizedBusNumber,
+      route: normalizedRoute,
+      enabled: true,
+      ...(geofenceId.trim() ? { geofenceId: geofenceId.trim() } : {}),
+    },
+    [`publicBuses/${id}`]: {
+      busNumber: normalizedBusNumber,
+      route: normalizedRoute,
+      enabled: true,
+      active: false,
+    },
   });
 
   return {
@@ -171,10 +175,7 @@ export async function deleteFleetBus(busNumber: string): Promise<void> {
     throw new Error("Bus number is required.");
   }
 
-  const liveRef = runtime.ref(
-    runtime.db,
-    `liveBuses/${normalizedBusNumber}`,
-  );
+  const liveRef = runtime.ref(runtime.db, `liveBuses/${normalizedBusNumber}`);
   const liveSnapshot = await runtime.get(liveRef);
 
   if (liveSnapshot.exists()) {
@@ -186,6 +187,7 @@ export async function deleteFleetBus(busNumber: string): Promise<void> {
 
   const updates: Record<string, unknown> = {
     [`buses/${normalizedBusNumber}`]: null,
+    [`publicBuses/${normalizedBusNumber}`]: null,
   };
 
   const driversSnapshot = await runtime.get(runtime.ref(runtime.db, "drivers"));

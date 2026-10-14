@@ -27,12 +27,13 @@ export function BusInfoCard({
 
   const stale = !demo && now - bus.lastUpdated.getTime() > 60_000;
   const unavailable =
-    stale ||
-    bus.status === "offline" ||
-    (!demo && bus.trackingActive !== true);
+    stale || bus.status === "offline" || (!demo && bus.trackingActive !== true);
 
   return (
-    <section className={`info-card ${demo ? "is-demo" : "is-live"}`} aria-label={`Bus ${bus.busNumber} details`}>
+    <section
+      className={`info-card ${demo ? "is-demo" : "is-live"}`}
+      aria-label={`Bus ${bus.busNumber} details`}
+    >
       <div className="details-toolbar">
         <button
           ref={hideButtonRef}
@@ -51,7 +52,11 @@ export function BusInfoCard({
           <h2>Bus {bus.busNumber}</h2>
           <span>Route {bus.route}</span>
         </div>
-        <span className={`status-pill ${unavailable ? "offline" : bus.status}`}>
+        <span
+          className={`status-pill ${unavailable ? "offline" : bus.status}`}
+          role="status"
+          aria-live="polite"
+        >
           <i />
           {stale && !demo ? "Update delayed" : statusLabel(bus)}
         </span>
@@ -79,7 +84,7 @@ export function BusInfoCard({
             Next stop
           </span>
           <strong>
-            {demo ? bus.nextStop ?? "Not available" : "No live route feed"}
+            {demo ? (bus.nextStop ?? "Not available") : "No live route feed"}
           </strong>
         </div>
       </div>
@@ -93,7 +98,7 @@ export function BusInfoCard({
           <strong>
             {!demo && bus.trackingActive
               ? `Live GPS${bus.locationAccuracyMeters !== undefined ? ` · ±${Math.round(bus.locationAccuracyMeters)} m` : ""}`
-              : bus.currentLocation ?? "Location not available"}
+              : (bus.currentLocation ?? "Location not available")}
           </strong>
         </div>
       </div>

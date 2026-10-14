@@ -1,267 +1,85 @@
-# Carmel Clay Schools Bus Tracker
+# CCS Bus Tracker
 
-A mobile-first public bus-tracking prototype for Carmel, Indiana. Select a bus on the interactive map or in the searchable menu to see its sample arrival time, location, status, and next stop. Bus 218 is selected initially and moves automatically using simulated GPS updates.
+Public bus-location website and driver phone tracker for the shared CCS bus-tracking prototype. The protected operations dashboard is maintained separately in the private `bus-safety-admin` repository.
 
-**All positions, route assignments, statuses, and ETAs are fictional demonstration data. This is an independent prototype, not an official district service.** There are no accounts, student records, real GPS connections, or backend services.
+## Current system
 
-## Run locally
+- `/` is the public bus map.
+- `/drivers` supports the existing Firebase driver signup, approval, sign-in, bus assignment, and phone GPS workflow.
+- `/admin` is a legacy protected interface retained temporarily during consolidation into `bus-safety-admin`. New administrative development belongs in the standalone admin repository.
+- Firebase Authentication protects driver and administrator sessions.
+- Realtime Database Rules are the security boundary. UI checks are not authorization.
 
-Use Node.js 22.12+ (or a newer supported Node release) and npm.
+The public map reads only `publicBuses`, a public-safe projection containing bus number, route label, active state, approved coordinates, accuracy, and timestamps. It cannot read driver identities, internal telemetry, accounts, safety events, trips, incidents, devices, notes, geofence administration, or audit records.
 
-```bash
-npm install
-npm run dev
-```
+Internal phone telemetry is stored under `liveBuses`. In the current no-cost prototype, an approved assigned driver writes both the internal record and the sanitized public projection atomically. A production district deployment should replace direct browser telemetry with a trusted ingestion service.
 
-Open the URL Vite prints, usually `http://localhost:5173`. The dev server also listens on your local network for phone testing using the printed network address, subject to your firewall settings.
+## Authentication and sessions
 
-```bash
-npm run build    # TypeScript checks and production bundle in dist/
-npm run preview  # Preview the production build locally
-npm test         # Service lifecycle, movement, search, and formatting tests
-```
+Driver onboarding remains self-registration followed by administrator approval. New profiles are disabled and pending until an enabled administrator assigns a bus and approves them. Browser authentication uses session-only persistence. A live driver profile listener stops tracking and signs the user out when the profile is removed or disabled.
 
-Deploy `dist/` to a static web host when ready. No server process is needed in production. This change does not publish a website or push to GitHub.
+Do not put passwords, service-account credentials, tracker secrets, database secrets, or private API credentials in frontend code. Firebase web configuration identifies the project and is not a server secret.
 
-## Technology and map configuration
+## Firebase data boundaries
 
-- React 19, TypeScript, Vite, plain CSS, and Lucide icons.
-- MapLibre GL JS provides pan, zoom, touch gestures, keyboard map controls, and markers.
-- OpenFreeMap's Positron style supplies OpenStreetMap-derived vector maps. **No API key, paid API, account, or environment variable is required.** See the [OpenFreeMap quick start](https://openfreemap.org/quick_start/).
-- Change `src/config/map.ts` to use a different compatible style. Attribution remains available in the map's lower-left corner.
-- An internet connection is required for map tiles and the optional Google Fonts. System fonts provide a fallback. If the map cannot load, a retry message appears and the bus list and details remain usable. A browser with WebGL is required for the map.
+| Path                                     | Public read | Authorized reader                          | Writer                                                         |
+| ---------------------------------------- | ----------- | ------------------------------------------ | -------------------------------------------------------------- |
+| `publicBuses`                            | Yes         | Everyone                                   | Assigned active driver; enabled admin for fleet initialization |
+| `buses`                                  | No          | Enabled drivers and admins                 | Enabled admin                                                  |
+| `liveBuses`                              | No          | Assigned driver for own bus; enabled admin | Assigned driver holding that bus lock                          |
+| `activeDrivers`                          | No          | Enabled drivers/admins                     | Assigned driver                                                |
+| `drivers`                                | No          | Own profile; enabled admin                 | Pending self-registration or enabled admin                     |
+| `safetyEvents`, `tripHistory`, `devices` | No          | Enabled admin                              | Restricted by collection rules                                 |
+| `auditLogs`                              | No          | Enabled admin                              | Append-only enabled admin records                              |
 
-## Project structure
+### Firebase security-rules ownership
 
-```text
-src/
-  components/
-    Header.tsx        Compact school branding and live-demo indicator
-    SideMenu.tsx      Responsive list / accessible mobile drawer
-    BusSearch.tsx     Bus number and route search
-    BusMap.tsx        Map lifecycle, camera, controls, loading recovery
-    BusMarker.tsx     Selectable markers with position interpolation
-    BusIcon.tsx       Shared bus symbol
-    BusInfoCard.tsx   ETA, next stop, location, freshness, recenter action
-  config/map.ts      Map style and initial Carmel center
-  data/mockBuses.ts  Fictional fleet and simulation coordinates
-  hooks/useBuses.ts  React subscription to the bus service
-  hooks/useBusTools.ts  Optional browser agent tool using the same selection action
-  services/
-    busService.ts    Provider-neutral contract and provider selection
-    mockBusService.ts  Shared, subscriber-managed simulation
-  types/bus.ts       Bus and snapshot types
-  utils/buses.ts     Search, time/status formatting, interpolation
-  App.tsx            Selection and responsive application layout
-  styles.css         Responsive styles and shared color tokens
-```
+`bus-safety-admin` is the canonical owner of Realtime Database security rules for the shared `chsbustracker2` project. Database rules must be reviewed, tested, and deployed from that repository only.
 
-## How tracking works
+This public repository keeps `database.rules.json` as a synchronized test fixture so its public and driver clients can be tested against the real security boundary. `firebase.json` intentionally has no database deployment target, and `npm run firebase:deploy` deploys hosting only. Do not re-enable database-rule deployment here.
 
-`BusService` exposes `getSnapshot()` and `subscribe(listener)`, compatible with React's `useSyncExternalStore`. Snapshots are immutable and stable between updates. The first subscription starts one simulation timer; the last unsubscribe stops it, including React Strict Mode remounts.
+`npm run test:rules` uses the sibling `../bus-safety-admin/firebase.json` emulator configuration. Keep that repository beside this checkout, keep the rules fixture synchronized, and use Java 21 or newer for Firebase emulator tests. This command runs only against a `demo-` test project; it does not deploy or modify production data.
 
-The mock provider publishes a new Bus 218 coordinate approximately every ten seconds. It traverses an illustrative segment of College Avenue, then reverses at the endpoint. Other buses publish stationary simulated heartbeats. Each marker interpolates from its current displayed position to the newest sample using `requestAnimationFrame`. This deliberately displays movement up to one update interval behind the simulated server. Reduced-motion preferences disable interpolation and camera animation.
+## Security and validation
 
-ETAs, stop names, and location descriptions are static sample metadata, not routing calculations. Update age reflects the last received snapshot. Positions older than 30 seconds display an update warning and suppress ETA. Selecting or recentering moves the camera; background updates do not override a user's pan.
+Rules enforce assignment and active-lock ownership, latitude/longitude limits, speed from 0–90 m/s, heading from 0–359.999 degrees, GPS accuracy from 0–10,000 m, recent timestamps, required fields, and an allowlist of telemetry fields. Public projection records reject driver IDs, safety fields, and unexpected children.
 
-On phones and tablets, the hamburger opens a left drawer with search, Escape-to-close, focus trapping, and focus restoration. Desktop keeps the bus list visible. Safe-area padding and dynamic viewport height accommodate phones.
+Hosting configuration adds CSP, clickjacking protection, referrer policy, MIME-sniffing protection, and a permissions policy that allows geolocation only from this origin. HTTPS and HSTS are provided by Firebase Hosting.
 
-## Future Firebase integration
+## Accessibility
 
-```text
-Android bus phone → Google Cloud Run → Firebase Realtime Database
-                                      ↓
-                               firebaseBusService
-                                      ↓
-                              useBuses → React UI
-```
+The target is WCAG 2.1 Level AA. The interface includes keyboard focus styles, named controls, live status announcements, reduced-motion handling, and non-map bus information. Map tiles are visual context; bus state is also available through the bus list and detail card.
 
-1. Define the public bus record schema, server timestamps, permitted fields, and authorized tracker writes. Keep student information out of public records.
-2. Add `firebaseBusService.ts` implementing `BusService`. Normalize Firebase coordinates and timestamps into validated `Bus` objects, preserve stable snapshots, and clean up database listeners when unsubscribing.
-3. Handle connection state, stale/offline vehicles, removed buses, and errors in the adapter; set `mode: 'live'` only when real tracking is connected. Set the update cadence through `updateIntervalMs`.
-4. Switch the exported provider in `src/services/busService.ts`. The map and bus UI do not need Firebase imports.
-5. Configure Firebase public read rules and authenticated tracker writes, then test with the Firebase Emulator Suite before connecting real vehicles. Public website access does not mean public write access.
+## Development and tests
 
-Firebase, Cloud Run, authentication, and a backend are intentionally not installed in version 1.
-
-## Firebase live tracking setup
-
-The prototype can switch from the built-in simulation to a Firebase Realtime Database-backed live provider when all `VITE_FIREBASE_*` variables are present. The public map subscribes to `liveBuses`; the hidden `/drivers` page signs drivers in and publishes phone GPS while tracking is active.
-
-Firebase's web SDK is loaded from the official modular CDN at runtime, so this prototype does not add a large Firebase dependency to the npm lockfile. The public Firebase web configuration is not a secret; database rules and Firebase Authentication are what protect writes.
-
-### 1. Create/register the Firebase web app
-
-Create or select a Firebase project, create a Web app, and enable Realtime Database. Copy the web-app configuration values into a local `.env` based on `.env.example`. Set `VITE_FIREBASE_DATABASE_URL` to the Realtime Database URL from the Firebase console.
-
-### 2. Enable driver authentication
-
-Enable Firebase Authentication with Email/Password. Create one account per driver. The driver page does not create accounts itself.
-
-### 3. Add the database rules
-
-Publish `firebase.database.rules.json` as the Realtime Database rules. Public users can read live bus locations, but only enabled driver accounts can claim an assigned bus and write its live record.
-
-### 4. Add a driver profile
-
-After creating a driver account, copy its Firebase Auth UID into the Realtime Database under:
-
-```text
-drivers/
-  DRIVER_UID/
-    enabled: true
-    displayName: "Driver Name"
-    allowedBuses:
-      "218": true
-```
-
-Add more bus IDs to `allowedBuses` when that driver is permitted to operate them. The client can display the list, but the same assignment is enforced again by the database rules.
-
-### 5. Run the app
-
-```bash
-npm install
-npm run dev
-```
-
-Open `/drivers` on the driver's phone. Sign in, select an assigned bus and route, and press **Start tracking**. The browser requests high-accuracy location permission and opens a live driver map with the bus position, ordered route stops, the next stop, and remaining straight-line distance. The newest GPS fix is published approximately once per second while the page is active.
-
-Administrators create routes and place ordered stops from the separate `bus-safety-admin` app. Route records are stored under `routes/<routeId>` and are readable only by approved drivers and enabled administrators. Route lines in this first version connect the saved stops in sequence; they are operational guidance, not turn-by-turn road navigation.
-
-The public map listens to Firebase and only renders buses whose `liveBuses/<busId>.active` value is true. When tracking stops, the record becomes inactive. Firebase's `onDisconnect` mechanism also marks the bus inactive and releases the bus lock when the tracking connection drops.
-
-### Driver-phone limitations
-
-Browser geolocation requires a secure context such as HTTPS, and the user must grant permission. `watchPosition()` is preferable to repeatedly calling `getCurrentPosition()` because the browser can deliver updated position fixes as they become available. The implementation requests high accuracy, allows at most about one second of cached position age, and publishes at most once per second.
-
-Mobile browsers can throttle or suspend background tabs. The page therefore asks for a Screen Wake Lock when supported, but a web page cannot guarantee continuous background GPS tracking across all phones. For reliable all-day fleet tracking, the eventual production version should use a dedicated native Android/iOS driver app or a managed device mode rather than depending on a foreground browser tab.
-
-### Cost/scaling note
-
-A one-second write cadence is intentionally aggressive for the prototype. It is suitable for a small number of active buses, but it is not the most efficient fleet design. A production implementation should usually combine movement thresholds, adaptive intervals, and heartbeat writes—for example, publish immediately when the bus moves several meters, otherwise send a periodic heartbeat. Firebase Realtime Database is designed for realtime listeners, but usage is billed primarily on stored data and outbound traffic, so scaling should be measured rather than assuming a free large-scale fleet.
-
-### Security note
-
-`/drivers` is hidden from the public navigation, but hiding a URL is not an access-control mechanism. Firebase Authentication and Realtime Database Rules are the real controls. Do not replace the rules with a shared secret embedded in frontend code.
-
-### Suggested production evolution
-
-For a real district deployment, keep the current `BusService` abstraction but replace browser-driver publishing with:
-
-```text
-Driver phone app
-   ↓
-Authenticated tracking session
-   ↓
-Cloud Run / trusted ingestion API
-   ↓
-Firebase Realtime Database
-   ↓
-Public bus listener
-   ↓
-Map UI
-```
-
-That trusted ingestion layer can validate driver assignments server-side, enforce rate limits, reject impossible GPS jumps, keep driver identity private from public clients, and maintain route/ETA computation separately from raw GPS.
-
-## Firebase Hosting deployment
-
-The repository is now wired for Firebase Hosting and Realtime Database deployment. The Firebase project ID in the supplied web configuration is **chsbustracker2** (the Firebase project display name can be different).
-
-### One-time Firebase console setup
-
-In Firebase Console for `chsbustracker2`:
-
-1. Create **Realtime Database** and choose its region. Start in locked mode. Firebase provides the database URL after the database is created; this URL must be added locally as `VITE_FIREBASE_DATABASE_URL`. Firebase documents that the URL format depends on the database region.
-2. Enable **Authentication → Sign-in method → Email/Password**. Create one Firebase Authentication account per driver.
-3. After creating a driver account, copy its Auth UID and add a driver profile in Realtime Database:
-
-```json
-{
-  "drivers": {
-    "DRIVER_UID": {
-      "enabled": true,
-      "displayName": "Driver Name",
-      "allowedBuses": {
-        "218": true
-      }
-    }
-  }
-}
-```
-
-The database rules in `database.rules.json` enforce the same bus assignment server-side.
-
-### Local setup on Windows PowerShell
-
-Clone the exact prototype branch:
+Use Node.js 22 LTS.
 
 ```powershell
-git clone --branch prototype --single-branch https://github.com/shanmukhapolu/bus-tracker-app.git
-cd bus-tracker-app
 npm ci
-```
-
-Create the local environment file:
-
-```powershell
-Copy-Item .env.example .env.local
-notepad .env.local
-```
-
-Set:
-
-```text
-VITE_FIREBASE_DATABASE_URL=https://YOUR_DATABASE_URL
-```
-
-You normally only need to add the database URL because the supplied `chsbustracker2` web configuration is already included in `src/config/firebase.ts`. `.env.local` is ignored by Git.
-
-Install/login to the Firebase CLI. The current Firebase CLI requires Node.js 18+ and Firebase recommends the npm installation path for Node users. citeturn482753search0
-
-```powershell
-npm install -g firebase-tools
-firebase login
-firebase projects:list
-```
-
-The repository already contains `.firebaserc`, so it points at `chsbustracker2`. The deployment files are `firebase.json` and `database.rules.json`.
-
-Build and deploy:
-
-```powershell
+npm test
 npm run build
-firebase deploy --only hosting,database
+npm audit --omit=dev
 ```
 
-Or use the repository script, which also runs the Hosting predeploy build:
+Firebase rule regression tests require Java 21 or another Firebase-supported JDK on `PATH`:
 
 ```powershell
-npm run firebase:deploy
+npm run test:rules
 ```
 
-Firebase Hosting serves static assets over HTTPS and provides project-hosted `web.app` and `firebaseapp.com` domains.
+The suite covers anonymous users, enabled and disabled drivers, wrong-bus writes, admins, protected reads, public writes, malformed telemetry, unexpected fields, and private append-only audit records.
 
-After deployment, open the Hosting URL printed by the CLI. The public tracker is `/`; the internal driver page is `/drivers`.
+## Local configuration
 
-### Local testing
-
-For normal development:
+Copy `.env.example` to `.env.local`. Firebase web identifiers may be present in client configuration. Never add server credentials or secrets.
 
 ```powershell
+npm install
 npm run dev
 ```
 
-For Firebase Hosting-style local serving:
+Browser GPS requires HTTPS outside localhost and explicit location permission. Mobile browsers can suspend background tabs; a managed native application remains the recommended production tracker.
 
-```powershell
-npm run firebase:serve
-```
+## Known production decisions
 
-For a phone GPS test, use the deployed HTTPS site or another HTTPS development environment. Browser geolocation requires a secure context and user permission.
-
-### Important production limitation
-
-A browser tab is not a fleet-management-grade tracking client. Mobile operating systems can throttle or suspend background tabs, so the driver should keep the tracking page active. The implementation requests Wake Lock where supported, but it cannot guarantee background GPS.
-
-For a real district deployment, the next production layer should add a trusted ingestion service that validates driver/bus assignments, rejects impossible GPS jumps, rate-limits writes, and keeps internal driver identity out of public live-bus records.
+CCS Transportation, IT, and legal still need to decide route/VersaTrans integration, route and stop visibility, public GPS delay/generalization, retention periods, MFA and Workspace enforcement, final staff roles, managed-phone requirements, and approved vendors. This phase does not decide or implement those items.

@@ -62,6 +62,12 @@ export function DriversPage() {
   const [loginError, setLoginError] = useState("");
 
   const emailInputRef = useRef<HTMLInputElement>(null);
+  const sessionRef = useRef<DriverTrackingSession | null>(null);
+  const revokingRef = useRef(false);
+
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
 
   const driverBuses = useMemo(
     () =>
@@ -91,7 +97,36 @@ export function DriversPage() {
     const stopProfile = subscribeDriverProfile(
       driverUid,
       (nextProfile) => {
-        if (!nextProfile) return;
+        if (!nextProfile || nextProfile.enabled !== true) {
+          if (revokingRef.current) return;
+          revokingRef.current = true;
+          void (async () => {
+            try {
+              await sessionRef.current?.stop();
+            } catch (error) {
+              console.error(
+                "Driver tracking cleanup failed after access was revoked.",
+                error,
+              );
+            }
+            try {
+              await signOutDriver();
+            } finally {
+              sessionRef.current = null;
+              setSession(null);
+              setSignedIn(false);
+              setDriverUid("");
+              setProfile(null);
+              setPosition(null);
+              setStatus("error");
+              setLoginError(
+                "Session expired because this driver account is no longer authorized.",
+              );
+              revokingRef.current = false;
+            }
+          })();
+          return;
+        }
 
         setProfile((current) => ({
           ...(current ?? {}),
@@ -111,7 +146,7 @@ export function DriversPage() {
       stopBuses();
       stopProfile();
     };
-  }, [signedIn, driverUid, session]);
+  }, [signedIn, driverUid]);
 
   const switchAuthMode = (mode: "login" | "signup") => {
     setAuthMode(mode);
@@ -229,11 +264,7 @@ export function DriversPage() {
     setStatus("signing-up");
 
     try {
-      const registration = await signUpDriver(
-        name,
-        normalizedEmail,
-        password,
-      );
+      const registration = await signUpDriver(name, normalizedEmail, password);
       await signOutDriver();
 
       setDisplayName("");

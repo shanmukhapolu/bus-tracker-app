@@ -136,7 +136,8 @@ function readableTrackingError(error: unknown, busNumber: string) {
   if (/permission[_ -]?denied/i.test(message)) {
     return `Firebase denied tracking access for Bus ${busNumber}. Sign out and back in after an administrator assigns this bus, then try again.`;
   }
-  return message || "Could not start tracking.";
+  console.error("Driver tracking failed.", error);
+  return "GPS update could not be saved. Check your connection and try again.";
 }
 
 export function getLocationSupportMessage() {
@@ -165,18 +166,13 @@ export async function loadDriverProfile(
   uid: string,
 ): Promise<DriverProfile | null> {
   const runtime = await getFirebaseRuntime();
-  const snapshot = await runtime.get(
-    runtime.ref(runtime.db, `drivers/${uid}`),
-  );
+  const snapshot = await runtime.get(runtime.ref(runtime.db, `drivers/${uid}`));
 
-  return snapshot.exists()
-    ? (snapshot.val() as DriverProfile)
-    : null;
+  return snapshot.exists() ? (snapshot.val() as DriverProfile) : null;
 }
 
 async function publishPosition(
   runtime: FirebaseRuntime,
-  liveRef: any,
   options: DriverTrackingOptions,
   position: DriverLocation,
 ) {
@@ -186,7 +182,7 @@ async function publishPosition(
     throw new Error("Driver authentication is no longer active.");
   }
 
-  await runtime.update(liveRef, {
+  const internalRecord = {
     busNumber: options.busNumber,
     route: options.route,
     latitude: position.latitude,
@@ -197,6 +193,21 @@ async function publishPosition(
     active: true,
     driverUid: user.uid,
     lastUpdated: runtime.serverTimestamp(),
+  };
+  const publicRecord = {
+    busNumber: options.busNumber,
+    route: options.route,
+    enabled: true,
+    latitude: position.latitude,
+    longitude: position.longitude,
+    accuracyMeters: position.accuracyMeters,
+    active: true,
+    lastUpdated: runtime.serverTimestamp(),
+  };
+
+  await runtime.update(runtime.ref(runtime.db, ""), {
+    [`liveBuses/${options.busId}`]: internalRecord,
+    [`publicBuses/${options.busId}`]: publicRecord,
   });
 }
 
@@ -339,6 +350,7 @@ export async function startDriverTracking(
 
   const lockRef = runtime.ref(runtime.db, `activeDrivers/${options.busId}`);
   const liveRef = runtime.ref(runtime.db, `liveBuses/${options.busId}`);
+  const publicRef = runtime.ref(runtime.db, `publicBuses/${options.busId}`);
 
   const transaction = await runtime.runTransaction(lockRef, (current) => {
     if (current === null || current === user.uid) {
@@ -397,12 +409,14 @@ export async function startDriverTracking(
 
     activePublish = (async () => {
       try {
-        await publishPosition(runtime, liveRef, options, latestPosition!);
+        await publishPosition(runtime, options, latestPosition!);
       } catch (error) {
+        console.error(
+          "Firebase could not save the latest GPS position.",
+          error,
+        );
         options.onError(
-          error instanceof Error
-            ? `Firebase write failed: ${error.message}`
-            : "Firebase could not save the latest GPS position.",
+          "GPS update could not be saved. Check your connection.",
         );
       }
     })();
@@ -425,10 +439,16 @@ export async function startDriverTracking(
 
     // The first write is mandatory. We do not mark tracking live until
     // Firebase has actually accepted the GPS coordinates.
-    await publishPosition(runtime, liveRef, options, firstLocation);
+    await publishPosition(runtime, options, firstLocation);
 
     await runtime.onDisconnect(liveRef).update({
       active: false,
+      lastUpdated: runtime.serverTimestamp(),
+      endedAt: runtime.serverTimestamp(),
+    });
+    await runtime.onDisconnect(publicRef).update({
+      active: false,
+      lastUpdated: runtime.serverTimestamp(),
       endedAt: runtime.serverTimestamp(),
     });
 
@@ -493,6 +513,7 @@ export async function startDriverTracking(
       try {
         await runtime.onDisconnect(lockRef).cancel();
         await runtime.onDisconnect(liveRef).cancel();
+        await runtime.onDisconnect(publicRef).cancel();
       } catch {
         // The server-side disconnect handler may already have run.
       }
@@ -502,9 +523,14 @@ export async function startDriverTracking(
         // the most recent position received immediately before stopping.
         await activePublish;
 
-        await runtime.update(liveRef, {
-          active: false,
-          endedAt: runtime.serverTimestamp(),
+        await runtime.update(runtime.ref(runtime.db, ""), {
+          [`liveBuses/${options.busId}/active`]: false,
+          [`liveBuses/${options.busId}/lastUpdated`]: runtime.serverTimestamp(),
+          [`liveBuses/${options.busId}/endedAt`]: runtime.serverTimestamp(),
+          [`publicBuses/${options.busId}/active`]: false,
+          [`publicBuses/${options.busId}/lastUpdated`]:
+            runtime.serverTimestamp(),
+          [`publicBuses/${options.busId}/endedAt`]: runtime.serverTimestamp(),
         });
       } finally {
         await runtime.remove(lockRef);
@@ -525,13 +551,12 @@ export async function startDriverTracking(
     try {
       await runtime.onDisconnect(lockRef).cancel();
       await runtime.onDisconnect(liveRef).cancel();
+      await runtime.onDisconnect(publicRef).cancel();
       await runtime.remove(lockRef);
     } catch {
       // Best-effort cleanup.
     }
 
-    throw new Error(
-      readableTrackingError(error, options.busNumber),
-    );
+    throw new Error(readableTrackingError(error, options.busNumber));
   }
 }

@@ -1,17 +1,30 @@
 {
   "rules": {
     "liveBuses": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
+      "$busId": {
+        ".read": "auth != null && ((root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true) || (root.child('drivers').child(auth.uid).child('enabled').val() === true && (root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true || root.child('drivers').child(auth.uid).child('assignedBus').val() === $busId)))",
+        ".write": "auth != null && root.child('drivers').child(auth.uid).child('enabled').val() === true && root.child('buses').child($busId).child('enabled').val() === true && (root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true || root.child('drivers').child(auth.uid).child('assignedBus').val() === $busId) && root.child('activeDrivers').child($busId).val() === auth.uid",
+        ".validate": "newData.hasChildren(['busNumber', 'route', 'latitude', 'longitude', 'active', 'lastUpdated', 'driverUid']) && newData.child('busNumber').isString() && newData.child('busNumber').val() === root.child('buses').child($busId).child('busNumber').val() && newData.child('route').isString() && newData.child('route').val() === root.child('buses').child($busId).child('route').val() && newData.child('latitude').isNumber() && newData.child('latitude').val() >= -90 && newData.child('latitude').val() <= 90 && newData.child('longitude').isNumber() && newData.child('longitude').val() >= -180 && newData.child('longitude').val() <= 180 && newData.child('active').isBoolean() && newData.child('lastUpdated').isNumber() && newData.child('lastUpdated').val() >= now - 300000 && newData.child('lastUpdated').val() <= now + 60000 && newData.child('driverUid').val() === auth.uid && (!newData.child('accuracyMeters').exists() || (newData.child('accuracyMeters').isNumber() && newData.child('accuracyMeters').val() >= 0 && newData.child('accuracyMeters').val() <= 10000)) && (!newData.child('speedMps').exists() || newData.child('speedMps').val() === null || (newData.child('speedMps').isNumber() && newData.child('speedMps').val() >= 0 && newData.child('speedMps').val() <= 90)) && (!newData.child('headingDeg').exists() || newData.child('headingDeg').val() === null || (newData.child('headingDeg').isNumber() && newData.child('headingDeg').val() >= 0 && newData.child('headingDeg').val() < 360)) && (!newData.child('startedAt').exists() || newData.child('startedAt').isNumber()) && (!newData.child('endedAt').exists() || newData.child('endedAt').isNumber()) && (!newData.child('geofenceId').exists() || newData.child('geofenceId').isString())",
+        "$other": {
+          ".validate": "$other === 'busNumber' || $other === 'route' || $other === 'latitude' || $other === 'longitude' || $other === 'accuracyMeters' || $other === 'speedMps' || $other === 'headingDeg' || $other === 'active' || $other === 'driverUid' || $other === 'lastUpdated' || $other === 'startedAt' || $other === 'endedAt' || $other === 'geofenceId'"
+        }
+      }
+    },
+    "publicBuses": {
       ".read": true,
       "$busId": {
-        ".read": true,
-        ".write": "auth != null && root.child('drivers').child(auth.uid).child('enabled').val() === true && (root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true || root.child('drivers').child(auth.uid).child('assignedBus').val() === $busId) && root.child('activeDrivers').child($busId).val() === auth.uid",
-        ".validate": "newData.hasChildren(['busNumber', 'route', 'latitude', 'longitude', 'active', 'lastUpdated', 'driverUid']) && newData.child('busNumber').isString() && newData.child('route').isString() && newData.child('latitude').isNumber() && newData.child('longitude').isNumber() && newData.child('latitude').val() >= -90 && newData.child('latitude').val() <= 90 && newData.child('longitude').val() >= -180 && newData.child('longitude').val() <= 180 && (!newData.child('geofenceId').exists() || newData.child('geofenceId').isString()) && newData.child('active').isBoolean() && newData.child('lastUpdated').isNumber() && newData.child('driverUid').val() === auth.uid"
+        ".write": "auth != null && ((root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true) || (root.child('drivers').child(auth.uid).child('enabled').val() === true && root.child('buses').child($busId).child('enabled').val() === true && (root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true || root.child('drivers').child(auth.uid).child('assignedBus').val() === $busId) && root.child('activeDrivers').child($busId).val() === auth.uid))",
+        ".validate": "newData.hasChildren(['busNumber', 'route', 'enabled', 'active']) && newData.child('busNumber').isString() && newData.child('busNumber').val() === root.child('buses').child($busId).child('busNumber').val() && newData.child('route').isString() && newData.child('route').val() === root.child('buses').child($busId).child('route').val() && newData.child('enabled').isBoolean() && newData.child('active').isBoolean() && (!newData.child('latitude').exists() || (newData.child('latitude').isNumber() && newData.child('latitude').val() >= -90 && newData.child('latitude').val() <= 90)) && (!newData.child('longitude').exists() || (newData.child('longitude').isNumber() && newData.child('longitude').val() >= -180 && newData.child('longitude').val() <= 180)) && (newData.child('latitude').exists() === newData.child('longitude').exists()) && (newData.child('active').val() !== true || (newData.child('latitude').exists() && newData.child('lastUpdated').isNumber() && newData.child('lastUpdated').val() >= now - 300000 && newData.child('lastUpdated').val() <= now + 60000)) && (!newData.child('accuracyMeters').exists() || (newData.child('accuracyMeters').isNumber() && newData.child('accuracyMeters').val() >= 0 && newData.child('accuracyMeters').val() <= 10000)) && (!newData.child('lastUpdated').exists() || newData.child('lastUpdated').isNumber()) && (!newData.child('startedAt').exists() || newData.child('startedAt').isNumber()) && (!newData.child('endedAt').exists() || newData.child('endedAt').isNumber()) && newData.parent().parent().child('buses').child($busId).child('enabled').val() === true && newData.parent().parent().child('buses').child($busId).child('lifecycleStatus').val() !== 'retired'",
+        "$other": {
+          ".validate": "$other === 'busNumber' || $other === 'route' || $other === 'enabled' || $other === 'latitude' || $other === 'longitude' || $other === 'accuracyMeters' || $other === 'active' || $other === 'lastUpdated' || $other === 'startedAt' || $other === 'endedAt'"
+        }
       }
     },
     "activeDrivers": {
       "$busId": {
         ".read": "auth != null && (root.child('drivers').child(auth.uid).child('enabled').val() === true || (root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true))",
-        ".write": "auth != null && root.child('drivers').child(auth.uid).child('enabled').val() === true && (root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true || root.child('drivers').child(auth.uid).child('assignedBus').val() === $busId) && ((!data.exists() && newData.val() === auth.uid) || (data.val() === auth.uid && !newData.exists()) || (data.val() === auth.uid && newData.val() === auth.uid))",
+        ".write": "auth != null && root.child('drivers').child(auth.uid).child('enabled').val() === true && root.child('buses').child($busId).child('enabled').val() === true && (root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true || root.child('drivers').child(auth.uid).child('assignedBus').val() === $busId) && ((!data.exists() && newData.val() === auth.uid) || (data.val() === auth.uid && !newData.exists()) || (data.val() === auth.uid && newData.val() === auth.uid))",
         ".validate": "newData.val() === auth.uid"
       }
     },
@@ -20,10 +33,10 @@
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || (root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true))",
         ".write": "auth != null && ((auth.uid === $uid && !data.exists() && newData.child('enabled').val() === false && newData.child('displayName').isString() && newData.child('assignedBus').val() === '' && newData.child('approvalStatus').val() === 'pending' && (!newData.child('email').exists() || newData.child('email').isString()) && !newData.child('allowedBuses').exists()) || (root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true))",
-        ".validate": "newData.hasChildren(['displayName', 'enabled', 'assignedBus']) && newData.child('displayName').isString() && newData.child('displayName').val().length >= 2 && newData.child('displayName').val().length <= 100 && newData.child('enabled').isBoolean() && newData.child('assignedBus').isString() && (newData.child('assignedBus').val() === '' || root.child('buses').child(newData.child('assignedBus').val()).child('enabled').val() === true) && (!newData.child('email').exists() || newData.child('email').isString()) && (!newData.child('approvalStatus').exists() || newData.child('approvalStatus').val() === 'pending' || newData.child('approvalStatus').val() === 'approved')",
+        ".validate": "newData.hasChildren(['displayName', 'enabled', 'assignedBus']) && newData.child('displayName').isString() && newData.child('displayName').val().length >= 2 && newData.child('displayName').val().length <= 100 && newData.child('enabled').isBoolean() && newData.child('assignedBus').isString() && (newData.child('assignedBus').val() === '' || newData.parent().parent().child('buses').child(newData.child('assignedBus').val()).child('enabled').val() === true) && (!newData.child('email').exists() || newData.child('email').isString()) && (!newData.child('approvalStatus').exists() || newData.child('approvalStatus').val() === 'pending' || newData.child('approvalStatus').val() === 'approved')",
         "allowedBuses": {
           "$busId": {
-            ".validate": "!newData.exists() || (newData.val() === true && root.child('buses').child($busId).child('enabled').val() === true)"
+            ".validate": "!newData.exists() || (newData.val() === true && newData.parent().parent().parent().parent().child('buses').child($busId).child('enabled').val() === true)"
           }
         }
       }
@@ -31,7 +44,7 @@
     "admins": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.child('role').val() === 'admin' && newData.child('enabled').val() === false && newData.child('displayName').isString() && newData.child('displayName').val().length >= 2 && newData.child('displayName').val().length <= 100"
+        ".write": false
       }
     },
     "geofences": {
@@ -42,10 +55,10 @@
       }
     },
     "buses": {
-      ".read": true,
+      ".read": "auth != null && ((root.child('drivers').child(auth.uid).child('enabled').val() === true) || (root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true))",
       "$busId": {
-        ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
-        ".validate": "newData.child('busNumber').isString() && newData.child('route').isString() && newData.child('enabled').isBoolean() && (!newData.child('geofenceId').exists() || newData.child('geofenceId').isString())"
+        ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true && newData.exists() && (!data.exists() || newData.child('enabled').val() !== false || (root.child('liveBuses').child($busId).child('active').val() !== true && !root.child('activeDrivers').child($busId).exists()))",
+        ".validate": "newData.child('busNumber').isString() && newData.child('busNumber').val().length >= 1 && newData.child('busNumber').val().length <= 20 && newData.child('route').isString() && newData.child('enabled').isBoolean() && (!newData.child('geofenceId').exists() || newData.child('geofenceId').isString()) && (!newData.child('lifecycleStatus').exists() || newData.child('lifecycleStatus').val() === 'active' || newData.child('lifecycleStatus').val() === 'inactive' || newData.child('lifecycleStatus').val() === 'retired') && (!newData.child('lifecycleStatus').exists() || (newData.child('lifecycleStatus').val() === 'active' && newData.child('enabled').val() === true) || ((newData.child('lifecycleStatus').val() === 'inactive' || newData.child('lifecycleStatus').val() === 'retired') && newData.child('enabled').val() === false)) && (!newData.child('createdAt').exists() || newData.child('createdAt').isNumber()) && (!newData.child('updatedAt').exists() || newData.child('updatedAt').isNumber()) && (!data.exists() || newData.child('registrationId').val() === data.child('registrationId').val()) && (!newData.child('registrationId').exists() || newData.child('registrationId').isString()) && (data.child('lifecycleStatus').val() !== 'retired' || newData.child('lifecycleStatus').val() === 'retired')"
       }
     },
     "routes": {
@@ -80,7 +93,13 @@
     },
     "safetyEvents": {
       ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
-      ".indexOn": ["busId", "tripId", "timestamp", "type", "status"],
+      ".indexOn": [
+        "busId",
+        "tripId",
+        "timestamp",
+        "type",
+        "status"
+      ],
       "$eventId": {
         "status": {
           ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
@@ -112,7 +131,12 @@
     "trips": {
       ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
       ".write": false,
-      ".indexOn": ["busId", "driverUid", "startedAt", "status"]
+      ".indexOn": [
+        "busId",
+        "driverUid",
+        "startedAt",
+        "status"
+      ]
     },
     "tripPoints": {
       ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
@@ -127,8 +151,14 @@
       ".write": false
     },
     "auditLogs": {
-      ".read": false,
-      ".write": false
+      ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
+      "$logId": {
+        ".write": "auth != null && !data.exists() && root.child('admins').child(auth.uid).child('role').val() === 'admin' && root.child('admins').child(auth.uid).child('enabled').val() === true",
+        ".validate": "newData.hasChildren(['actorUid', 'action', 'resource', 'timestamp', 'result']) && newData.child('actorUid').val() === auth.uid && newData.child('action').isString() && newData.child('action').val().length >= 3 && newData.child('action').val().length <= 80 && newData.child('resource').isString() && newData.child('resource').val().length >= 1 && newData.child('resource').val().length <= 200 && newData.child('timestamp').isNumber() && newData.child('timestamp').val() >= now - 300000 && newData.child('timestamp').val() <= now + 60000 && (newData.child('result').val() === 'success' || newData.child('result').val() === 'failure') && (!newData.child('actorEmail').exists() || (newData.child('actorEmail').isString() && newData.child('actorEmail').val().length <= 254)) && (!newData.child('details').exists() || (newData.child('details').isString() && newData.child('details').val().length <= 500))",
+        "$other": {
+          ".validate": "$other === 'actorUid' || $other === 'actorEmail' || $other === 'action' || $other === 'resource' || $other === 'timestamp' || $other === 'result' || $other === 'details'"
+        }
+      }
     }
   }
 }

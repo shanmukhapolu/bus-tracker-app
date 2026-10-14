@@ -7,9 +7,10 @@ import type { BusService } from "./busService";
 const LIVE_UPDATE_INTERVAL_MS = 1000;
 const LIVE_STALE_MS = 60_000;
 
-interface LiveBusRecord {
+interface PublicBusRecord {
   busNumber?: string;
   route?: string;
+  enabled?: boolean;
   latitude?: number;
   longitude?: number;
   accuracyMeters?: number;
@@ -19,13 +20,6 @@ interface LiveBusRecord {
   lastUpdated?: number | null;
   startedAt?: number | null;
   endedAt?: number | null;
-}
-
-interface FleetBusRecord {
-  busNumber?: string;
-  route?: string;
-  enabled?: boolean;
-  geofenceId?: string;
 }
 
 function isFiniteNumber(value: unknown): value is number {
@@ -53,11 +47,8 @@ function createOfflineFleetBus(
   };
 }
 
-function mergeLiveBuses(
-  data: Record<string, LiveBusRecord> | null,
-  fleetData: Record<string, FleetBusRecord> | null,
-): Bus[] {
-  const fleetBuses = normalizeFleetBuses(fleetData);
+function mergePublicBuses(data: Record<string, PublicBusRecord> | null): Bus[] {
+  const fleetBuses = normalizeFleetBuses(data);
   const merged = new Map<string, Bus>();
 
   for (const fleet of fleetBuses) {
@@ -65,7 +56,7 @@ function mergeLiveBuses(
 
     merged.set(
       fleet.id,
-      createOfflineFleetBus(fleet.id, fleet.busNumber, fleet.route, fleet.geofenceId ?? ""),
+      createOfflineFleetBus(fleet.id, fleet.busNumber, fleet.route, ""),
     );
   }
 
@@ -91,13 +82,9 @@ function mergeLiveBuses(
       Date.now() - live.lastUpdated <= LIVE_STALE_MS;
 
     const hasKnownLocation =
-      isFiniteNumber(live.latitude) &&
-      isFiniteNumber(live.longitude);
+      isFiniteNumber(live.latitude) && isFiniteNumber(live.longitude);
 
-    const active =
-      live.active === true &&
-      hasFreshUpdate &&
-      hasKnownLocation;
+    const active = live.active === true && hasFreshUpdate && hasKnownLocation;
 
     const firebaseLastUpdated = isFiniteNumber(live.lastUpdated)
       ? new Date(live.lastUpdated)
@@ -153,7 +140,7 @@ function mergeLiveBuses(
 
 export function createFirebaseBusService(): BusService {
   let snapshot: BusSnapshot = {
-    buses: mergeLiveBuses(null, null),
+    buses: mergePublicBuses(null),
     mode: "live",
     connected: false,
     updateIntervalMs: LIVE_UPDATE_INTERVAL_MS,
@@ -161,12 +148,10 @@ export function createFirebaseBusService(): BusService {
 
   const listeners = new Set<() => void>();
   let started = false;
-  let stopLiveListener: (() => void) | undefined;
-  let stopFleetListener: (() => void) | undefined;
+  let stopPublicListener: (() => void) | undefined;
   let stopConnectionListener: (() => void) | undefined;
   let staleRefreshTimer: ReturnType<typeof setInterval> | undefined;
-  let liveData: Record<string, LiveBusRecord> | null = null;
-  let fleetData: Record<string, FleetBusRecord> | null = null;
+  let publicData: Record<string, PublicBusRecord> | null = null;
 
   const notify = () => {
     listeners.forEach((listener) => listener());
@@ -178,63 +163,32 @@ export function createFirebaseBusService(): BusService {
 
     try {
       const runtime = await getFirebaseRuntime();
-      const liveBusesRef = runtime.ref(runtime.db, "liveBuses");
-      const fleetRef = runtime.ref(runtime.db, "buses");
+      const publicBusesRef = runtime.ref(runtime.db, "publicBuses");
       const connectedRef = runtime.ref(runtime.db, ".info/connected");
 
-      stopLiveListener = runtime.onValue(
-        liveBusesRef,
+      stopPublicListener = runtime.onValue(
+        publicBusesRef,
         (dataSnapshot) => {
           const value = dataSnapshot.val();
-          liveData =
+          publicData =
             value && typeof value === "object"
-              ? (value as Record<string, LiveBusRecord>)
+              ? (value as Record<string, PublicBusRecord>)
               : null;
 
           snapshot = {
             ...snapshot,
-            buses: mergeLiveBuses(liveData, fleetData),
+            buses: mergePublicBuses(publicData),
             connectionError: undefined,
             lastSyncAt: new Date(),
           };
           notify();
         },
         (error) => {
+          console.error("Public bus subscription failed.", error);
           snapshot = {
             ...snapshot,
             connected: false,
-            connectionError:
-              error instanceof Error
-                ? error.message
-                : "Firebase denied access to live bus data.",
-          };
-          notify();
-        },
-      );
-
-      stopFleetListener = runtime.onValue(
-        fleetRef,
-        (dataSnapshot) => {
-          const value = dataSnapshot.val();
-          fleetData =
-            value && typeof value === "object"
-              ? (value as Record<string, FleetBusRecord>)
-              : null;
-
-          snapshot = {
-            ...snapshot,
-            buses: mergeLiveBuses(liveData, fleetData),
-            lastSyncAt: new Date(),
-          };
-          notify();
-        },
-        (error) => {
-          snapshot = {
-            ...snapshot,
-            connectionError:
-              error instanceof Error
-                ? error.message
-                : "Could not load bus fleet data.",
+            connectionError: "Unable to connect to live bus information.",
           };
           notify();
         },
@@ -243,7 +197,7 @@ export function createFirebaseBusService(): BusService {
       staleRefreshTimer = setInterval(() => {
         snapshot = {
           ...snapshot,
-          buses: mergeLiveBuses(liveData, fleetData),
+          buses: mergePublicBuses(publicData),
         };
         notify();
       }, LIVE_UPDATE_INTERVAL_MS);
@@ -258,40 +212,37 @@ export function createFirebaseBusService(): BusService {
           notify();
         },
         (error) => {
+          console.error(
+            "Firebase connection-state subscription failed.",
+            error,
+          );
           snapshot = {
             ...snapshot,
             connected: false,
-            connectionError:
-              error instanceof Error
-                ? error.message
-                : "Could not connect to Firebase Realtime Database.",
+            connectionError: "Unable to connect to live bus information.",
           };
           notify();
         },
       );
     } catch (error) {
+      console.error("Public Firebase initialization failed.", error);
       snapshot = {
         ...snapshot,
         connected: false,
-        connectionError:
-          error instanceof Error
-            ? error.message
-            : "Could not initialize Firebase Realtime Database.",
+        connectionError: "Unable to connect to live bus information.",
       };
       notify();
     }
   };
 
   const stop = () => {
-    stopLiveListener?.();
-    stopFleetListener?.();
+    stopPublicListener?.();
     stopConnectionListener?.();
     if (staleRefreshTimer) {
       clearInterval(staleRefreshTimer);
       staleRefreshTimer = undefined;
     }
-    stopLiveListener = undefined;
-    stopFleetListener = undefined;
+    stopPublicListener = undefined;
     stopConnectionListener = undefined;
     started = false;
   };

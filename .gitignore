@@ -8,3 +8,4 @@ dist/
 test-results/
 .firebase/
 firebase-debug.log
+database-debug.log

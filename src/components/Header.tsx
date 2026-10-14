@@ -34,10 +34,7 @@ export function Header({
         href="/"
         aria-label="Carmel Clay Schools Bus Tracker home"
       >
-        <SchoolLogo
-          className="brand-logo"
-          alt=""
-        />
+        <SchoolLogo className="brand-logo" alt="" />
         <span className="brand-copy">
           <strong>CARMEL CLAY SCHOOLS</strong>
           <span>BUS TRACKER</span>
@@ -47,9 +44,11 @@ export function Header({
         <span className="region">Carmel, Indiana</span>
         <span
           className={`live-indicator ${!connected ? "disconnected" : ""}`}
+          role="status"
+          aria-live="polite"
           title={
             connectionError
-              ? `Firebase sync error: ${connectionError}`
+              ? "Live bus information is temporarily unavailable"
               : lastSyncAt
                 ? `Firebase synced at ${lastSyncAt.toLocaleTimeString()}`
                 : "Connecting to Firebase Realtime Database"

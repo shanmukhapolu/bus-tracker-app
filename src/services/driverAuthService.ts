@@ -25,6 +25,25 @@ function firebaseAuthErrorCode(error: unknown) {
     : "";
 }
 
+function safeAuthError(error: unknown) {
+  console.error("Driver authentication request failed.", error);
+  const code = firebaseAuthErrorCode(error);
+  if (code === "auth/too-many-requests") {
+    return new Error("Too many attempts. Wait a few minutes and try again.");
+  }
+  if (code === "auth/network-request-failed") {
+    return new Error("Unable to connect. Check your internet connection.");
+  }
+  if (
+    code === "auth/invalid-credential" ||
+    code === "auth/wrong-password" ||
+    code === "auth/user-not-found"
+  ) {
+    return new Error("The email or password is incorrect.");
+  }
+  return new Error("Unable to complete driver sign-in. Try again.");
+}
+
 function driverDisplayName(user: FirebaseDriverUser, preferredName = "") {
   const value =
     preferredName.trim() ||
@@ -69,18 +88,26 @@ export async function signInDriver(email: string, password: string) {
     throw new Error("Enter your password.");
   }
 
-  return runtime.signInWithEmailAndPassword(
-    runtime.auth,
-    normalizedEmail,
-    normalizedPassword,
-  );
+  try {
+    return await runtime.signInWithEmailAndPassword(
+      runtime.auth,
+      normalizedEmail,
+      normalizedPassword,
+    );
+  } catch (error) {
+    throw safeAuthError(error);
+  }
 }
 
 export async function signInDriverWithGoogle() {
   const runtime = await getFirebaseRuntime();
   const provider = new runtime.GoogleAuthProvider();
   provider.setCustomParameters?.({ prompt: "select_account" });
-  return runtime.signInWithPopup(runtime.auth, provider);
+  try {
+    return await runtime.signInWithPopup(runtime.auth, provider);
+  } catch (error) {
+    throw safeAuthError(error);
+  }
 }
 
 export async function signUpDriver(
@@ -104,7 +131,7 @@ export async function signUpDriver(
     );
   } catch (error) {
     if (firebaseAuthErrorCode(error) !== "auth/email-already-in-use") {
-      throw error;
+      throw safeAuthError(error);
     }
 
     // A previous registration can create the Firebase Auth user before the
@@ -128,7 +155,7 @@ export async function signUpDriver(
           "This email already has an account, but that password did not match. Use Log in with the existing password or Continue with Google.",
         );
       }
-      throw signInError;
+      throw safeAuthError(signInError);
     }
   }
 
