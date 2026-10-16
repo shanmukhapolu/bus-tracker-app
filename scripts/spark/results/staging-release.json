@@ -1,0 +1,62 @@
+{
+  "checkedAt": "2026-10-16T22:05:44.957Z",
+  "hosting": {
+    "chsbustracker2": [
+      {
+        "name": "sites/chsbustracker2/releases/1791997635838000",
+        "version": "sites/chsbustracker2/versions/dd3e951a56fd1a1c",
+        "releaseTime": "2026-10-14T17:07:15.838Z",
+        "type": "DEPLOY"
+      }
+    ],
+    "chsbustracker2-admin": [
+      {
+        "name": "sites/chsbustracker2-admin/releases/1791997649898000",
+        "version": "sites/chsbustracker2-admin/versions/52e075ccb3d2fb6e",
+        "releaseTime": "2026-10-14T17:07:29.898Z",
+        "type": "DEPLOY"
+      }
+    ],
+    "chsbustracker2-staging": [
+      {
+        "name": "sites/chsbustracker2-staging/releases/1792188154526000",
+        "version": "sites/chsbustracker2-staging/versions/996c5371f0545dd4",
+        "releaseTime": "2026-10-16T22:02:34.526Z",
+        "type": "DEPLOY"
+      }
+    ],
+    "chsbustracker2-staging-admin": [
+      {
+        "name": "sites/chsbustracker2-staging-admin/releases/1792008240661000",
+        "version": "sites/chsbustracker2-staging-admin/versions/685de4fb1b953958",
+        "releaseTime": "2026-10-14T20:04:00.661Z",
+        "type": "DEPLOY"
+      }
+    ]
+  },
+  "stagingRulesSha256": "d112469de4b7aba2a2846d830fdea2cf4969f1a6b8339e67bfd08cbefe91b2b9",
+  "integrity": {
+    "chsbustracker2": true,
+    "chsbustracker2-admin": true,
+    "chsbustracker2-staging": false,
+    "chsbustracker2-staging-admin": true,
+    "stagingRulesUnchanged": true
+  },
+  "headers": {
+    "content-security-policy": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://i.postimg.cc https://*.openfreemap.org; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://*.openfreemap.org; frame-src https://chsbustracker2-staging.firebaseapp.com; worker-src 'self' blob:; font-src 'self' data: https://fonts.gstatic.com https://*.openfreemap.org",
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "DENY",
+    "referrer-policy": "no-referrer",
+    "permissions-policy": "camera=(), microphone=(), geolocation=(self)"
+  },
+  "manifest": {
+    "environment": "staging",
+    "projectId": "chsbustracker2-staging",
+    "site": "chsbustracker2-staging"
+  },
+  "hostedAsset": {
+    "path": "/assets/index-0ssBW2yN.js",
+    "sha256": "7ad31895159368947ac1856a3deae575ff92ae195a6ccd0a02da1c8969fc9b9f",
+    "matchesLocal": true
+  }
+}

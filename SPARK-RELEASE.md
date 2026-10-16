@@ -20,7 +20,7 @@ Prepared in isolated branch `dev/spark-gps-release` from public/driver commit `0
 - Credential scan: no private keys, OAuth tokens, GitHub tokens, or synthetic account passwords found in the release changes. Ignored environment/account files are not included. Firebase web app configuration is public configuration, not an authorization secret.
 - GitHub Actions API returned zero workflows. Repository webhook settings were inaccessible (404); the owner must confirm external deployment triggers before this branch is pushed. No production branch is modified.
 
-Staging deployment and smoke results will be recorded after execution. No production deployment is authorized.
+Staging deployment and smoke results are recorded below. No production deployment is authorized.
 
 ## Recorded rollback targets before this release
 
@@ -58,3 +58,19 @@ Spark's hosted connection quota does not support 188 simultaneous drivers plus v
 ## Isolated release load rerun
 
 Both optimized 188-bus/60-second cases passed: 11,280 distinct fixes offered and acknowledged, 11,280 writes, no duplicates/errors/history access or integrity errors. SDK write p95: 334 ms with empty history and 282 ms with 100 MiB; capture-to-ack p95: 349/296 ms. Both frozen old cases intentionally failed completeness. See the four result JSON files for full counters. These are emulator results, not hosted capacity guarantees.
+
+## Hosted staging verification
+
+Deployed ONLY public/driver Hosting to chsbustracker2-staging at 2026-10-16T22:02:34.526Z, version 996c5371f0545dd4. Source commit: 33698fa. The downloaded JS asset matches the locally built artifact byte-for-byte (SHA256 7ad31895159368947ac1856a3deae575ff92ae195a6ccd0a02da1c8969fc9b9f). Its deployment manifest identifies only the staging project/site. Security headers remain present.
+
+The 60-second synthetic hosted smoke test passed all 16 checks: valid staging Auth tokens, assigned-bus GPS, public/protected separation, wrong-bus and disabled-driver denials, 60/60 distinct fixes observed by BOTH anonymous public and authenticated admin listeners, private speed changes, stale/altered-duplicate rejection, atomic disconnect cleanup, explicit reconnect/restart, safe stop, and unchanged hashes for buses/drivers/geofences/geofence alerts/order/history/safety/incidents/audits/devices. The first harness attempt used a nonexistent geofenceEvents collection and was denied before starting tracking; corrected to existing geofenceAlerts/geofenceBusOrder, without app/rules changes.
+
+The deployed public map visibly showed SYN-101 as Live now with GPS ±8 m and Updated just now. Its rendered marker moved without reload (screen transform 819,490 to 833,459); browser error log was empty. Authenticated Firebase client listeners verified every update. After the test administrator signed in, the admin bus-details page also passed visual verification: Online/Active status, speed 13 → 16 → 20 mph, fresh timestamps, coordinates 39.97560,-86.12964 → 39.97725,-86.12865, and map marker screen transform 351,307 → 379,246 without reload. Admin browser error log was empty. Phone hardware GPS/background tracking is still a manual acceptance check; automated smoke uses the real driver service with synthetic Geolocation input and Firebase Email/Password accounts.
+
+Before/after metadata confirms staging admin, production public and production admin Hosting releases did not change. Staging and production rules fingerprints did not change. No production records were accessed or copied, no rules were deployed, no billing changed. No admin management operation or history migration was needed.
+
+To rerun the hosted smoke test after approval: place the existing synthetic account journal in ignored .staging.local/cloud-accounts.json, configure ignored .env.staging.local for chsbustracker2-staging, set CONFIRM_STAGING=chsbustracker2-staging, and run node node_modules/vitest/vitest.mjs run --config spark.config.ts scripts/spark/staging-smoke.test.ts. Stop any simulator using SYN-101 first. Without the explicit confirmation the hosted test is skipped. It refuses mismatched project/accounts and uses ordinary client permissions, not privileged database writes. No real accounts or full-fleet hosted stress test is permitted.
+
+GitHub push remains explicitly blocked by the user pending repository-owner verification of external deployment triggers. A Firebase CLI login-status command unexpectedly returned tokens in tool output; no such credentials were included in commits. Revoke/renew that CLI authorization after testing.
+
+Final visual session also passed the same guarded 60-fix smoke test. On completion the public site showed Not tracking and admin showed Offline. No synthetic session was left running. The tracked hosted test was also checked with confirmation unset: it skipped without connecting. Remaining manual acceptance: physical phone GPS/background behavior; production release blockers: canonical capturedAt rules/client cutover and pretested compatible rollback, plus owner verification before any GitHub push.
