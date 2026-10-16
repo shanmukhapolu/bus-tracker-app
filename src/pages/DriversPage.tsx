@@ -335,7 +335,7 @@ export function DriversPage() {
       setMessage(
         nextSession.transport === "trusted_backend"
           ? `Bus ${selectedBus.busNumber} is live. The secure telemetry service is recording this trip.`
-          : `Bus ${selectedBus.busNumber} is live. Firebase is saving the latest GPS position every second.`,
+          : `Bus ${selectedBus.busNumber} is live. New GPS fixes are sent to Firebase as your device provides them.`,
       );
     } catch (error) {
       setStatus("error");

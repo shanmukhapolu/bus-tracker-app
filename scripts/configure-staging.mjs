@@ -7,8 +7,9 @@ const project = env.VITE_FIREBASE_PROJECT_ID,
 if (
   env.VITE_ENVIRONMENT !== "staging" ||
   !project ||
-  project.startsWith("chsbustracker2") ||
-  !site?.startsWith(project)
+  project === "chsbustracker2" ||
+  !site?.startsWith(project) ||
+  ["chsbustracker2", "chsbustracker2-admin"].includes(site)
 )
   throw Error(
     "Configure a separate project and site in .env.staging.local first.",

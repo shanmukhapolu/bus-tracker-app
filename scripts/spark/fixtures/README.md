@@ -1,0 +1,1 @@
+Test-only snapshot of canonical bus-safety-admin/database.rules.json, SHA256 43dd0001c8a8a329854a5e383b71e94d4ecb23a81e8a3b1bcd144465928e2bde. Never deploy this fixture. bus-safety-admin remains the rules owner. Refresh only after reviewing canonical changes.

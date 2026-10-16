@@ -2803,3 +2803,10 @@ body {
   letter-spacing: -0.8px;
 }
 
+
+.environment-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 2147483647; background: #fff1b8; color: #332600; border-bottom: 2px solid #765600; min-height: 28px; padding: 4px 12px; display: flex; justify-content: center; gap: 12px; font: 600 12px/18px system-ui, sans-serif; pointer-events: none; }
+body:has(.environment-banner) { padding-top: 30px; }
+@media (max-width: 600px) { .environment-banner span { display: none; } }
+
+body:has(.environment-banner) .app-shell { height: calc(100dvh - 30px); }
+body:has(.environment-banner) .side-menu { top: 30px; }

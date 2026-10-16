@@ -44,6 +44,7 @@ export default defineConfig(({ mode }) => {
         "**/dist/**",
         "src/test/database.rules.test.ts",
         "phase2.security.test.ts",
+        "scripts/spark/**",
       ],
     },
   };

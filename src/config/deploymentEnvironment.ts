@@ -108,7 +108,7 @@ export function resolveFirebaseEnvironment(
     !hostingSite ||
     (!isProduction &&
       (!hostingSite.startsWith(projectId) ||
-        hostingSite.startsWith(production)))
+        [production, production + "-admin"].includes(hostingSite)))
   )
     throw new Error(
       "Configure a staging Hosting site belonging to the staging project.",

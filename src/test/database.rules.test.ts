@@ -20,6 +20,7 @@ const validInternalTelemetry = (uid = "driver-a") => ({
   headingDeg: 180,
   active: true,
   lastUpdated: Date.now(),
+  capturedAt: Date.now(),
   driverUid: uid,
 });
 
@@ -32,13 +33,14 @@ const validPublicTelemetry = () => ({
   accuracyMeters: 12,
   active: true,
   lastUpdated: Date.now(),
+  capturedAt: Date.now(),
 });
 
 beforeAll(async () => {
   if (!/^(127\.0\.0\.1|localhost):\d+$/.test(process.env.FIREBASE_DATABASE_EMULATOR_HOST ?? "")) throw new Error("Loopback emulator required; production tests are forbidden.");
   environment = await initializeTestEnvironment({
     projectId: "demo-ccs-bus-security",
-    database: { rules: readFileSync("database.rules.json", "utf8") },
+    database: { rules: readFileSync("scripts/spark/fixtures/database.rules.json", "utf8") },
   });
 });
 

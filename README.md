@@ -156,3 +156,9 @@ All 146 tests were rerun successfully, including synthetic Firebase Emulator con
 No bulk database migration, data import/export, production test records, Auth changes or staging cloud resources were created by this release. The normal admin fleet-load initializer remains conditional and audited. Previous Hosting versions and exact pre-release rules were captured for recovery reference; a protected full-database backup/restore rehearsal was not performed.
 
 Separate cloud-staging acceptance, real-device tracking, OAuth/session smoke tests and manual WCAG verification remain outstanding. This is a published prototype release, not a claim of district production certification. Follow the remaining trust boundaries and the admin VALIDATION.md recovery runbook.
+
+## Spark GPS release
+
+The direct Firebase GPS queue preserves distinct fixes, rejects duplicate/out-of-order samples, and atomically updates private and sanitized public locations. See [Spark optimization](SPARK-OPTIMIZATION.md) and [release verification](SPARK-RELEASE.md). Cloud Run changes remain outside this release.
+
+`npm run test:spark` uses loopback emulators and a test-only canonical rules snapshot; it never deploys rules. Run `npm run configure:staging` and `npm run build:staging` with ignored staging configuration before any separately approved staging Hosting deployment. bus-safety-admin remains the sole rules owner.

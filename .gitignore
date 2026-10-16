@@ -13,3 +13,7 @@ database-debug.log
 dist-staging/
 firebase.staging.json
 !.env.staging.example
+
+.staging.local/
+emulator-debug.log
+ui-debug.log

@@ -8,13 +8,15 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
-    "test:rules": "npx --yes firebase-tools@15.31.0 emulators:exec --config ../bus-safety-admin/firebase.json --project demo-ccs-bus-security --only database \"vitest run --config vitest.rules.config.ts\"",
+    "test:rules": "npx --yes firebase-tools@15.31.0 emulators:exec --config firebase.spark-emulators.json --project demo-ccs-bus-security --only database \"vitest run --config vitest.rules.config.ts\"",
     "format": "prettier --write src index.html vite.config.ts tsconfig.json package.json README.md",
     "firebase:deploy": "firebase deploy --only hosting",
     "firebase:serve": "firebase serve --only hosting",
     "dev:staging": "vite --host 127.0.0.1 --mode staging",
     "build:staging": "tsc -b && vite build --mode staging",
-    "configure:staging": "node scripts/configure-staging.mjs"
+    "configure:staging": "node scripts/configure-staging.mjs",
+    "test:spark": "npx --yes firebase-tools@15.31.0 emulators:exec --config firebase.spark-emulators.json --project demo-ccs-staging --only database \"vitest run --config spark.config.ts scripts/spark/security.test.ts\"",
+    "benchmark:spark": "node scripts/spark/benchmark.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

@@ -59,3 +59,22 @@ describe("environment isolation", () => {
       ).config.databaseURL,
     ).toContain("127.0.0.1"));
 });
+
+it("allows the proposed staging project without accepting production", () => {
+  const project = "chsbustracker2-staging";
+  expect(
+    resolveFirebaseEnvironment(
+      {
+        ...stage,
+        VITE_FIREBASE_PROJECT_ID: project,
+        VITE_FIREBASE_AUTH_DOMAIN: project + ".firebaseapp.com",
+        VITE_FIREBASE_DATABASE_URL:
+          "https://" + project + "-default-rtdb.firebaseio.com",
+        VITE_FIREBASE_HOSTING_SITE: project + "-admin",
+      },
+      "staging",
+      "admin",
+    ).config.projectId,
+  ).toBe(project);
+
+});

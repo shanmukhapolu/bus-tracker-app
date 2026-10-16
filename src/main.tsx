@@ -1,3 +1,4 @@
+import { EnvironmentBanner } from "./components/EnvironmentBanner";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { setWorkerUrl } from "maplibre-gl";
@@ -12,6 +13,7 @@ setWorkerUrl(mapLibreWorkerUrl);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
+    <EnvironmentBanner />
     <ErrorBoundary>
       <App />
     </ErrorBoundary>

@@ -7,6 +7,14 @@ if (!project || !["production", "staging"].includes(environment))
   );
 if ((environment === "production") !== (project === "chsbustracker2"))
   throw Error("Deployment project/environment mismatch.");
+if (environment === "staging") {
+  const envFile = fs.readFileSync(".env.staging.local", "utf8");
+  const match = envFile.match(/^VITE_FIREBASE_PROJECT_ID=(.+)$/m);
+  if (!match || match[1].trim() !== project)
+    throw Error(
+      "Staging deployment must match the explicitly configured staging project.",
+    );
+}
 if (target === "hosting") {
   const directory = environment === "production" ? "dist" : "dist-staging";
   const manifest = JSON.parse(

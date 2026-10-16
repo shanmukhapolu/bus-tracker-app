@@ -1,3 +1,4 @@
+import { SparkGpsQueue, sparkGpsUpdate } from "./sparkGps";
 import type { FirebaseRuntime } from "../config/firebase";
 import { getFirebaseRuntime } from "../config/firebase";
 import {
@@ -182,33 +183,10 @@ async function publishPosition(
     throw new Error("Driver authentication is no longer active.");
   }
 
-  const internalRecord = {
-    busNumber: options.busNumber,
-    route: options.route,
-    latitude: position.latitude,
-    longitude: position.longitude,
-    accuracyMeters: position.accuracyMeters,
-    speedMps: position.speedMps,
-    headingDeg: position.headingDeg,
-    active: true,
-    driverUid: user.uid,
-    lastUpdated: runtime.serverTimestamp(),
-  };
-  const publicRecord = {
-    busNumber: options.busNumber,
-    route: options.route,
-    enabled: true,
-    latitude: position.latitude,
-    longitude: position.longitude,
-    accuracyMeters: position.accuracyMeters,
-    active: true,
-    lastUpdated: runtime.serverTimestamp(),
-  };
-
-  await runtime.update(runtime.ref(runtime.db, ""), {
-    [`liveBuses/${options.busId}`]: internalRecord,
-    [`publicBuses/${options.busId}`]: publicRecord,
-  });
+  await runtime.update(
+    runtime.ref(runtime.db, "/"),
+    sparkGpsUpdate(options, user.uid, position, runtime.serverTimestamp()),
+  );
 }
 
 async function startTrustedBackendTracking(
@@ -349,8 +327,6 @@ export async function startDriverTracking(
   }
 
   const lockRef = runtime.ref(runtime.db, `activeDrivers/${options.busId}`);
-  const liveRef = runtime.ref(runtime.db, `liveBuses/${options.busId}`);
-  const publicRef = runtime.ref(runtime.db, `publicBuses/${options.busId}`);
 
   const transaction = await runtime.runTransaction(lockRef, (current) => {
     if (current === null || current === user.uid) {
@@ -364,8 +340,23 @@ export async function startDriverTracking(
     throw new Error("That bus is already being tracked by another driver.");
   }
 
-  let latestPosition: DriverLocation | null = firstLocation;
+  const delivery = new SparkGpsQueue((position) =>
+    publishPosition(runtime, options, position),
+  );
   let activePublish: Promise<void> | null = null;
+  let uploadFailed = false;
+  let lockLost = false;
+  let connectionEpoch = 0;
+  const disconnectRef = runtime.ref(runtime.db, "/");
+  const inactiveUpdate = () => ({
+    [`liveBuses/${options.busId}/active`]: false,
+    [`liveBuses/${options.busId}/lastUpdated`]: runtime.serverTimestamp(),
+    [`liveBuses/${options.busId}/endedAt`]: runtime.serverTimestamp(),
+    [`publicBuses/${options.busId}/active`]: false,
+    [`publicBuses/${options.busId}/lastUpdated`]: runtime.serverTimestamp(),
+    [`publicBuses/${options.busId}/endedAt`]: runtime.serverTimestamp(),
+    [`activeDrivers/${options.busId}`]: null,
+  });
   let stopped = false;
   let publishTimer: ReturnType<typeof setInterval> | undefined;
   let wakeLock: any = null;
@@ -403,64 +394,70 @@ export async function startDriverTracking(
     }
   };
 
+  const failUploads = (message: string) => {
+    uploadFailed = true;
+    delivery.setPaused(true);
+    if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
+    if (publishTimer) clearInterval(publishTimer);
+    void releaseWakeLock();
+    options.onError(message);
+  };
   const publishLatest = () => {
-    if (stopped || !latestPosition) return Promise.resolve();
+    if (stopped || uploadFailed) return Promise.resolve();
     if (activePublish) return activePublish;
-
-    activePublish = (async () => {
-      try {
-        await publishPosition(runtime, options, latestPosition!);
-      } catch (error) {
-        console.error(
-          "Firebase could not save the latest GPS position.",
-          error,
-        );
-        options.onError(
-          "GPS update could not be saved. Check your connection.",
-        );
-      }
-    })();
-
-    return activePublish.finally(() => {
-      activePublish = null;
-    });
+    activePublish = delivery
+      .flush()
+      .catch((error) => {
+        if (/permission[_ -]?denied/i.test(String(error))) {
+          failUploads(
+            "Tracking authorization changed or the session ended. Stop tracking, confirm your bus assignment, and start again.",
+          );
+        } else {
+          options.onError(
+            "GPS update could not be saved. Pending fixes will retry while this page remains open.",
+          );
+        }
+      })
+      .finally(() => {
+        activePublish = null;
+      });
+    return activePublish;
   };
 
   const handleVisibilityChange = () => {
-    if (!stopped && document.visibilityState === "visible") {
+    if (!stopped && !uploadFailed && document.visibilityState === "visible") {
       void requestWakeLock();
       void publishLatest();
     }
   };
 
   try {
+    delivery.enqueue(firstLocation);
     // Keep the driver lock alive only while the Firebase connection exists.
     await runtime.onDisconnect(lockRef).remove();
 
     // The first write is mandatory. We do not mark tracking live until
     // Firebase has actually accepted the GPS coordinates.
-    await publishPosition(runtime, options, firstLocation);
+    await delivery.flush();
 
-    await runtime.onDisconnect(liveRef).update({
-      active: false,
-      lastUpdated: runtime.serverTimestamp(),
-      endedAt: runtime.serverTimestamp(),
-    });
-    await runtime.onDisconnect(publicRef).update({
-      active: false,
-      lastUpdated: runtime.serverTimestamp(),
-      endedAt: runtime.serverTimestamp(),
-    });
+    // One atomic disconnect operation prevents releasing the lock before marking
+    // both projections inactive. Rules recheck ownership at disconnect time.
+    await runtime.onDisconnect(disconnectRef).update(inactiveUpdate());
 
     watchId = navigator.geolocation.watchPosition(
       (position) => {
-        if (stopped) return;
+        if (stopped || uploadFailed) return;
 
-        latestPosition = toLocation(position);
-        options.onPosition(latestPosition);
-
-        // New GPS fixes are published immediately.
-        void publishLatest();
+        try {
+          const nextPosition = toLocation(position);
+          if (!delivery.enqueue(nextPosition)) return;
+          options.onPosition(nextPosition);
+          void publishLatest();
+        } catch (error) {
+          failUploads(
+            error instanceof Error ? error.message : "Invalid GPS fix.",
+          );
+        }
       },
       (error) => {
         if (!stopped) {
@@ -470,8 +467,7 @@ export async function startDriverTracking(
       watchLocationOptions,
     );
 
-    // Continue publishing the latest known GPS position every second even
-    // when the browser has not delivered a new fix during that exact second.
+    // Retry pending work at one-second cadence; never republish an acknowledged fix.
     publishTimer = setInterval(() => {
       void publishLatest();
     }, 1_000);
@@ -479,9 +475,36 @@ export async function startDriverTracking(
     stopConnectionListener = runtime.onValue(
       runtime.ref(runtime.db, ".info/connected"),
       (snapshot) => {
-        if (snapshot.val() === true) {
-          void publishLatest();
-        }
+        if (stopped || uploadFailed) return;
+        const epoch = ++connectionEpoch;
+        delivery.setPaused(true);
+        if (snapshot.val() !== true) return;
+        // onDisconnect may have released our lock. Do not silently reclaim it
+        // or publish queued fixes under another driver's session.
+        void runtime
+          .get(lockRef)
+          .then(async (lock) => {
+            if (stopped || uploadFailed || epoch !== connectionEpoch) return;
+            if (lock.val() !== user.uid) {
+              lockLost = true;
+              failUploads(
+                "The connection ended your tracking session. Stop tracking and start again when connected.",
+              );
+              return;
+            }
+            await runtime.onDisconnect(disconnectRef).update(inactiveUpdate());
+            if (stopped || uploadFailed || epoch !== connectionEpoch) return;
+            delivery.setPaused(false);
+            await activePublish;
+            if (stopped || uploadFailed || epoch !== connectionEpoch) return;
+            void publishLatest();
+          })
+          .catch(() => {
+            if (!stopped && epoch === connectionEpoch)
+              failUploads(
+                "Could not verify your tracking session. Stop tracking and reconnect before restarting.",
+              );
+          });
       },
     );
 
@@ -511,29 +534,22 @@ export async function startDriverTracking(
       await releaseWakeLock();
 
       try {
-        await runtime.onDisconnect(lockRef).cancel();
-        await runtime.onDisconnect(liveRef).cancel();
-        await runtime.onDisconnect(publicRef).cancel();
-      } catch {
-        // The server-side disconnect handler may already have run.
-      }
-
-      try {
         // Finish any GPS write already in flight so the stored coordinate is
         // the most recent position received immediately before stopping.
         await activePublish;
 
-        await runtime.update(runtime.ref(runtime.db, ""), {
-          [`liveBuses/${options.busId}/active`]: false,
-          [`liveBuses/${options.busId}/lastUpdated`]: runtime.serverTimestamp(),
-          [`liveBuses/${options.busId}/endedAt`]: runtime.serverTimestamp(),
-          [`publicBuses/${options.busId}/active`]: false,
-          [`publicBuses/${options.busId}/lastUpdated`]:
-            runtime.serverTimestamp(),
-          [`publicBuses/${options.busId}/endedAt`]: runtime.serverTimestamp(),
-        });
-      } finally {
-        await runtime.remove(lockRef);
+        if (lockLost) {
+          // The old lock is already gone or belongs to another driver. Stop locally only.
+          await runtime.onDisconnect(disconnectRef).cancel();
+          return;
+        }
+        if (!uploadFailed) await delivery.flush();
+        await runtime.update(disconnectRef, inactiveUpdate());
+        // Keep the disconnect safety net until the stop was acknowledged.
+        await runtime.onDisconnect(disconnectRef).cancel();
+      } catch (error) {
+        // Rules reject stale sessions; never remove a replacement owner's lock.
+        throw new Error(readableTrackingError(error, options.busNumber));
       }
     };
 
@@ -549,9 +565,7 @@ export async function startDriverTracking(
     }
 
     try {
-      await runtime.onDisconnect(lockRef).cancel();
-      await runtime.onDisconnect(liveRef).cancel();
-      await runtime.onDisconnect(publicRef).cancel();
+      await runtime.onDisconnect(disconnectRef).cancel();
       await runtime.remove(lockRef);
     } catch {
       // Best-effort cleanup.

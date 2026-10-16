@@ -32,6 +32,10 @@ function check(
       ),
       JSON.stringify({ hosting: { site: manifestProject, public: dist } }),
     );
+    writeFileSync(
+      join(directory, ".env.staging.local"),
+      "VITE_FIREBASE_PROJECT_ID=" + manifestProject + "\n",
+    );
     const env = { ...process.env };
     delete env.GCLOUD_PROJECT;
     if (project) env.GCLOUD_PROJECT = project;
