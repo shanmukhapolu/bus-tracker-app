@@ -4,10 +4,10 @@ export function heartbeatInterval(value: unknown) {
   return Number.isFinite(n) && n >= 1000 && n <= 60000 ? n : 1000;
 }
 export class TrackingHeartbeat {
-  private timer: ReturnType<typeof setInterval> | undefined;
+  private timer: ReturnType<typeof setTimeout> | undefined;
   private pending: Promise<void> | null = null;
   private stopped = false;
-  private lastAttempt = -Infinity;
+  private nextDue = -Infinity;
   private paused = false;
   gpsAvailable = true;
   constructor(
@@ -15,29 +15,53 @@ export class TrackingHeartbeat {
     private onError: (error: unknown) => void,
     readonly intervalMs = 1000,
   ) {}
+  private schedule() {
+    clearTimeout(this.timer);
+    this.timer = undefined;
+    if (this.stopped || this.paused || this.pending) return;
+    this.timer = setTimeout(
+      () => {
+        this.timer = undefined;
+        void this.flush();
+      },
+      Math.max(0, this.nextDue - performance.now()),
+    );
+  }
   start() {
-    this.timer = setInterval(() => void this.flush(), this.intervalMs);
     return this.flush();
   }
   pause(value: boolean) {
     this.paused = value;
+    this.schedule();
   }
   flush(): Promise<void> {
     if (this.stopped || this.paused) return Promise.resolve();
     if (this.pending) return this.pending;
-    if (Date.now() - this.lastAttempt < this.intervalMs)
+    if (performance.now() < this.nextDue) {
+      // A few milliseconds of timer jitter must not discard a whole interval.
+      this.schedule();
       return Promise.resolve();
-    this.lastAttempt = Date.now();
-    this.pending = this.send(this.gpsAvailable)
-      .catch(this.onError)
-      .finally(() => {
-        this.pending = null;
-      });
+    }
+    clearTimeout(this.timer);
+    this.timer = undefined;
+    // Monotonic clock: device wall-clock adjustments do not alter the cadence.
+    // No catch-up burst after suspension or a slow network acknowledgement.
+    this.nextDue = performance.now() + this.intervalMs;
+    let attempt: Promise<void>;
+    try {
+      attempt = this.send(this.gpsAvailable);
+    } catch (error) {
+      attempt = Promise.reject(error);
+    }
+    this.pending = attempt.catch(this.onError).finally(() => {
+      this.pending = null;
+      this.schedule();
+    });
     return this.pending;
   }
   async stop() {
     this.stopped = true;
-    clearInterval(this.timer);
+    clearTimeout(this.timer);
     await this.pending;
   }
 }

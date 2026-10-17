@@ -4,7 +4,8 @@ import type { GpsDiagnostics } from "./gpsDiagnostics";
  * the browser owns its timeout/cancellation. Late callbacks after Stop are ignored.
  */
 export class FreshLocationRecovery {
-  private lastWatchAt = Date.now();
+  private lastWatchAt = performance.now();
+  private retryTimer: ReturnType<typeof setTimeout> | undefined;
   private nextRequestAt = 0;
   private pending = false;
   private stopped = false;
@@ -16,24 +17,31 @@ export class FreshLocationRecovery {
     private readonly diagnostics?: GpsDiagnostics,
   ) {}
   watchReceivedFreshFix() {
-    this.lastWatchAt = Date.now();
+    this.lastWatchAt = performance.now();
   }
   pause(value: boolean) {
     this.paused = value;
+    if (value) clearTimeout(this.retryTimer);
   }
   stop() {
     this.stopped = true;
+    clearTimeout(this.retryTimer);
   }
   tick() {
-    const now = Date.now();
+    const now = performance.now();
     if (
       this.stopped ||
       this.paused ||
       this.pending ||
-      document.visibilityState !== "visible" ||
-      now < this.nextRequestAt
+      document.visibilityState !== "visible"
     )
       return;
+    if (now < this.nextRequestAt) {
+      clearTimeout(this.retryTimer);
+      this.retryTimer = setTimeout(() => this.tick(), this.nextRequestAt - now);
+      return;
+    }
+    clearTimeout(this.retryTimer);
     this.pending = true;
     this.diagnostics?.requestStarted();
     // Schedule from request start, not callback completion (which would halve
@@ -45,7 +53,7 @@ export class FreshLocationRecovery {
       if (
         !this.stopped &&
         !this.paused &&
-        Date.now() - this.lastWatchAt >= 1000
+        performance.now() - this.lastWatchAt >= 1000
       )
         this.onError(error);
     };
