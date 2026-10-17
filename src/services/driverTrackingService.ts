@@ -32,7 +32,11 @@ export interface DriverTrackingSession {
   stop: () => Promise<void>;
 }
 
+export type DriverGpsStatus = "available" | "waiting" | "blocked";
+
 export interface DriverTrackingOptions {
+  onGpsStatus?: (status: DriverGpsStatus) => void;
+  onTrackingFailure?: (message: string) => void;
   busId: string;
   busNumber: string;
   route: string;
@@ -318,6 +322,7 @@ export async function startDriverTracking(
   // CRITICAL: this must stay before Firebase/database work.
   const firstLocation = await requestInitialLocation();
   options.onPosition(firstLocation);
+  options.onGpsStatus?.("available");
 
   const runtime = await getFirebaseRuntime();
   const user = runtime.auth.currentUser;
@@ -425,6 +430,7 @@ export async function startDriverTracking(
   };
 
   const failUploads = (message: string) => {
+    options.onTrackingFailure?.(message);
     diagnostics?.stop();
     uploadFailed = true;
     recovery?.stop();
@@ -510,6 +516,7 @@ export async function startDriverTracking(
     );
     await heartbeat.start();
     if (uploadFailed) throw new Error("Tracker heartbeat was denied.");
+    let lastFreshFixAt = performance.now();
     const acceptPosition = (position: GeolocationPosition) => {
       if (stopped || uploadFailed) return false;
       try {
@@ -518,6 +525,8 @@ export async function startDriverTracking(
         diagnostics?.fix(nextPosition.capturedAt, accepted);
         if (!accepted) return false;
         heartbeat!.gpsAvailable = true;
+        lastFreshFixAt = performance.now();
+        options.onGpsStatus?.("available");
         options.onPosition(nextPosition);
         void publishLatest();
         return true;
@@ -529,10 +538,23 @@ export async function startDriverTracking(
       }
     };
     const locationError = (error: GeolocationPositionError) => {
-      if (!stopped && !uploadFailed) {
-        if (heartbeat) heartbeat.gpsAvailable = false;
-        options.onError(readableGeolocationError(error));
+      if (stopped || uploadFailed) return;
+      if (error.code === 1) {
+        options.onGpsStatus?.("blocked");
+        failUploads(
+          "Location permission is blocked. Allow location access, then stop tracking and start again.",
+        );
+        return;
       }
+      // Watch and explicit requests can finish in different orders. A late
+      // timeout must not replace a fix just received from the other source.
+      if (performance.now() - lastFreshFixAt < 1000) return;
+      if (heartbeat) heartbeat.gpsAvailable = false;
+      if (options.onGpsStatus) options.onGpsStatus("waiting");
+      else
+        options.onError(
+          "Waiting for a fresh GPS location. Retrying automatically; tracker reports continue with the last known location.",
+        );
     };
     recovery = new FreshLocationRecovery(
       navigator.geolocation,

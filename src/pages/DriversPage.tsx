@@ -15,6 +15,7 @@ import {
   getLocationSupportMessage,
   startDriverTracking,
   type DriverLocation,
+  type DriverGpsStatus,
   type DriverTrackingSession,
 } from "../services/driverTrackingService";
 import {
@@ -61,6 +62,8 @@ export function DriversPage() {
   >("idle");
   const [message, setMessage] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [gpsStatus, setGpsStatus] = useState<DriverGpsStatus>("waiting");
+  const [trackingFailure, setTrackingFailure] = useState("");
 
   const emailInputRef = useRef<HTMLInputElement>(null);
   const sessionRef = useRef<DriverTrackingSession | null>(null);
@@ -321,6 +324,8 @@ export function DriversPage() {
     setLoginError("");
     setPosition(null);
     setStatus("requesting");
+    setGpsStatus("waiting");
+    setTrackingFailure("");
 
     try {
       const nextSession = await startDriverTracking({
@@ -328,16 +333,14 @@ export function DriversPage() {
         busNumber: selectedBus.busNumber,
         route: selectedBus.route,
         onPosition: setPosition,
+        onGpsStatus: setGpsStatus,
+        onTrackingFailure: setTrackingFailure,
         onError: setMessage,
       });
 
       setSession(nextSession);
       setStatus("tracking");
-      setMessage(
-        nextSession.transport === "trusted_backend"
-          ? `Bus ${selectedBus.busNumber} is live. The secure telemetry service is recording this trip.`
-          : `Bus ${selectedBus.busNumber} is live. Reports are sent every second with the latest available GPS fix.`,
-      );
+      // GPS recovery notices are independent of network/authorization errors.
     } catch (error) {
       setStatus("error");
       setMessage(
@@ -573,24 +576,33 @@ export function DriversPage() {
         </button>
 
         <div
+          role="status"
+          aria-live="polite"
           className={
-            status === "error"
+            status === "error" || (session && trackingFailure)
               ? "simple-driver-status error"
               : "simple-driver-status"
           }
         >
           <span
             className={
-              status === "tracking"
+              status === "tracking" &&
+              !trackingFailure &&
+              gpsStatus === "available"
                 ? "status-dot live"
-                : status === "error"
+                : status === "error" || (session && trackingFailure)
                   ? "status-dot error"
                   : "status-dot"
             }
           />
           {status === "idle" && "Ready to request location"}
           {status === "requesting" && "Requesting your location…"}
-          {status === "tracking" && (message || "Live tracking is active")}
+          {status === "tracking" &&
+            (trackingFailure ||
+              message ||
+              (gpsStatus === "waiting"
+                ? "Waiting for a fresh GPS location. Retrying automatically; reports continue with the last known location."
+                : "Tracking is active. Reports use the latest available GPS fix."))}
           {status === "error" && loginError
             ? loginError
             : status === "error"
@@ -603,18 +615,28 @@ export function DriversPage() {
           <div className="simple-driver-coordinates">
             <div>
               <span>GPS</span>
-              <strong>Connected</strong>
+              <strong>
+                {trackingFailure
+                  ? "Stopped"
+                  : gpsStatus === "waiting"
+                    ? "Waiting for GPS"
+                    : gpsStatus === "blocked"
+                      ? "Permission blocked"
+                      : "Location received"}
+              </strong>
             </div>
             <div>
-              <span>Accuracy</span>
+              <span>Last fix accuracy</span>
               <strong>{formatAccuracy(position.accuracyMeters)}</strong>
             </div>
             <div>
               <span>Database</span>
               <strong>
-                {session.transport === "trusted_backend"
-                  ? `Trusted upload every ${Math.round(session.uploadIntervalMs / 1000)} sec`
-                  : "Reports every second"}
+                {trackingFailure
+                  ? "Uploads stopped"
+                  : session.transport === "trusted_backend"
+                    ? `Trusted upload every ${Math.round(session.uploadIntervalMs / 1000)} sec`
+                    : "Reports every second"}
               </strong>
             </div>
             <div>

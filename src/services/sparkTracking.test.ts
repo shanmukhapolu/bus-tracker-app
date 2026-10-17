@@ -74,13 +74,18 @@ afterEach(async () => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
-async function start() {
+async function start(
+  overrides: Partial<
+    import("./driverTrackingService").DriverTrackingOptions
+  > = {},
+) {
   session = await startDriverTracking({
     busId: "SYN-1",
     busNumber: "1",
     route: "Synthetic",
     onPosition: vi.fn(),
     onError: errors,
+    ...overrides,
   });
   await settle();
   return session;
@@ -398,4 +403,77 @@ it("does not collect timing diagnostics in production", async () => {
   } finally {
     vi.unstubAllEnvs();
   }
+});
+
+it("keeps reporting through GPS timeouts and clears waiting only on a fresh fix", async () => {
+  const gpsStatus = vi.fn(),
+    failure = vi.fn();
+  const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
+  await start({ onGpsStatus: gpsStatus, onTrackingFailure: failure });
+  request.mockImplementationOnce((_cb, error) =>
+    error?.({ code: 3, TIMEOUT: 3 } as GeolocationPositionError),
+  );
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(gpsStatus).toHaveBeenLastCalledWith("waiting");
+  expect(errors).not.toHaveBeenCalled();
+  expect(failure).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(1000); // default mock returns the old fix
+  expect(gpsStatus).toHaveBeenLastCalledWith("waiting");
+  expect(gpsWrites()).toHaveLength(1);
+  expect(
+    fixture.runtime.update.mock.calls.filter(
+      (c: any) => c[1]["trackerHeartbeats/SYN-1"],
+    ),
+  ).toHaveLength(3);
+  watch(pos(2000));
+  await settle();
+  expect(gpsStatus).toHaveBeenLastCalledWith("available");
+  expect(gpsWrites()).toHaveLength(2);
+  await session.stop();
+  const calls = gpsStatus.mock.calls.length;
+  await vi.advanceTimersByTimeAsync(30000);
+  expect(gpsStatus).toHaveBeenCalledTimes(calls);
+});
+it("ignores a late watcher timeout after the explicit GPS requester recovers", async () => {
+  const gpsStatus = vi.fn();
+  let watchError!: PositionErrorCallback;
+  vi.spyOn(navigator.geolocation, "watchPosition").mockImplementation(
+    (ok, error) => {
+      watch = ok;
+      watchError = error!;
+      return 1;
+    },
+  );
+  await start({ onGpsStatus: gpsStatus });
+  vi.spyOn(navigator.geolocation, "getCurrentPosition").mockImplementation(
+    (cb) => cb(pos(2000) as GeolocationPosition),
+  );
+  await vi.advanceTimersByTimeAsync(1000);
+  watchError({ code: 3, TIMEOUT: 3 } as GeolocationPositionError);
+  expect(gpsStatus).toHaveBeenLastCalledWith("available");
+  expect(errors).not.toHaveBeenCalled();
+});
+it("treats native permission denial as terminal even just after a fresh fix", async () => {
+  const gpsStatus = vi.fn(),
+    failure = vi.fn();
+  const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
+  await start({ onGpsStatus: gpsStatus, onTrackingFailure: failure });
+  let reject!: PositionErrorCallback;
+  request.mockImplementation((_cb, error) => {
+    reject = error!;
+  });
+  await vi.advanceTimersByTimeAsync(1000);
+  watch(pos(2000));
+  await settle();
+  reject({ code: 1, PERMISSION_DENIED: 1 } as GeolocationPositionError);
+  await settle();
+  expect(gpsStatus).toHaveBeenLastCalledWith("blocked");
+  expect(failure).toHaveBeenCalledWith(
+    expect.stringContaining("permission is blocked"),
+  );
+  const writes = fixture.runtime.update.mock.calls.length,
+    requests = request.mock.calls.length;
+  await vi.advanceTimersByTimeAsync(30000);
+  expect(fixture.runtime.update.mock.calls).toHaveLength(writes);
+  expect(request).toHaveBeenCalledTimes(requests);
 });

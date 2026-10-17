@@ -53,7 +53,7 @@ export class FreshLocationRecovery {
       if (
         !this.stopped &&
         !this.paused &&
-        performance.now() - this.lastWatchAt >= 1000
+        (error.code === 1 || performance.now() - this.lastWatchAt >= 1000)
       )
         this.onError(error);
     };
