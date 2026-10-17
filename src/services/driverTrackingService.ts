@@ -1,3 +1,4 @@
+import { GpsDiagnostics, type GpsDiagnosticSnapshot } from "./gpsDiagnostics";
 import { FreshLocationRecovery } from "./freshLocationRecovery";
 import { TrackingHeartbeat, heartbeatInterval } from "./trackingHeartbeat";
 import { SparkGpsQueue, sparkGpsUpdate } from "./sparkGps";
@@ -24,6 +25,7 @@ export interface DriverLocation {
 }
 
 export interface DriverTrackingSession {
+  diagnostics?: () => GpsDiagnosticSnapshot;
   busId: string;
   transport: "trusted_backend" | "legacy_firebase";
   uploadIntervalMs: number;
@@ -342,6 +344,10 @@ export async function startDriverTracking(
     throw new Error("That bus is already being tracked by another driver.");
   }
 
+  const diagnostics =
+    import.meta.env.MODE === "staging" ? new GpsDiagnostics() : undefined;
+  diagnostics?.fix(firstLocation.capturedAt, true);
+
   // Serialize GPS and reports so a report references the last acknowledged fix.
   // This never queues duplicate GPS samples or advances their capture timestamp.
   let lastAcknowledgedLocation = firstLocation;
@@ -353,8 +359,15 @@ export async function startDriverTracking(
   };
   const delivery = new SparkGpsQueue((position) =>
     orderedWrite(async () => {
-      await publishPosition(runtime, options, position);
-      lastAcknowledgedLocation = { ...position };
+      diagnostics?.uploadStarted();
+      try {
+        await publishPosition(runtime, options, position);
+        lastAcknowledgedLocation = { ...position };
+        diagnostics?.uploadFinished(true);
+      } catch (error) {
+        diagnostics?.uploadFinished(false);
+        throw error;
+      }
     }),
   );
   let activePublish: Promise<void> | null = null;
@@ -412,6 +425,7 @@ export async function startDriverTracking(
   };
 
   const failUploads = (message: string) => {
+    diagnostics?.stop();
     uploadFailed = true;
     recovery?.stop();
     delivery.setPaused(true);
@@ -479,6 +493,7 @@ export async function startDriverTracking(
               ),
             },
           });
+          diagnostics?.reportAcknowledged();
         }),
       (error) => {
         if (stopped || uploadFailed) return;
@@ -499,7 +514,9 @@ export async function startDriverTracking(
       if (stopped || uploadFailed) return false;
       try {
         const nextPosition = toLocation(position);
-        if (!delivery.enqueue(nextPosition)) return false;
+        const accepted = delivery.enqueue(nextPosition);
+        diagnostics?.fix(nextPosition.capturedAt, accepted);
+        if (!accepted) return false;
         heartbeat!.gpsAvailable = true;
         options.onPosition(nextPosition);
         void publishLatest();
@@ -521,6 +538,7 @@ export async function startDriverTracking(
       navigator.geolocation,
       acceptPosition,
       locationError,
+      diagnostics,
     );
     watchId = navigator.geolocation.watchPosition(
       (position) => {
@@ -540,6 +558,7 @@ export async function startDriverTracking(
       runtime.ref(runtime.db, ".info/connected"),
       (snapshot) => {
         if (stopped || uploadFailed) return;
+        diagnostics?.connection(snapshot.val() === true);
         const epoch = ++connectionEpoch;
         delivery.setPaused(true);
         recovery?.pause(true);
@@ -589,6 +608,7 @@ export async function startDriverTracking(
       if (stopped) return;
 
       stopped = true;
+      diagnostics?.stop();
       recovery?.stop();
       delivery.setPaused(true);
       const heartbeatStopped = heartbeat?.stop();
@@ -628,11 +648,13 @@ export async function startDriverTracking(
     return {
       busId: options.busId,
       transport: "legacy_firebase",
+      diagnostics: diagnostics ? () => diagnostics.snapshot() : undefined,
       uploadIntervalMs: 1_000,
       stop,
     };
   } catch (error) {
     stopped = true;
+    diagnostics?.stop();
     recovery?.stop();
     delivery.setPaused(true);
     await heartbeat?.stop();

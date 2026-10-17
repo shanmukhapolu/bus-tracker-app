@@ -1,3 +1,4 @@
+import { GpsTimingPanel } from "../components/GpsTimingPanel";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LogIn, MapPin, Radio, ShieldCheck, UserPlus } from "lucide-react";
 import { SchoolLogo } from "../components/SchoolLogo";
@@ -621,6 +622,10 @@ export function DriversPage() {
               <strong>{selectedBus?.busNumber ?? selectedBusId}</strong>
             </div>
           </div>
+        )}
+
+        {session && import.meta.env.MODE === "staging" && (
+          <GpsTimingPanel session={session} />
         )}
 
         {!session && (

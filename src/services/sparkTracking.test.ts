@@ -351,3 +351,51 @@ it("keeps one-second request starts when device callbacks take 100 ms", async ()
   expect(request).toHaveBeenCalledTimes(61);
   expect(gpsWrites()).toHaveLength(61);
 });
+
+it("exposes staging-only native timing without extra database operations", async () => {
+  vi.stubEnv("MODE", "staging");
+  try {
+    const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
+    await start();
+    let answer!: PositionCallback;
+    request.mockImplementation((cb) => {
+      answer = cb;
+    });
+    await vi.advanceTimersByTimeAsync(7000);
+    expect(session.diagnostics()).toMatchObject({
+      requestsStarted: 1,
+      requestsCompleted: 0,
+      requestPendingMs: 6000,
+      gpsUploadsAcknowledged: 1,
+      reportsAcknowledged: 8,
+    });
+    const writes = fixture.runtime.update.mock.calls.length;
+    const reads = fixture.runtime.get.mock.calls.length;
+    for (let i = 0; i < 100; i++) session.diagnostics();
+    expect(fixture.runtime.update.mock.calls.length).toBe(writes);
+    expect(fixture.runtime.get.mock.calls.length).toBe(reads);
+    answer(pos(1000) as GeolocationPosition);
+    await settle();
+    expect(session.diagnostics()).toMatchObject({
+      requestsCompleted: 1,
+      lastRequestMs: 6000,
+      repeatedOrOlderFixes: 1,
+      gpsUploadsAcknowledged: 1,
+    });
+    await session.stop();
+    const frozen = session.diagnostics();
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(session.diagnostics()).toEqual(frozen);
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
+it("does not collect timing diagnostics in production", async () => {
+  vi.stubEnv("MODE", "production");
+  try {
+    await start();
+    expect(session.diagnostics).toBeUndefined();
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
