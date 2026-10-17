@@ -23,6 +23,8 @@ const pos = (timestamp = 1000) => ({
     heading: 90,
   },
 });
+const gpsWrites = () =>
+  fixture.runtime.update.mock.calls.filter((c: any) => c[1]["liveBuses/SYN-1"]);
 const settle = async () => {
   for (let i = 0; i < 20; i++) await Promise.resolve();
 };
@@ -98,7 +100,7 @@ it("a stale reconnect response cannot resume uploads after a later disconnect", 
   release({ val: () => "driver" });
   await settle();
   await vi.advanceTimersByTimeAsync(2000);
-  expect(fixture.runtime.update).toHaveBeenCalledTimes(1);
+  expect(gpsWrites()).toHaveLength(1);
   expect(errors).not.toHaveBeenCalled();
 });
 it("does not announce a session when the mandatory initial write fails", async () => {
@@ -113,14 +115,14 @@ it("retains disconnect cleanup when an explicit stop write fails", async () => {
   const hook = fixture.runtime.onDisconnect.mock.results[0].value;
   expect(hook.cancel).not.toHaveBeenCalled();
 });
-it("uses a valid root reference and sends no duplicate timer heartbeats", async () => {
+it("uses a valid root reference and sends no duplicate timer GPS fixes", async () => {
   await start();
   await vi.advanceTimersByTimeAsync(5000);
-  expect(fixture.runtime.update).toHaveBeenCalledTimes(1);
+  expect(gpsWrites()).toHaveLength(1);
   expect(fixture.runtime.update.mock.calls[0][0]).toBe("/");
   watch(pos(2000));
   await settle();
-  expect(fixture.runtime.update).toHaveBeenCalledTimes(2);
+  expect(gpsWrites()).toHaveLength(2);
 });
 it("keeps all intermediate captured fixes through a slow upload", async () => {
   await start();
@@ -134,9 +136,7 @@ it("keeps all intermediate captured fixes through a slow upload", async () => {
   release();
   await settle();
   expect(
-    fixture.runtime.update.mock.calls.map(
-      (c: any) => c[1]["liveBuses/SYN-1"].capturedAt,
-    ),
+    gpsWrites().map((c: any) => c[1]["liveBuses/SYN-1"].capturedAt),
   ).toEqual([1000, 2000, 3000, 4000]);
 });
 it("fails closed after reconnect when the session lock was released", async () => {
@@ -144,7 +144,7 @@ it("fails closed after reconnect when the session lock was released", async () =
   connection({ val: () => false });
   watch(pos(2000));
   await settle();
-  expect(fixture.runtime.update).toHaveBeenCalledTimes(1);
+  expect(gpsWrites()).toHaveLength(1);
   fixture.runtime.get.mockResolvedValueOnce({ val: () => null });
   connection({ val: () => true });
   await settle();
@@ -152,7 +152,7 @@ it("fails closed after reconnect when the session lock was released", async () =
   expect(errors).toHaveBeenCalledWith(
     expect.stringContaining("connection ended"),
   );
-  expect(fixture.runtime.update).toHaveBeenCalledTimes(1);
+  expect(gpsWrites()).toHaveLength(1);
   expect(fixture.runtime.runTransaction).toHaveBeenCalledTimes(1);
 });
 it("rearms disconnect handling before resuming a still-owned connection", async () => {
@@ -161,7 +161,7 @@ it("rearms disconnect handling before resuming a still-owned connection", async 
   watch(pos(2000));
   connection({ val: () => true });
   await settle();
-  expect(fixture.runtime.update).toHaveBeenCalledTimes(2);
+  expect(gpsWrites()).toHaveLength(2);
   expect(errors).not.toHaveBeenCalled();
   expect(fixture.runtime.onDisconnect).toHaveBeenCalledWith("/");
 });
@@ -171,7 +171,7 @@ it("permission denial stops retry traffic and location collection", async () => 
   watch(pos(2000));
   await settle();
   await vi.advanceTimersByTimeAsync(5000);
-  expect(fixture.runtime.update).toHaveBeenCalledTimes(2);
+  expect(gpsWrites()).toHaveLength(2);
   expect(navigator.geolocation.clearWatch).toHaveBeenCalled();
   expect(errors).toHaveBeenCalledWith(
     expect.stringContaining("authorization changed"),
@@ -192,4 +192,117 @@ it("stops both projections and the owning lock atomically before cancelling disc
   expect(hook.cancel.mock.invocationCallOrder[0]).toBeGreaterThan(
     fixture.runtime.update.mock.invocationCallOrder.at(-1),
   );
+});
+
+it("recovers fresh one-second fixes when the foreground watch goes quiet", async () => {
+  const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
+  await start();
+  let capture = 1000;
+  request.mockImplementation((cb) =>
+    cb(pos((capture += 1000)) as GeolocationPosition),
+  );
+  await vi.advanceTimersByTimeAsync(6000);
+  expect(request).toHaveBeenCalledTimes(5); // initial + recovery at 3,4,5,6 seconds
+  expect(
+    gpsWrites().map((c: any) => c[1]["liveBuses/SYN-1"].capturedAt),
+  ).toEqual([1000, 2000, 3000, 4000, 5000]);
+  expect(request.mock.calls.at(-1)?.[2]).toMatchObject({
+    maximumAge: 0,
+    enableHighAccuracy: true,
+  });
+});
+
+it("keeps a normal one-second watcher without extra native location requests", async () => {
+  const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
+  await start();
+  for (let i = 1; i <= 60; i++) {
+    watch(pos(1000 + i * 1000));
+    await vi.advanceTimersByTimeAsync(1000);
+  }
+  expect(gpsWrites()).toHaveLength(61);
+  expect(request).toHaveBeenCalledTimes(1);
+});
+it("ignores recovery callbacks after Stop and makes no further location requests", async () => {
+  const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
+  await start();
+  let resolve!: PositionCallback;
+  request.mockImplementation((cb) => {
+    resolve = cb;
+  });
+  await vi.advanceTimersByTimeAsync(3000);
+  await session.stop();
+  const writes = fixture.runtime.update.mock.calls.length;
+  resolve(pos(2000) as GeolocationPosition);
+  await vi.advanceTimersByTimeAsync(60000);
+  expect(fixture.runtime.update.mock.calls.length).toBe(writes);
+  expect(request).toHaveBeenCalledTimes(2);
+});
+it("does not multiply pending native requests or upload repeated capture timestamps", async () => {
+  const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
+  await start();
+  let resolve!: PositionCallback;
+  request.mockImplementation((cb) => {
+    resolve = cb;
+  });
+  await vi.advanceTimersByTimeAsync(300000);
+  expect(request).toHaveBeenCalledTimes(2);
+  resolve(pos() as GeolocationPosition);
+  await vi.advanceTimersByTimeAsync(4000);
+  expect(request).toHaveBeenCalledTimes(2);
+  expect(gpsWrites()).toHaveLength(1);
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(request).toHaveBeenCalledTimes(3);
+});
+it("backs off recovery errors and recovers on the next fresh capture", async () => {
+  const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
+  await start();
+  request.mockImplementationOnce((_cb, error) =>
+    error?.({ code: 3, TIMEOUT: 3 } as GeolocationPositionError),
+  );
+  request.mockImplementation((cb) => cb(pos(2000) as GeolocationPosition));
+  await vi.advanceTimersByTimeAsync(7000);
+  expect(gpsWrites()).toHaveLength(1);
+  expect(request).toHaveBeenCalledTimes(2);
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(gpsWrites()).toHaveLength(2);
+});
+it("pauses recovery during disconnect and resumes only after session verification", async () => {
+  const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
+  await start();
+  connection({ val: () => false });
+  request.mockImplementation((cb) => cb(pos(2000) as GeolocationPosition));
+  await vi.advanceTimersByTimeAsync(30000);
+  expect(request).toHaveBeenCalledTimes(1);
+  connection({ val: () => true });
+  await settle();
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(gpsWrites()).toHaveLength(2);
+});
+it("does not request recovery while hidden or after permission failure", async () => {
+  const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
+  await start();
+  Object.assign(document, { visibilityState: "hidden" });
+  await vi.advanceTimersByTimeAsync(30000);
+  expect(request).toHaveBeenCalledTimes(1);
+  Object.assign(document, { visibilityState: "visible" });
+  fixture.runtime.update.mockRejectedValueOnce(Error("PERMISSION_DENIED"));
+  watch(pos(2000));
+  await settle();
+  await vi.advanceTimersByTimeAsync(30000);
+  expect(request).toHaveBeenCalledTimes(1);
+});
+
+it("does not report a failed recovery request after the normal watcher recovers", async () => {
+  const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
+  await start();
+  let reject!: PositionErrorCallback;
+  request.mockImplementation((_cb, error) => {
+    reject = error!;
+  });
+  await vi.advanceTimersByTimeAsync(3000);
+  watch(pos(2000));
+  await settle();
+  reject({ code: 3, TIMEOUT: 3 } as GeolocationPositionError);
+  expect(errors).not.toHaveBeenCalled();
+  expect(gpsWrites()).toHaveLength(2);
 });

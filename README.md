@@ -172,3 +172,7 @@ See [credential incident and GPS remediation](docs/SECURITY-REMEDIATION.md) and 
 Staging security release verified October 16, 2026: [deployment and test results](docs/STAGING-SECURITY-RESULTS.md). Production remains unchanged and requires separate approval.
 
 Final release review: [verification, production blockers, backup and rollback plan](docs/FINAL-PRODUCTION-REVIEW.md). This review reran 218 tests successfully and made no production changes. Physical-phone acceptance and a maintenance window remain open gates.
+
+Approved production GPS release deployed October 16, 2026: [live release results and remaining phone acceptance checks](docs/PRODUCTION-GPS-RELEASE.md). This supersedes the earlier production deployment hold for these exact GPS commits only. Admin Hosting and existing records were preserved.
+
+See [tracker heartbeat, GPS recovery and staging verification](docs/TRACKER-HEARTBEAT-VERIFICATION.md) for behavior, tests and production rollout restrictions.

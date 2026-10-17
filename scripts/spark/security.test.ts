@@ -198,3 +198,86 @@ it("actual disconnect atomically cleans up and a new authorized connection can r
   await assertSucceeds(set(ref(d, "activeDrivers/SYN-1"), "driver"));
   await assertSucceeds(publish(d));
 });
+
+it("heartbeats remain private and never refresh stale GPS captures or receipts", async () => {
+  const d = client();
+  await publish(d);
+  const before = await privileged("liveBuses/SYN-1");
+  const beat = () =>
+    update(ref(d), {
+      "trackerHeartbeats/SYN-1": {
+        driverUid: "driver",
+        lastSeenAt: serverTimestamp(),
+        gpsAvailable: true,
+        intervalMs: 15000,
+      },
+    });
+  await assertSucceeds(beat());
+  expect(await privileged("liveBuses/SYN-1")).toEqual(before);
+  await assertFails(
+    get(ref(env.unauthenticatedContext().database(), "trackerHeartbeats")),
+  );
+  await assertFails(
+    update(ref(env.unauthenticatedContext().database()), {
+      "trackerHeartbeats/SYN-1": {
+        driverUid: "driver",
+        lastSeenAt: serverTimestamp(),
+        gpsAvailable: true,
+        intervalMs: 15000,
+      },
+    }),
+  );
+  for (const change of [
+    { latitude: 40 },
+    { lastSeenAt: 1 },
+    { gpsAvailable: "yes" },
+    { intervalMs: 1000 },
+    { driverUid: "other" },
+  ])
+    await assertFails(
+      set(ref(d, "trackerHeartbeats/SYN-1"), {
+        driverUid: "driver",
+        lastSeenAt: serverTimestamp(),
+        gpsAvailable: true,
+        intervalMs: 15000,
+        ...change,
+      }),
+    );
+  await assertFails(
+    set(ref(d, "trackerHeartbeats/SYN-2"), {
+      driverUid: "driver",
+      lastSeenAt: serverTimestamp(),
+      gpsAvailable: true,
+      intervalMs: 15000,
+    }),
+  );
+  await update(ref(d), inactive());
+  await assertFails(beat());
+});
+it("heartbeat authorization is revoked on disable, reassignment, removal or lock handover", async () => {
+  const d = client();
+  await publish(d);
+  const beat = () =>
+    set(ref(d, "trackerHeartbeats/SYN-1"), {
+      driverUid: "driver",
+      lastSeenAt: serverTimestamp(),
+      gpsAvailable: true,
+      intervalMs: 15000,
+    });
+  const changes = [
+    ["drivers/driver/enabled", false],
+    ["drivers/driver/assignedBus", "SYN-2"],
+    ["activeDrivers/SYN-1", "other"],
+    ["drivers/driver", null],
+  ] as const;
+  for (const [path, value] of changes) {
+    const previous = await privileged(path);
+    await env.withSecurityRulesDisabled((c) =>
+      set(ref(c.database(), path), value),
+    );
+    await assertFails(beat());
+    await env.withSecurityRulesDisabled((c) =>
+      set(ref(c.database(), path), previous),
+    );
+  }
+});

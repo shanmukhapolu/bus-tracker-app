@@ -1,3 +1,5 @@
+import { FreshLocationRecovery } from "./freshLocationRecovery";
+import { TrackingHeartbeat, heartbeatInterval } from "./trackingHeartbeat";
 import { SparkGpsQueue, sparkGpsUpdate } from "./sparkGps";
 import type { FirebaseRuntime } from "../config/firebase";
 import { getFirebaseRuntime } from "../config/firebase";
@@ -345,7 +347,10 @@ export async function startDriverTracking(
   );
   let activePublish: Promise<void> | null = null;
   let uploadFailed = false;
+  let initialGpsAcknowledged = false;
   let lockLost = false;
+  let heartbeat: TrackingHeartbeat | undefined;
+  let recovery: FreshLocationRecovery | undefined;
   let connectionEpoch = 0;
   const disconnectRef = runtime.ref(runtime.db, "/");
   const inactiveUpdate = () => ({
@@ -396,7 +401,9 @@ export async function startDriverTracking(
 
   const failUploads = (message: string) => {
     uploadFailed = true;
+    recovery?.stop();
     delivery.setPaused(true);
+    void heartbeat?.stop();
     if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
     if (publishTimer) clearInterval(publishTimer);
     void releaseWakeLock();
@@ -439,36 +446,77 @@ export async function startDriverTracking(
     // The first write is mandatory. We do not mark tracking live until
     // Firebase has actually accepted the GPS coordinates.
     await delivery.flush();
+    initialGpsAcknowledged = true;
 
     // One atomic disconnect operation prevents releasing the lock before marking
     // both projections inactive. Rules recheck ownership at disconnect time.
     await runtime.onDisconnect(disconnectRef).update(inactiveUpdate());
 
+    heartbeat = new TrackingHeartbeat(
+      (gpsAvailable) =>
+        runtime.update(disconnectRef, {
+          [`trackerHeartbeats/${options.busId}`]: {
+            driverUid: user.uid,
+            lastSeenAt: runtime.serverTimestamp(),
+            gpsAvailable,
+            intervalMs: heartbeatInterval(
+              import.meta.env.VITE_TRACKER_HEARTBEAT_MS,
+            ),
+          },
+        }),
+      (error) => {
+        if (stopped || uploadFailed) return;
+        if (/permission[_ -]?denied/i.test(String(error)))
+          failUploads(
+            "Tracking authorization changed. Stop tracking and confirm your assignment before restarting.",
+          );
+        else
+          options.onError(
+            "Tracker heartbeat could not be saved. Check your connection.",
+          );
+      },
+      heartbeatInterval(import.meta.env.VITE_TRACKER_HEARTBEAT_MS),
+    );
+    await heartbeat.start();
+    if (uploadFailed) throw new Error("Tracker heartbeat was denied.");
+    const acceptPosition = (position: GeolocationPosition) => {
+      if (stopped || uploadFailed) return false;
+      try {
+        const nextPosition = toLocation(position);
+        if (!delivery.enqueue(nextPosition)) return false;
+        heartbeat!.gpsAvailable = true;
+        options.onPosition(nextPosition);
+        void publishLatest();
+        return true;
+      } catch (error) {
+        failUploads(
+          error instanceof Error ? error.message : "Invalid GPS fix.",
+        );
+        return false;
+      }
+    };
+    const locationError = (error: GeolocationPositionError) => {
+      if (!stopped && !uploadFailed) {
+        if (heartbeat) heartbeat.gpsAvailable = false;
+        options.onError(readableGeolocationError(error));
+      }
+    };
+    recovery = new FreshLocationRecovery(
+      navigator.geolocation,
+      acceptPosition,
+      locationError,
+    );
     watchId = navigator.geolocation.watchPosition(
       (position) => {
-        if (stopped || uploadFailed) return;
-
-        try {
-          const nextPosition = toLocation(position);
-          if (!delivery.enqueue(nextPosition)) return;
-          options.onPosition(nextPosition);
-          void publishLatest();
-        } catch (error) {
-          failUploads(
-            error instanceof Error ? error.message : "Invalid GPS fix.",
-          );
-        }
+        if (acceptPosition(position)) recovery?.watchReceivedFreshFix();
       },
-      (error) => {
-        if (!stopped) {
-          options.onError(readableGeolocationError(error));
-        }
-      },
+      locationError,
       watchLocationOptions,
     );
 
     // Retry pending work at one-second cadence; never republish an acknowledged fix.
     publishTimer = setInterval(() => {
+      recovery?.tick();
       void publishLatest();
     }, 1_000);
 
@@ -478,6 +526,8 @@ export async function startDriverTracking(
         if (stopped || uploadFailed) return;
         const epoch = ++connectionEpoch;
         delivery.setPaused(true);
+        recovery?.pause(true);
+        heartbeat?.pause(true);
         if (snapshot.val() !== true) return;
         // onDisconnect may have released our lock. Do not silently reclaim it
         // or publish queued fixes under another driver's session.
@@ -494,7 +544,10 @@ export async function startDriverTracking(
             }
             await runtime.onDisconnect(disconnectRef).update(inactiveUpdate());
             if (stopped || uploadFailed || epoch !== connectionEpoch) return;
+            recovery?.pause(false);
             delivery.setPaused(false);
+            heartbeat?.pause(false);
+            void heartbeat?.flush();
             await activePublish;
             if (stopped || uploadFailed || epoch !== connectionEpoch) return;
             void publishLatest();
@@ -520,6 +573,9 @@ export async function startDriverTracking(
       if (stopped) return;
 
       stopped = true;
+      recovery?.stop();
+      delivery.setPaused(true);
+      const heartbeatStopped = heartbeat?.stop();
 
       if (watchId !== undefined) {
         navigator.geolocation.clearWatch(watchId);
@@ -537,13 +593,13 @@ export async function startDriverTracking(
         // Finish any GPS write already in flight so the stored coordinate is
         // the most recent position received immediately before stopping.
         await activePublish;
+        await heartbeatStopped;
 
         if (lockLost) {
           // The old lock is already gone or belongs to another driver. Stop locally only.
           await runtime.onDisconnect(disconnectRef).cancel();
           return;
         }
-        if (!uploadFailed) await delivery.flush();
         await runtime.update(disconnectRef, inactiveUpdate());
         // Keep the disconnect safety net until the stop was acknowledged.
         await runtime.onDisconnect(disconnectRef).cancel();
@@ -560,13 +616,22 @@ export async function startDriverTracking(
       stop,
     };
   } catch (error) {
+    stopped = true;
+    recovery?.stop();
+    delivery.setPaused(true);
+    await heartbeat?.stop();
+    if (publishTimer) clearInterval(publishTimer);
+    stopConnectionListener?.();
+    stopVisibilityListener?.();
     if (watchId !== undefined) {
       navigator.geolocation.clearWatch(watchId);
     }
 
     try {
+      if (initialGpsAcknowledged)
+        await runtime.update(disconnectRef, inactiveUpdate());
+      else await runtime.remove(lockRef);
       await runtime.onDisconnect(disconnectRef).cancel();
-      await runtime.remove(lockRef);
     } catch {
       // Best-effort cleanup.
     }

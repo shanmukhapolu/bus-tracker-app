@@ -613,7 +613,7 @@ export function DriversPage() {
               <strong>
                 {session.transport === "trusted_backend"
                   ? `Trusted upload every ${Math.round(session.uploadIntervalMs / 1000)} sec`
-                  : "Saving every second"}
+                  : "Saves each fresh GPS fix"}
               </strong>
             </div>
             <div>
