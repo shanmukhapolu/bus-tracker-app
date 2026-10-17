@@ -1,0 +1,173 @@
+diff --git a/src/services/driverTrackingService.ts b/src/services/driverTrackingService.ts
+index ef75334..0166c17 100644
+--- a/src/services/driverTrackingService.ts
++++ b/src/services/driverTrackingService.ts
+@@ -193,6 +193,7 @@ async function publishPosition(
+     active: true,
+     driverUid: user.uid,
+     lastUpdated: runtime.serverTimestamp(),
++    capturedAt: position.capturedAt,
+   };
+   const publicRecord = {
+     busNumber: options.busNumber,
+@@ -203,9 +204,10 @@ async function publishPosition(
+     accuracyMeters: position.accuracyMeters,
+     active: true,
+     lastUpdated: runtime.serverTimestamp(),
++    capturedAt: position.capturedAt,
+   };
+ 
+-  await runtime.update(runtime.ref(runtime.db, ""), {
++  await runtime.update(runtime.ref(runtime.db, "/"), {
+     [`liveBuses/${options.busId}`]: internalRecord,
+     [`publicBuses/${options.busId}`]: publicRecord,
+   });
+@@ -349,8 +351,19 @@ export async function startDriverTracking(
+   }
+ 
+   const lockRef = runtime.ref(runtime.db, `activeDrivers/${options.busId}`);
+-  const liveRef = runtime.ref(runtime.db, `liveBuses/${options.busId}`);
+-  const publicRef = runtime.ref(runtime.db, `publicBuses/${options.busId}`);
++  const rootRef = runtime.ref(runtime.db, "/");
++  const inactive = () => ({
++    [`activeDrivers/${options.busId}`]: null,
++    [`liveBuses/${options.busId}/active`]: false,
++    [`liveBuses/${options.busId}/lastUpdated`]: runtime.serverTimestamp(),
++    [`liveBuses/${options.busId}/endedAt`]: runtime.serverTimestamp(),
++    [`publicBuses/${options.busId}/active`]: false,
++    [`publicBuses/${options.busId}/lastUpdated`]: runtime.serverTimestamp(),
++    [`publicBuses/${options.busId}/endedAt`]: runtime.serverTimestamp(),
++  });
++  let uploadsBlocked = false;
++  let lockLost = false;
++  let connectionEpoch = 0;
+ 
+   const transaction = await runtime.runTransaction(lockRef, (current) => {
+     if (current === null || current === user.uid) {
+@@ -404,17 +417,19 @@ export async function startDriverTracking(
+   };
+ 
+   const publishLatest = () => {
+-    if (stopped || !latestPosition) return Promise.resolve();
++    if (stopped || uploadsBlocked || !latestPosition) return Promise.resolve();
+     if (activePublish) return activePublish;
+ 
+     activePublish = (async () => {
+       try {
+         await publishPosition(runtime, options, latestPosition!);
+       } catch (error) {
+-        console.error(
+-          "Firebase could not save the latest GPS position.",
+-          error,
+-        );
++        if (/permission[_ -]?denied/i.test(String(error))) {
++          uploadsBlocked = true;
++          if (publishTimer) clearInterval(publishTimer);
++          if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
++          void releaseWakeLock();
++        }
+         options.onError(
+           "GPS update could not be saved. Check your connection.",
+         );
+@@ -441,22 +456,14 @@ export async function startDriverTracking(
+     // Firebase has actually accepted the GPS coordinates.
+     await publishPosition(runtime, options, firstLocation);
+ 
+-    await runtime.onDisconnect(liveRef).update({
+-      active: false,
+-      lastUpdated: runtime.serverTimestamp(),
+-      endedAt: runtime.serverTimestamp(),
+-    });
+-    await runtime.onDisconnect(publicRef).update({
+-      active: false,
+-      lastUpdated: runtime.serverTimestamp(),
+-      endedAt: runtime.serverTimestamp(),
+-    });
++    await runtime.onDisconnect(rootRef).update(inactive());
+ 
+     watchId = navigator.geolocation.watchPosition(
+       (position) => {
+-        if (stopped) return;
+-
+-        latestPosition = toLocation(position);
++        if (stopped || uploadsBlocked) return;
++        const next = toLocation(position);
++        if (latestPosition && next.capturedAt <= latestPosition.capturedAt) return;
++        latestPosition = next;
+         options.onPosition(latestPosition);
+ 
+         // New GPS fixes are published immediately.
+@@ -479,9 +486,25 @@ export async function startDriverTracking(
+     stopConnectionListener = runtime.onValue(
+       runtime.ref(runtime.db, ".info/connected"),
+       (snapshot) => {
+-        if (snapshot.val() === true) {
++        if (stopped || lockLost) return;
++        const epoch = ++connectionEpoch;
++        uploadsBlocked = true;
++        if (snapshot.val() !== true) return;
++        void runtime.get(lockRef).then(async (lock) => {
++          if (stopped || epoch !== connectionEpoch) return;
++          if (lock.val() !== user.uid) {
++            lockLost = true;
++            if (publishTimer) clearInterval(publishTimer);
++            if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
++            void releaseWakeLock();
++            options.onError("The connection ended your tracking session. Stop tracking and start again when connected.");
++            return;
++          }
++          await runtime.onDisconnect(rootRef).update(inactive());
++          if (stopped || epoch !== connectionEpoch) return;
++          uploadsBlocked = false;
+           void publishLatest();
+-        }
++        }).catch(() => options.onError("Could not verify your tracking session. Stop tracking and reconnect before restarting."));
+       },
+     );
+ 
+@@ -510,31 +533,9 @@ export async function startDriverTracking(
+       stopVisibilityListener?.();
+       await releaseWakeLock();
+ 
+-      try {
+-        await runtime.onDisconnect(lockRef).cancel();
+-        await runtime.onDisconnect(liveRef).cancel();
+-        await runtime.onDisconnect(publicRef).cancel();
+-      } catch {
+-        // The server-side disconnect handler may already have run.
+-      }
+-
+-      try {
+-        // Finish any GPS write already in flight so the stored coordinate is
+-        // the most recent position received immediately before stopping.
+-        await activePublish;
+-
+-        await runtime.update(runtime.ref(runtime.db, ""), {
+-          [`liveBuses/${options.busId}/active`]: false,
+-          [`liveBuses/${options.busId}/lastUpdated`]: runtime.serverTimestamp(),
+-          [`liveBuses/${options.busId}/endedAt`]: runtime.serverTimestamp(),
+-          [`publicBuses/${options.busId}/active`]: false,
+-          [`publicBuses/${options.busId}/lastUpdated`]:
+-            runtime.serverTimestamp(),
+-          [`publicBuses/${options.busId}/endedAt`]: runtime.serverTimestamp(),
+-        });
+-      } finally {
+-        await runtime.remove(lockRef);
+-      }
++      await activePublish;
++      if (!lockLost) await runtime.update(rootRef, inactive());
++      await runtime.onDisconnect(rootRef).cancel();
+     };
+ 
+     return {
+@@ -549,9 +550,7 @@ export async function startDriverTracking(
+     }
+ 
+     try {
+-      await runtime.onDisconnect(lockRef).cancel();
+-      await runtime.onDisconnect(liveRef).cancel();
+-      await runtime.onDisconnect(publicRef).cancel();
++      await runtime.onDisconnect(rootRef).cancel();
+       await runtime.remove(lockRef);
+     } catch {
+       // Best-effort cleanup.

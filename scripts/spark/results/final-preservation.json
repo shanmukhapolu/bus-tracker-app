@@ -1,0 +1,34 @@
+{
+  "project": "chsbustracker2-staging",
+  "checkedAt": "2026-10-17T00:04:39.846Z",
+  "baselineAt": "2026-10-16T23:58:53.755Z",
+  "afterAt": "2026-10-17T00:04:08.948Z",
+  "unchanged": {
+    "drivers": true,
+    "admins": true,
+    "tripHistory": true,
+    "safetyEvents": true,
+    "incidentSensors": true,
+    "devices": true,
+    "geofences": true,
+    "geofenceAlerts": true,
+    "geofenceBusOrder": true,
+    "sessionClosures": true
+  },
+  "oldAuditPreserved": true,
+  "addedAuditCount": 2,
+  "expectedAudit": true,
+  "changedBusIds": [
+    "SYN-118"
+  ],
+  "changedLiveIds": [
+    "SYN-101"
+  ],
+  "changedPublicIds": [
+    "SYN-101"
+  ],
+  "noRemainingLocks": true,
+  "rulesUnchanged": true,
+  "hostingUnchanged": true,
+  "passed": true
+}

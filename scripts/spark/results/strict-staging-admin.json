@@ -1,0 +1,12 @@
+{
+  "project": "chsbustracker2-staging",
+  "bus": "SYN-118",
+  "checks": [
+    "Deactivate hides unassigned non-tracking synthetic bus publicly",
+    "Reactivate restores public eligibility without inventing live GPS",
+    "Drivers, telemetry history, trips, safety evidence and devices preserved",
+    "Two required atomic audit records saved; all existing audit entries preserved"
+  ],
+  "startedAt": "2026-10-16T23:35:50.821Z",
+  "result": "PASS"
+}

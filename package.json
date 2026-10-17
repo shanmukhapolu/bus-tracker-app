@@ -16,7 +16,11 @@
     "build:staging": "tsc -b && vite build --mode staging",
     "configure:staging": "node scripts/configure-staging.mjs",
     "test:spark": "npx --yes firebase-tools@15.31.0 emulators:exec --config firebase.spark-emulators.json --project demo-ccs-staging --only database \"vitest run --config spark.config.ts scripts/spark/security.test.ts\"",
-    "benchmark:spark": "node scripts/spark/benchmark.mjs"
+    "benchmark:spark": "node scripts/spark/benchmark.mjs",
+    "test:security-tools": "node --test scripts/security/security-tools.test.mjs",
+    "security:scan": "node scripts/security/secret-scan.mjs .",
+    "firebase:status:safe": "node scripts/security/firebase-safe-status.mjs",
+    "test:transition": "npx --yes firebase-tools@15.31.0 emulators:exec --config firebase.spark-emulators.json --project demo-ccs-staging --only database \"vitest run --config spark.config.ts scripts/spark/security.test.ts scripts/spark/transition.test.ts\""
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

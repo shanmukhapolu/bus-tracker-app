@@ -1,0 +1,27 @@
+{
+  "client": "legacy-compatibility",
+  "project": "chsbustracker2-staging",
+  "checks": [
+    "Staging project/token isolation and synthetic accounts validated",
+    "Anonymous blocked from drivers",
+    "Anonymous blocked from liveBuses",
+    "Anonymous blocked from tripHistory",
+    "Anonymous blocked from safetyEvents",
+    "Anonymous blocked from auditLogs",
+    "Wrong-bus lock denied",
+    "Disabled driver lock denied",
+    "60 distinct one-second GPS fixes reached public/admin listeners with changing position and private speed",
+    "Older GPS denied by deployed staging rules",
+    "Altered duplicate denied",
+    "Disabled driver GPS denied",
+    "Disconnect atomically marked projections inactive and released own lock",
+    "Reconnect fails closed, then explicit restart resumes authorized GPS",
+    "Stop marks both projections inactive and releases lock",
+    "Buses, drivers, geofences, history, incidents, audit and device records unchanged"
+  ],
+  "startedAt": "2026-10-16T22:40:19.936Z",
+  "offered": 60,
+  "publicDistinct": 60,
+  "adminDistinct": 60,
+  "result": "PASS"
+}

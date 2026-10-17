@@ -1,0 +1,12 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {detect} from './secret-scan.mjs';
+import {summarize} from './firebase-safe-status.mjs';
+test('refresh credentials detected without returning their values',()=>{const v='1'+'//'+ 'A'.repeat(45);const result=detect(v);assert.deepEqual(result,['google-refresh']);assert(!JSON.stringify(result).includes(v));});
+test('access credentials detected',()=>assert.deepEqual(detect('ya'+'29.'+'b'.repeat(45)),['google-access']));
+test('known synthetic-account password detected anywhere',()=>assert.deepEqual(detect('prefix-'+ 's'.repeat(20),['s'.repeat(20)]),['known-local-credential']));
+test('literal credentials detected',()=>assert(detect('pass'+'word: "'+'x'.repeat(12)+'"').includes('literal-password')));
+test('autocomplete labels are not credentials',()=>assert.deepEqual(detect('mode === "signup" ? "new-password" : "current-password"'),[]));
+test('web Firebase API configuration is public configuration',()=>assert.deepEqual(detect('apiKey: "AIzaExamplePublicConfiguration"'),[]));
+test('diagnostic status emits only allowlisted fields',()=>{const secret='test-'+'z'.repeat(24);const report=summarize({email:'test@example.test',id_token:secret,extra:secret},{refresh_token:secret,access_token:secret,id_token:secret});assert.deepEqual(Object.keys(report),['signedIn','account','hasLocalCredential']);assert(!JSON.stringify(report).includes(secret));});
+test('signed-out diagnostic status is explicit',()=>assert.deepEqual(summarize(null,null),{signedIn:false,account:null,hasLocalCredential:false}));

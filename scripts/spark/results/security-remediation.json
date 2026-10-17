@@ -1,0 +1,20 @@
+{
+  "rulesSha256": "cb6e857178b6c879043b20a09978b9122d0b77cf0af42b7db386734bf793b344",
+  "changedRuleExpressions": [
+    "/rules/liveBuses/$busId/.write",
+    "/rules/liveBuses/$busId/.validate",
+    "/rules/liveBuses/$busId/$other/.validate",
+    "/rules/publicBuses/$busId/.write",
+    "/rules/publicBuses/$busId/.validate",
+    "/rules/publicBuses/$busId/$other/.validate"
+  ],
+  "canonicalFixtureMatches": true,
+  "compatibilityBuildMatchesTestedSource": true,
+  "trustedBackendFunctionUnchanged": true,
+  "localTestsPassed": 213,
+  "localTestsFailed": 0,
+  "hostedSmokeScenariosPassed": 2,
+  "hostingDeployed": false,
+  "rulesDeployed": false,
+  "pushed": false
+}

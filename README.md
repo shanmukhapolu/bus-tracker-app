@@ -162,3 +162,13 @@ Separate cloud-staging acceptance, real-device tracking, OAuth/session smoke tes
 The direct Firebase GPS queue preserves distinct fixes, rejects duplicate/out-of-order samples, and atomically updates private and sanitized public locations. See [Spark optimization](SPARK-OPTIMIZATION.md) and [release verification](SPARK-RELEASE.md). Cloud Run changes remain outside this release.
 
 `npm run test:spark` uses loopback emulators and a test-only canonical rules snapshot; it never deploys rules. Run `npm run configure:staging` and `npm run build:staging` with ignored staging configuration before any separately approved staging Hosting deployment. bus-safety-admin remains the sole rules owner.
+
+## Security release hold — October 16, 2026
+
+See [credential incident and GPS remediation](docs/SECURITY-REMEDIATION.md) and the [controlled release checklist](docs/CONTROLLED-GPS-RELEASE.md). The final review authorizes verified development-branch pushes only; production deployment still requires explicit approval. Use `npm run security:scan` and `npm run firebase:status:safe`; never print Firebase CLI authentication objects or raw debug logs. Canonical Firebase rules belong to `bus-safety-admin` only.
+
+[Staging security rollout approval packet](docs/STAGING-SECURITY-APPROVAL.md): October 16 rerun passed 213 local tests. The user has confirmed no automatic deployment integrations. Cloud changes remain subject to staging approval and a fresh backup.
+
+Staging security release verified October 16, 2026: [deployment and test results](docs/STAGING-SECURITY-RESULTS.md). Production remains unchanged and requires separate approval.
+
+Final release review: [verification, production blockers, backup and rollback plan](docs/FINAL-PRODUCTION-REVIEW.md). This review reran 218 tests successfully and made no production changes. Physical-phone acceptance and a maintenance window remain open gates.

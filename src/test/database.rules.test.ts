@@ -125,12 +125,11 @@ describe("Realtime Database public and protected boundaries", () => {
 
   it("allows an enabled assigned driver to publish only the assigned bus", async () => {
     const db = environment.authenticatedContext("driver-a").database();
-    await assertSucceeds(
-      set(ref(db, "liveBuses/12"), validInternalTelemetry()),
-    );
-    await assertSucceeds(
-      set(ref(db, "publicBuses/12"), validPublicTelemetry()),
-    );
+    const capturedAt = Date.now();
+    await assertSucceeds(update(ref(db), {
+      "liveBuses/12": {...validInternalTelemetry(), capturedAt},
+      "publicBuses/12": {...validPublicTelemetry(), capturedAt},
+    }));
     await assertFails(
       set(ref(db, "liveBuses/45"), {
         ...validInternalTelemetry(),

@@ -17,3 +17,10 @@ firebase.staging.json
 .staging.local/
 emulator-debug.log
 ui-debug.log
+
+# Never publish local authentication, diagnostics or incident evidence.
+.security.local/
+*-debug*.log
+*.pem
+*.key
+*service-account*.json

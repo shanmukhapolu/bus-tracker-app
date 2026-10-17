@@ -9,10 +9,13 @@ import {resolveFirebaseEnvironment} from '../../src/config/deploymentEnvironment
 const shared=vi.hoisted(()=>({runtime:null as any}));
 vi.mock('../../src/config/firebase',()=>({getFirebaseRuntime:async()=>shared.runtime}));
 vi.mock('../../src/services/telemetryClient',()=>({trustedTelemetryEnabled:()=>false,createBackendTelemetryClient:vi.fn()}));
-import {startDriverTracking} from '../../src/services/driverTrackingService';
+import {startDriverTracking as optimizedTracking} from '../../src/services/driverTrackingService';
+// @ts-expect-error test-only frozen compatibility module
+import {startDriverTracking as compatibilityTracking} from "virtual:legacy-compat";
+const startDriverTracking=process.env.SPARK_COMPAT_CLIENT === "1" ? compatibilityTracking : optimizedTracking;
 import {sparkGpsUpdate} from '../../src/services/sparkGps';
 const sleep=(ms:number)=>new Promise(r=>setTimeout(r,ms));
-const report:any={project:'chsbustracker2-staging',checks:[],startedAt:new Date().toISOString()};
+const report:any={client:process.env.SPARK_COMPAT_CLIENT === "1" ? "legacy-compatibility" : "optimized",project:'chsbustracker2-staging',checks:[],startedAt:new Date().toISOString()};
 const pass=(s:string)=>{report.checks.push(s);console.log('PASS: '+s)};
 const digest=(x:any)=>createHash('sha256').update(JSON.stringify(x)).digest('hex');
 const until=async(fn:()=>Promise<boolean>,message:string)=>{for(let i=0;i<100;i++){if(await fn())return;await sleep(100)}throw Error(message)};
@@ -53,9 +56,20 @@ it.skipIf(process.env.CONFIRM_STAGING !== 'chsbustracker2-staging')('small synth
  await denied(()=>db.update(db.ref(driver.db),sparkGpsUpdate(options,driver.auth.currentUser.uid,stale,db.serverTimestamp())),'Older GPS denied by deployed staging rules');
  await denied(()=>db.update(db.ref(driver.db),sparkGpsUpdate(options,driver.auth.currentUser.uid,{...stale,capturedAt:latest},db.serverTimestamp())),'Altered duplicate denied');
  await denied(()=>db.update(db.ref(disabled.db),sparkGpsUpdate(options,disabled.auth.currentUser.uid,{...stale,capturedAt:Date.now()},db.serverTimestamp())),'Disabled driver GPS denied');
+ const same={latitude:live.latitude,longitude:live.longitude,accuracyMeters:live.accuracyMeters,speedMps:live.speedMps,headingDeg:live.headingDeg,capturedAt:live.capturedAt};
+ await db.update(db.ref(driver.db),sparkGpsUpdate(options,driver.auth.currentUser.uid,same,db.serverTimestamp()));pass('Exact unchanged retry remains idempotent');
+ for(const field of ['latitude','longitude','accuracyMeters','capturedAt','busNumber','route','active'])expect(publicBus[field],field+' projection mismatch').toEqual(live[field]);pass('Public/private GPS projections agree and public fields remain sanitized');
+ for(const change of [{capturedAt:Date.now()+120000},{capturedAt:Date.now()-360000},{capturedAt:'invalid'},{latitude:91},{speedMps:91},{accuracyMeters:-1}])await denied(()=>db.update(db.ref(driver.db),sparkGpsUpdate(options,driver.auth.currentUser.uid,{...same,...change} as any,db.serverTimestamp())),'Malformed, future or expired telemetry denied: '+Object.keys(change)[0]);
+ await denied(()=>db.update(db.ref(driver.db),sparkGpsUpdate(options,disabled.auth.currentUser.uid,{...same,capturedAt:Date.now()},db.serverTimestamp())),'Forged driver identity denied');
+ const cached:any=sparkGpsUpdate(options,driver.auth.currentUser.uid,{...same,capturedAt:Date.now()},db.serverTimestamp());for(const entry of Object.values(cached) as any[])delete entry.capturedAt;
+ await denied(()=>db.update(db.ref(driver.db),cached),'Unpatched cached-client timestamp-free upload denied');
+ for(const attack of [{'liveBuses/SYN-101':null},{'publicBuses/SYN-101':null},{'liveBuses/SYN-101/capturedAt':null,'publicBuses/SYN-101/capturedAt':null},{'publicBuses/SYN-101/latitude':40}])await denied(()=>db.update(db.ref(driver.db),attack),'Cached-client deletion or projection bypass denied');
+ expect((await value(admin,'liveBuses/SYN-101')).capturedAt).toBe(latest);pass('Rejected uploads preserve the authoritative capture watermark');
  db.goOffline(driver.db);
  await until(async()=>!(await value(admin,'liveBuses/SYN-101')).active&&(await value(admin,'activeDrivers/SYN-101'))===null,'Disconnect cleanup failed');pass('Disconnect atomically marked projections inactive and released own lock');
  db.goOnline(driver.db);await until(async()=>errors.length>0,'Lost session was not reported');expect(errors.some(e=>/connection ended|session ended/i.test(e))).toBe(true);await session.stop();session=null;errors.length=0;
+ await denied(()=>db.update(db.ref(driver.db),cached),'Cached client cannot resume after disconnect without a valid lock');
+ await denied(()=>db.update(db.ref(driver.db),sparkGpsUpdate(options,driver.auth.currentUser.uid,{...same,capturedAt:Date.now()},db.serverTimestamp())),'Missing-session GPS denied after reconnect');
  session=await startDriverTracking(options);await sleep(1100);const resumed=position(61);watch(resumed);await until(async()=>(await value(admin,'liveBuses/SYN-101')).capturedAt===resumed.timestamp,'Explicit reconnect/restart failed');pass('Reconnect fails closed, then explicit restart resumes authorized GPS');
  await session.stop();session=null;expect(await value(admin,'activeDrivers/SYN-101')).toBe(null);expect((await value(anon,'publicBuses/SYN-101')).active).toBe(false);pass('Stop marks both projections inactive and releases lock');
  for(const [p,h]of Object.entries(before))expect(digest(await value(admin,p)),p+' changed').toBe(h);pass('Buses, drivers, geofences, history, incidents, audit and device records unchanged');

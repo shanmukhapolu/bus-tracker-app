@@ -39,6 +39,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     test: {
+      include: ["src/**/*.test.ts"],
       exclude: [
         "**/node_modules/**",
         "**/dist/**",
