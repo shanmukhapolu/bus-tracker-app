@@ -176,3 +176,5 @@ Final release review: [verification, production blockers, backup and rollback pl
 Approved production GPS release deployed October 16, 2026: [live release results and remaining phone acceptance checks](docs/PRODUCTION-GPS-RELEASE.md). This supersedes the earlier production deployment hold for these exact GPS commits only. Admin Hosting and existing records were preserved.
 
 See [tracker heartbeat, GPS recovery and staging verification](docs/TRACKER-HEARTBEAT-VERIFICATION.md) for behavior, tests and production rollout restrictions.
+
+Current reporting cadence: [one-second tracking reports and staging verification](docs/ONE-SECOND-TRACKING-REPORTS.md).

@@ -179,9 +179,15 @@
       ".read": "auth != null && root.child('admins').child(auth.uid).child('enabled').val() === true && root.child('admins').child(auth.uid).child('role').val() === 'admin'",
       "$busId": {
         ".write": "auth != null && root.child('drivers').child(auth.uid).child('enabled').val() === true && root.child('buses').child($busId).child('enabled').val() === true && (root.child('drivers').child(auth.uid).child('assignedBus').val() === $busId || root.child('drivers').child(auth.uid).child('allowedBuses').child($busId).val() === true) && root.child('activeDrivers').child($busId).val() === auth.uid && root.child('liveBuses').child($busId).child('driverUid').val() === auth.uid && root.child('liveBuses').child($busId).child('active').val() === true && newData.exists() && newData.child('driverUid').val() === auth.uid",
-        ".validate": "newData.hasChildren(['driverUid','lastSeenAt','gpsAvailable','intervalMs']) && newData.child('lastSeenAt').isNumber() && newData.child('lastSeenAt').val() === now && (!data.child('lastSeenAt').exists() || newData.child('lastSeenAt').val() >= data.child('lastSeenAt').val()) && newData.child('gpsAvailable').isBoolean() && newData.child('intervalMs').isNumber() && newData.child('intervalMs').val() >= 5000 && newData.child('intervalMs').val() <= 60000",
+        ".validate": "newData.hasChildren(['driverUid','lastSeenAt','gpsAvailable','intervalMs']) && newData.child('lastSeenAt').isNumber() && newData.child('lastSeenAt').val() === now && (!data.child('lastSeenAt').exists() || newData.child('lastSeenAt').val() >= data.child('lastSeenAt').val()) && newData.child('gpsAvailable').isBoolean() && newData.child('intervalMs').isNumber() && newData.child('intervalMs').val() >= 1000 && newData.child('intervalMs').val() <= 60000",
         "$other": {
-          ".validate": "$other === 'driverUid' || $other === 'lastSeenAt' || $other === 'gpsAvailable' || $other === 'intervalMs'"
+          ".validate": "$other === 'driverUid' || $other === 'lastSeenAt' || $other === 'gpsAvailable' || $other === 'intervalMs' || $other === 'lastKnownLocation'"
+        },
+        "lastKnownLocation": {
+          ".validate": "newData.hasChildren(['latitude','longitude','accuracyMeters','capturedAt']) && newData.child('latitude').val() === root.child('liveBuses').child($busId).child('latitude').val() && newData.child('longitude').val() === root.child('liveBuses').child($busId).child('longitude').val() && newData.child('accuracyMeters').val() === root.child('liveBuses').child($busId).child('accuracyMeters').val() && newData.child('capturedAt').val() === root.child('liveBuses').child($busId).child('capturedAt').val() && newData.child('speedMps').val() === root.child('liveBuses').child($busId).child('speedMps').val() && newData.child('headingDeg').val() === root.child('liveBuses').child($busId).child('headingDeg').val()",
+          "$other": {
+            ".validate": "$other === 'latitude' || $other === 'longitude' || $other === 'accuracyMeters' || $other === 'capturedAt' || $other === 'speedMps' || $other === 'headingDeg'"
+          }
         }
       }
     }

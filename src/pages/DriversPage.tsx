@@ -335,7 +335,7 @@ export function DriversPage() {
       setMessage(
         nextSession.transport === "trusted_backend"
           ? `Bus ${selectedBus.busNumber} is live. The secure telemetry service is recording this trip.`
-          : `Bus ${selectedBus.busNumber} is live. New GPS fixes are sent to Firebase as your device provides them.`,
+          : `Bus ${selectedBus.busNumber} is live. Reports are sent every second with the latest available GPS fix.`,
       );
     } catch (error) {
       setStatus("error");
@@ -613,7 +613,7 @@ export function DriversPage() {
               <strong>
                 {session.transport === "trusted_backend"
                   ? `Trusted upload every ${Math.round(session.uploadIntervalMs / 1000)} sec`
-                  : "Saves each fresh GPS fix"}
+                  : "Reports every second"}
               </strong>
             </div>
             <div>

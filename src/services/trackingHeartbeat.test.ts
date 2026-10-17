@@ -62,12 +62,17 @@ it("keeps a stationary tracker alive for five minutes without inventing GPS fixe
   });
   await vi.advanceTimersByTimeAsync(300000);
   expect(writes.filter((w) => w["liveBuses/SYN-12"])).toHaveLength(1);
-  expect(
-    writes.filter((w) => w["trackerHeartbeats/SYN-12"]).length,
-  ).toBeGreaterThanOrEqual(20);
+  expect(writes.filter((w) => w["trackerHeartbeats/SYN-12"]).length).toBe(301);
   expect(
     writes.find((w) => w["liveBuses/SYN-12"])["liveBuses/SYN-12"].capturedAt,
   ).toBe(capturedAt);
+  const reports = writes.filter((w) => w["trackerHeartbeats/SYN-12"]);
+  for (const report of reports)
+    expect(report["trackerHeartbeats/SYN-12"].lastKnownLocation).toMatchObject({
+      latitude: 39.97,
+      longitude: -86.12,
+      capturedAt,
+    });
   await session.stop();
   const count = writes.length;
   await vi.advanceTimersByTimeAsync(60000);
@@ -96,8 +101,8 @@ it("has bounded configurable frequency, one in-flight write, and pauses during d
   await heartbeat.stop();
   await vi.advanceTimersByTimeAsync(30000);
   expect(send).toHaveBeenCalledTimes(2);
-  expect(heartbeatInterval(undefined)).toBe(15000);
-  expect(heartbeatInterval(1000)).toBe(15000);
+  expect(heartbeatInterval(undefined)).toBe(1000);
+  expect(heartbeatInterval(999)).toBe(1000);
   expect(heartbeatInterval(60000)).toBe(60000);
 });
 it("sends 60 fresh GPS fixes without throttling them to heartbeat cadence", async () => {
@@ -161,7 +166,7 @@ it("sends 60 fresh GPS fixes without throttling them to heartbeat cadence", asyn
   }
   await vi.advanceTimersByTimeAsync(1);
   expect(writes.filter((w) => w["liveBuses/SYN-12"])).toHaveLength(61);
-  expect(writes.filter((w) => w["trackerHeartbeats/SYN-12"])).toHaveLength(5);
+  expect(writes.filter((w) => w["trackerHeartbeats/SYN-12"])).toHaveLength(61);
   expect(errors).not.toHaveBeenCalled();
   await session.stop();
 });
@@ -174,9 +179,9 @@ it("reports GPS unavailable and recovery without changing coordinates in a heart
   }, vi.fn());
   await heartbeat.start();
   heartbeat.gpsAvailable = false;
-  await vi.advanceTimersByTimeAsync(15000);
+  await vi.advanceTimersByTimeAsync(1000);
   heartbeat.gpsAvailable = true;
-  await vi.advanceTimersByTimeAsync(15000);
+  await vi.advanceTimersByTimeAsync(1000);
   expect(sent).toEqual([true, false, true]);
   await heartbeat.stop();
 });

@@ -1,7 +1,7 @@
-/** Presence only: never updates coordinates, capturedAt, or GPS receipt timestamps. */
+/** Periodic reports repeat the last acknowledged fix without changing its capture time. */
 export function heartbeatInterval(value: unknown) {
   const n = Number(value);
-  return Number.isFinite(n) && n >= 5000 && n <= 60000 ? n : 15000;
+  return Number.isFinite(n) && n >= 1000 && n <= 60000 ? n : 1000;
 }
 export class TrackingHeartbeat {
   private timer: ReturnType<typeof setInterval> | undefined;
@@ -13,7 +13,7 @@ export class TrackingHeartbeat {
   constructor(
     private send: (gpsAvailable: boolean) => Promise<void>,
     private onError: (error: unknown) => void,
-    readonly intervalMs = 15000,
+    readonly intervalMs = 1000,
   ) {}
   start() {
     this.timer = setInterval(() => void this.flush(), this.intervalMs);

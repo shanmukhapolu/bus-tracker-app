@@ -1,4 +1,4 @@
-/** Recover a quiet foreground watch without inventing capture times.
+/** Request fresh foreground GPS every second without inventing capture times.
  * tick() uses the existing upload timer. Only one native request can be pending;
  * the browser owns its timeout/cancellation. Late callbacks after Stop are ignored.
  */
@@ -29,18 +29,19 @@ export class FreshLocationRecovery {
       this.paused ||
       this.pending ||
       document.visibilityState !== "visible" ||
-      now - this.lastWatchAt < 3000 ||
       now < this.nextRequestAt
     )
       return;
     this.pending = true;
+    // Schedule from request start, not callback completion (which would halve
+    // the cadence when a normal location request takes a fraction of a second).
+    this.nextRequestAt = now + 1000;
     const failed = (error: GeolocationPositionError) => {
       this.pending = false;
-      this.nextRequestAt = Date.now() + 5000;
       if (
         !this.stopped &&
         !this.paused &&
-        Date.now() - this.lastWatchAt >= 3000
+        Date.now() - this.lastWatchAt >= 1000
       )
         this.onError(error);
     };
@@ -50,8 +51,7 @@ export class FreshLocationRecovery {
           this.pending = false;
           if (this.stopped || this.paused) return;
           // Duplicate/out-of-order readings are rejected by the same upload queue.
-          const fresh = this.onPosition(position);
-          this.nextRequestAt = Date.now() + (fresh ? 1000 : 5000);
+          this.onPosition(position);
         },
         failed,
         { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 },

@@ -231,7 +231,7 @@ it("heartbeats remain private and never refresh stale GPS captures or receipts",
     { latitude: 40 },
     { lastSeenAt: 1 },
     { gpsAvailable: "yes" },
-    { intervalMs: 1000 },
+    { intervalMs: 999 },
     { driverUid: "other" },
   ])
     await assertFails(
@@ -280,4 +280,38 @@ it("heartbeat authorization is revoked on disable, reassignment, removal or lock
       set(ref(c.database(), path), previous),
     );
   }
+});
+
+it("one-second reports repeat only the acknowledged fix and cannot forge or refresh GPS", async () => {
+  const d = client();
+  await publish(d);
+  const gps = await privileged("liveBuses/SYN-1");
+  const location = {
+    latitude: gps.latitude,
+    longitude: gps.longitude,
+    accuracyMeters: gps.accuracyMeters,
+    capturedAt: gps.capturedAt,
+    speedMps: gps.speedMps ?? null,
+    headingDeg: gps.headingDeg ?? null,
+  };
+  const report = (change = {}) => ({
+    driverUid: "driver",
+    lastSeenAt: serverTimestamp(),
+    gpsAvailable: true,
+    intervalMs: 1000,
+    lastKnownLocation: { ...location, ...change },
+  });
+  await assertSucceeds(set(ref(d, "trackerHeartbeats/SYN-1"), report()));
+  await assertSucceeds(set(ref(d, "trackerHeartbeats/SYN-1"), report()));
+  expect(await privileged("liveBuses/SYN-1")).toEqual(gps);
+  for (const change of [
+    { latitude: 1 },
+    { capturedAt: Date.now() + 5000 },
+    { speedMps: 80 },
+    { extra: "not allowed" },
+  ]) {
+    await assertFails(set(ref(d, "trackerHeartbeats/SYN-1"), report(change)));
+  }
+  await update(ref(d), inactive());
+  await assertFails(set(ref(d, "trackerHeartbeats/SYN-1"), report()));
 });

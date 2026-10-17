@@ -342,8 +342,20 @@ export async function startDriverTracking(
     throw new Error("That bus is already being tracked by another driver.");
   }
 
+  // Serialize GPS and reports so a report references the last acknowledged fix.
+  // This never queues duplicate GPS samples or advances their capture timestamp.
+  let lastAcknowledgedLocation = firstLocation;
+  let writeTail = Promise.resolve();
+  const orderedWrite = (operation: () => Promise<void>) => {
+    const next = writeTail.then(operation);
+    writeTail = next.catch(() => {});
+    return next;
+  };
   const delivery = new SparkGpsQueue((position) =>
-    publishPosition(runtime, options, position),
+    orderedWrite(async () => {
+      await publishPosition(runtime, options, position);
+      lastAcknowledgedLocation = { ...position };
+    }),
   );
   let activePublish: Promise<void> | null = null;
   let uploadFailed = false;
@@ -454,15 +466,19 @@ export async function startDriverTracking(
 
     heartbeat = new TrackingHeartbeat(
       (gpsAvailable) =>
-        runtime.update(disconnectRef, {
-          [`trackerHeartbeats/${options.busId}`]: {
-            driverUid: user.uid,
-            lastSeenAt: runtime.serverTimestamp(),
-            gpsAvailable,
-            intervalMs: heartbeatInterval(
-              import.meta.env.VITE_TRACKER_HEARTBEAT_MS,
-            ),
-          },
+        orderedWrite(async () => {
+          if (stopped || uploadFailed) return;
+          await runtime.update(disconnectRef, {
+            [`trackerHeartbeats/${options.busId}`]: {
+              driverUid: user.uid,
+              lastSeenAt: runtime.serverTimestamp(),
+              gpsAvailable,
+              lastKnownLocation: { ...lastAcknowledgedLocation },
+              intervalMs: heartbeatInterval(
+                import.meta.env.VITE_TRACKER_HEARTBEAT_MS,
+              ),
+            },
+          });
         }),
       (error) => {
         if (stopped || uploadFailed) return;

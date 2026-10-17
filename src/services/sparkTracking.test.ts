@@ -133,6 +133,7 @@ it("keeps all intermediate captured fixes through a slow upload", async () => {
   watch(pos(2000));
   watch(pos(3000));
   watch(pos(4000));
+  await settle();
   release();
   await settle();
   expect(
@@ -202,17 +203,17 @@ it("recovers fresh one-second fixes when the foreground watch goes quiet", async
     cb(pos((capture += 1000)) as GeolocationPosition),
   );
   await vi.advanceTimersByTimeAsync(6000);
-  expect(request).toHaveBeenCalledTimes(5); // initial + recovery at 3,4,5,6 seconds
+  expect(request).toHaveBeenCalledTimes(7); // initial plus one request each second
   expect(
     gpsWrites().map((c: any) => c[1]["liveBuses/SYN-1"].capturedAt),
-  ).toEqual([1000, 2000, 3000, 4000, 5000]);
+  ).toEqual([1000, 2000, 3000, 4000, 5000, 6000, 7000]);
   expect(request.mock.calls.at(-1)?.[2]).toMatchObject({
     maximumAge: 0,
     enableHighAccuracy: true,
   });
 });
 
-it("keeps a normal one-second watcher without extra native location requests", async () => {
+it("requests once each second while deduplicating the normal one-second watcher", async () => {
   const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
   await start();
   for (let i = 1; i <= 60; i++) {
@@ -220,7 +221,7 @@ it("keeps a normal one-second watcher without extra native location requests", a
     await vi.advanceTimersByTimeAsync(1000);
   }
   expect(gpsWrites()).toHaveLength(61);
-  expect(request).toHaveBeenCalledTimes(1);
+  expect(request).toHaveBeenCalledTimes(61);
 });
 it("ignores recovery callbacks after Stop and makes no further location requests", async () => {
   const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
@@ -247,20 +248,20 @@ it("does not multiply pending native requests or upload repeated capture timesta
   await vi.advanceTimersByTimeAsync(300000);
   expect(request).toHaveBeenCalledTimes(2);
   resolve(pos() as GeolocationPosition);
-  await vi.advanceTimersByTimeAsync(4000);
+  await vi.advanceTimersByTimeAsync(999);
   expect(request).toHaveBeenCalledTimes(2);
   expect(gpsWrites()).toHaveLength(1);
-  await vi.advanceTimersByTimeAsync(1000);
+  await vi.advanceTimersByTimeAsync(1);
   expect(request).toHaveBeenCalledTimes(3);
 });
-it("backs off recovery errors and recovers on the next fresh capture", async () => {
+it("retries failed requests at the next one-second tick", async () => {
   const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
   await start();
   request.mockImplementationOnce((_cb, error) =>
     error?.({ code: 3, TIMEOUT: 3 } as GeolocationPositionError),
   );
   request.mockImplementation((cb) => cb(pos(2000) as GeolocationPosition));
-  await vi.advanceTimersByTimeAsync(7000);
+  await vi.advanceTimersByTimeAsync(1000);
   expect(gpsWrites()).toHaveLength(1);
   expect(request).toHaveBeenCalledTimes(2);
   await vi.advanceTimersByTimeAsync(1000);
@@ -305,4 +306,48 @@ it("does not report a failed recovery request after the normal watcher recovers"
   reject({ code: 3, TIMEOUT: 3 } as GeolocationPositionError);
   expect(errors).not.toHaveBeenCalled();
   expect(gpsWrites()).toHaveLength(2);
+});
+
+it("serializes reports behind slow GPS writes without copying an unacknowledged capture", async () => {
+  await start();
+  let release!: () => void;
+  fixture.runtime.update.mockImplementationOnce(
+    () =>
+      new Promise<void>((r) => {
+        release = r;
+      }),
+  );
+  watch(pos(2000));
+  await settle();
+  await vi.advanceTimersByTimeAsync(1000);
+  watch(pos(3000));
+  expect(
+    fixture.runtime.update.mock.calls.filter(
+      (c: any) => c[1]["trackerHeartbeats/SYN-1"],
+    ),
+  ).toHaveLength(1);
+  release();
+  await settle();
+  await settle();
+  const reports = fixture.runtime.update.mock.calls.filter(
+    (c: any) => c[1]["trackerHeartbeats/SYN-1"],
+  );
+  expect(
+    reports.at(-1)[1]["trackerHeartbeats/SYN-1"].lastKnownLocation.capturedAt,
+  ).toBe(2000);
+  expect(
+    gpsWrites().map((c: any) => c[1]["liveBuses/SYN-1"].capturedAt),
+  ).toEqual([1000, 2000, 3000]);
+});
+
+it("keeps one-second request starts when device callbacks take 100 ms", async () => {
+  const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
+  await start();
+  let capture = 1000;
+  request.mockImplementation((cb) => {
+    setTimeout(() => cb(pos((capture += 1000)) as GeolocationPosition), 100);
+  });
+  await vi.advanceTimersByTimeAsync(60100);
+  expect(request).toHaveBeenCalledTimes(61);
+  expect(gpsWrites()).toHaveLength(61);
 });
