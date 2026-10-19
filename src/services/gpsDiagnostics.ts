@@ -1,5 +1,8 @@
+import { GpsDeliveryMetrics } from "./gpsDeliveryMetrics";
 /** Local, staging-only counters. Never accepts coordinates, identity or error text. */
 export class GpsDiagnostics {
+  readonly delivery = new GpsDeliveryMetrics();
+  constructor(readonly recoveryEnabled = true) {}
   private startedAt = Date.now();
   private stoppedAt: number | null = null;
   private requestAt: number | null = null;
@@ -63,12 +66,16 @@ export class GpsDiagnostics {
   }
   stop() {
     this.stoppedAt ??= Date.now();
+    this.delivery.stop();
   }
   snapshot() {
     const now = this.stoppedAt ?? Date.now();
     const age = (time: number | null) =>
       time === null ? null : Math.max(0, now - time);
     return {
+      diagnosticVersion: 2,
+      recoveryEnabled: this.recoveryEnabled,
+      delivery: this.delivery.snapshot(),
       elapsedMs: now - this.startedAt,
       stopped: this.stoppedAt !== null,
       firebaseConnected: this.connected,

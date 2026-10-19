@@ -7,6 +7,7 @@ export function GpsTimingPanel({
 }: {
   session: DriverTrackingSession;
 }) {
+  const [includeFixTimings, setIncludeFixTimings] = useState(false);
   const [, refresh] = useState(0);
   useEffect(() => {
     if (!session.diagnostics) return;
@@ -25,7 +26,14 @@ export function GpsTimingPanel({
           ? "Waiting for Firebase to acknowledge a GPS upload."
           : "Measuring phone responses and Firebase acknowledgements.";
   const report = JSON.stringify(
-    { ...data, pageVisible: document.visibilityState === "visible" },
+    {
+      ...data,
+      delivery: {
+        ...data.delivery,
+        fixTimings: includeFixTimings ? data.delivery.fixTimings : undefined,
+      },
+      pageVisible: document.visibilityState === "visible",
+    },
     null,
     2,
   );
@@ -33,6 +41,19 @@ export function GpsTimingPanel({
     <details className="simple-driver-empty">
       <summary>STAGING: GPS timing check</summary>
       <p>{summary}</p>
+      <p>
+        {data.recoveryEnabled
+          ? "Comparison mode: watch plus recovery requests"
+          : "Comparison mode: watch only"}
+      </p>
+      <label>
+        <input
+          type="checkbox"
+          checked={includeFixTimings}
+          onChange={(event) => setIncludeFixTimings(event.target.checked)}
+        />{" "}
+        Include per-fix timings (last 256 callbacks)
+      </label>
       <p>
         Keep this page visible for 60 seconds. Copy these timing counters before
         stopping. They contain no coordinates, account details or passwords.

@@ -1,3 +1,6 @@
+import { execFileSync } from "node:child_process";
+import { runInNewContext } from "node:vm";
+import { transpileModule, ModuleKind } from "typescript";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const fixture = vi.hoisted(() => ({ runtime: null as any }));
 vi.mock("../config/firebase", () => ({
@@ -476,4 +479,151 @@ it("treats native permission denial as terminal even just after a fresh fix", as
   await vi.advanceTimersByTimeAsync(30000);
   expect(fixture.runtime.update.mock.calls).toHaveLength(writes);
   expect(request).toHaveBeenCalledTimes(requests);
+});
+
+it("uploads a fix arriving in the completion microtasks without waiting for the retry timer", async () => {
+  await start();
+  let inject = false;
+  const update = fixture.runtime.update;
+  update.mockImplementation(async (_: unknown, patch: any) => {
+    if (patch["liveBuses/SYN-1"]?.capturedAt === 2000 && !inject) {
+      inject = true;
+      // Arrive after the drain has emptied, while its wrapper promise settles.
+      let remaining = 7;
+      const later = () => {
+        if (--remaining > 0) void Promise.resolve().then(later);
+        else watch(pos(3000));
+      };
+      void Promise.resolve().then(later);
+    }
+  });
+  watch(pos(2000));
+  for (let n = 0; n < 80; n++) await Promise.resolve();
+  expect(
+    gpsWrites().map((c: any) => c[1]["liveBuses/SYN-1"].capturedAt),
+  ).toEqual([1000, 2000, 3000]);
+});
+
+function oldImplementation() {
+  // Execute the exact pre-optimization Git blob only in a synthetic VM.
+  // No old code is bundled into either website or given real Firebase access.
+  const source = execFileSync(
+    "git",
+    [
+      "show",
+      "0618dfbfaa03aa0d618d7f3b52b55678d3fd8f40:src/services/driverTrackingService.ts",
+    ],
+    { encoding: "utf8" },
+  );
+  const exports: any = {};
+  runInNewContext(
+    transpileModule(source, {
+      compilerOptions: { module: ModuleKind.CommonJS },
+    }).outputText,
+    {
+      exports,
+      require: (name: string) => {
+        if (name === "../config/firebase")
+          return { getFirebaseRuntime: async () => fixture.runtime };
+        if (name === "./telemetryClient")
+          return { trustedTelemetryEnabled: () => false };
+        throw Error("Unexpected baseline import");
+      },
+      navigator,
+      document,
+      window,
+      setInterval,
+      clearInterval,
+      Date,
+      Promise,
+      console: { error: () => {} },
+    },
+  );
+  return exports.startDriverTracking;
+}
+it("the exact old client repeats unchanged locations at one-second intervals without persisted capture times", async () => {
+  const legacyStart = oldImplementation();
+  session = await legacyStart({
+    busId: "SYN-1",
+    busNumber: "1",
+    route: "Synthetic",
+    onPosition: vi.fn(),
+    onError: errors,
+  });
+  await settle();
+  const initialWrites = gpsWrites().length;
+  await vi.advanceTimersByTimeAsync(64000);
+  expect(gpsWrites().length - initialWrites).toBe(64);
+  expect(
+    gpsWrites().every(
+      (c: any) => c[1]["liveBuses/SYN-1"].capturedAt === undefined,
+    ),
+  ).toBe(true);
+  expect(
+    new Set(
+      gpsWrites().map((c: any) => JSON.stringify(c[1]["liveBuses/SYN-1"])),
+    ).size,
+  ).toBe(1);
+});
+it("seven raw fresh timestamps produce seven GPS uploads, independent of repeated watch callbacks and reports", async () => {
+  vi.stubEnv("MODE", "staging");
+  try {
+    await start();
+    let capture = 1000;
+    for (let sec = 1; sec <= 64; sec++) {
+      await vi.advanceTimersByTimeAsync(1000);
+      if (sec % 10 === 0) capture += 1000;
+      watch(pos(capture));
+      await settle();
+    }
+    const d = session.diagnostics();
+    expect(d.delivery.sources.watch.callbacks).toBe(64);
+    expect(d.delivery.rawNewerTimestamps).toBe(7);
+    expect(d.delivery.decisions.queued).toBe(7);
+    expect(d.delivery.acknowledgedFixes).toBe(7);
+    expect(d.delivery.pendingAcceptedFixes).toBe(0);
+    expect(d.reportsAcknowledged).toBe(65);
+    expect(gpsWrites()).toHaveLength(7);
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
+it("staging watch-only mode counts every fresh callback and measures upload acknowledgement latency", async () => {
+  vi.stubEnv("MODE", "staging");
+  try {
+    const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
+    await start({ gpsWatchOnly: true });
+    fixture.runtime.update.mockImplementation(async () => {
+      await new Promise((r) => setTimeout(r, 95));
+    });
+    for (let sec = 1; sec <= 60; sec++) {
+      watch(pos(1000 + sec * 1000));
+      await vi.advanceTimersByTimeAsync(1000);
+    }
+    await vi.advanceTimersByTimeAsync(100);
+    const d = session.diagnostics();
+    expect(d.recoveryEnabled).toBe(false);
+    expect(d.delivery.sources.watch.callbacks).toBe(60);
+    expect(d.delivery.sources.request.callbacks).toBe(0);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(d.delivery.rawNewerTimestamps).toBe(61);
+    expect(d.delivery.acknowledgedFixes).toBe(61);
+    expect(d.delivery.firebaseAck.p95Ms).toBe(95);
+    expect(d.delivery.decisions.invalid).toBe(0);
+    // Stop has its own acknowledged write; restore fast mock for teardown.
+    fixture.runtime.update.mockResolvedValue(undefined);
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
+it("production ignores the staging watch-only comparison option", async () => {
+  vi.stubEnv("MODE", "production");
+  try {
+    const request = vi.spyOn(navigator.geolocation, "getCurrentPosition");
+    await start({ gpsWatchOnly: true });
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(request).toHaveBeenCalledTimes(3);
+  } finally {
+    vi.unstubAllEnvs();
+  }
 });

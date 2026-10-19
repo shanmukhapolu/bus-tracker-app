@@ -332,6 +332,10 @@ export function DriversPage() {
         busId: selectedBus.id,
         busNumber: selectedBus.busNumber,
         route: selectedBus.route,
+        gpsWatchOnly:
+          import.meta.env.MODE === "staging" &&
+          new URLSearchParams(window.location.search).get("gpsTest") ===
+            "watch-only",
         onPosition: setPosition,
         onGpsStatus: setGpsStatus,
         onTrackingFailure: setTrackingFailure,

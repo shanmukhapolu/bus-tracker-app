@@ -31,6 +31,15 @@ export function sparkGpsUpdate(
 /** Single-flight FIFO: every distinct fix, no timer-generated copies or coalescing.
  * The bounded in-memory queue is not durable trip storage. Fail visibly on overflow.
  */
+export class GpsQueueError extends Error {
+  constructor(
+    readonly reason: "invalid" | "overflow",
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
 export class SparkGpsQueue {
   private readonly pending: DriverLocation[] = [];
   private newestAt = -1;
@@ -40,6 +49,12 @@ export class SparkGpsQueue {
     private readonly send: (p: DriverLocation) => Promise<void>,
     private readonly capacity = 120,
   ) {}
+  get isPaused() {
+    return this.paused;
+  }
+  get newestCapturedAt() {
+    return this.newestAt;
+  }
   get size() {
     return this.pending.length;
   }
@@ -64,10 +79,14 @@ export class SparkGpsQueue {
           p.headingDeg < 0 ||
           p.headingDeg >= 360))
     )
-      throw new Error("The device returned an invalid GPS fix.");
+      throw new GpsQueueError(
+        "invalid",
+        "The device returned an invalid GPS fix.",
+      );
     if (p.capturedAt <= this.newestAt) return false;
     if (this.pending.length >= this.capacity)
-      throw new Error(
+      throw new GpsQueueError(
+        "overflow",
         "GPS upload buffer is full. Stop tracking and restore the connection before restarting; the new fix could not be queued.",
       );
     this.pending.push({ ...p });

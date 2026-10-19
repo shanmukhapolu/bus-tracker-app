@@ -1,7 +1,7 @@
 import { GpsDiagnostics, type GpsDiagnosticSnapshot } from "./gpsDiagnostics";
 import { FreshLocationRecovery } from "./freshLocationRecovery";
 import { TrackingHeartbeat, heartbeatInterval } from "./trackingHeartbeat";
-import { SparkGpsQueue, sparkGpsUpdate } from "./sparkGps";
+import { GpsQueueError, SparkGpsQueue, sparkGpsUpdate } from "./sparkGps";
 import type { FirebaseRuntime } from "../config/firebase";
 import { getFirebaseRuntime } from "../config/firebase";
 import {
@@ -35,6 +35,8 @@ export interface DriverTrackingSession {
 export type DriverGpsStatus = "available" | "waiting" | "blocked";
 
 export interface DriverTrackingOptions {
+  /** Staging comparison only; production always keeps its recovery behavior. */
+  gpsWatchOnly?: boolean;
   onGpsStatus?: (status: DriverGpsStatus) => void;
   onTrackingFailure?: (message: string) => void;
   busId: string;
@@ -349,9 +351,17 @@ export async function startDriverTracking(
     throw new Error("That bus is already being tracked by another driver.");
   }
 
+  const recoveryEnabled = !(
+    import.meta.env.MODE === "staging" && options.gpsWatchOnly === true
+  );
   const diagnostics =
-    import.meta.env.MODE === "staging" ? new GpsDiagnostics() : undefined;
-  diagnostics?.fix(firstLocation.capturedAt, true);
+    import.meta.env.MODE === "staging"
+      ? new GpsDiagnostics(recoveryEnabled)
+      : undefined;
+  const initialSample = diagnostics?.delivery.observe(
+    "initial",
+    firstLocation.capturedAt,
+  );
 
   // Serialize GPS and reports so a report references the last acknowledged fix.
   // This never queues duplicate GPS samples or advances their capture timestamp.
@@ -365,12 +375,15 @@ export async function startDriverTracking(
   const delivery = new SparkGpsQueue((position) =>
     orderedWrite(async () => {
       diagnostics?.uploadStarted();
+      diagnostics?.delivery.uploadStarted(position.capturedAt);
       try {
         await publishPosition(runtime, options, position);
         lastAcknowledgedLocation = { ...position };
         diagnostics?.uploadFinished(true);
+        diagnostics?.delivery.uploadFinished(true);
       } catch (error) {
         diagnostics?.uploadFinished(false);
+        diagnostics?.delivery.uploadFinished(false);
         throw error;
       }
     }),
@@ -444,9 +457,11 @@ export async function startDriverTracking(
   const publishLatest = () => {
     if (stopped || uploadFailed) return Promise.resolve();
     if (activePublish) return activePublish;
+    let flushFailed = false;
     activePublish = delivery
       .flush()
       .catch((error) => {
+        flushFailed = true;
         if (/permission[_ -]?denied/i.test(String(error))) {
           failUploads(
             "Tracking authorization changed or the session ended. Stop tracking, confirm your bus assignment, and start again.",
@@ -459,6 +474,16 @@ export async function startDriverTracking(
       })
       .finally(() => {
         activePublish = null;
+        // A callback can enqueue after drain() empties but before this wrapper
+        // settles. Resume immediately; never spin on failure or while paused.
+        if (
+          !flushFailed &&
+          !stopped &&
+          !uploadFailed &&
+          !delivery.isPaused &&
+          delivery.size > 0
+        )
+          void publishLatest();
       });
     return activePublish;
   };
@@ -472,6 +497,8 @@ export async function startDriverTracking(
 
   try {
     delivery.enqueue(firstLocation);
+    diagnostics?.fix(firstLocation.capturedAt, true);
+    diagnostics?.delivery.decision(initialSample!, "queued");
     // Keep the driver lock alive only while the Firebase connection exists.
     await runtime.onDisconnect(lockRef).remove();
 
@@ -517,12 +544,25 @@ export async function startDriverTracking(
     await heartbeat.start();
     if (uploadFailed) throw new Error("Tracker heartbeat was denied.");
     let lastFreshFixAt = performance.now();
-    const acceptPosition = (position: GeolocationPosition) => {
+    const acceptPosition = (
+      position: GeolocationPosition,
+      source: "watch" | "request" = "request",
+    ) => {
       if (stopped || uploadFailed) return false;
+      const sample = diagnostics?.delivery.observe(source, position.timestamp);
       try {
         const nextPosition = toLocation(position);
+        const previousCapture = delivery.newestCapturedAt;
         const accepted = delivery.enqueue(nextPosition);
         diagnostics?.fix(nextPosition.capturedAt, accepted);
+        diagnostics?.delivery.decision(
+          sample!,
+          accepted
+            ? "queued"
+            : nextPosition.capturedAt === previousCapture
+              ? "duplicate"
+              : "older",
+        );
         if (!accepted) return false;
         heartbeat!.gpsAvailable = true;
         lastFreshFixAt = performance.now();
@@ -531,6 +571,10 @@ export async function startDriverTracking(
         void publishLatest();
         return true;
       } catch (error) {
+        diagnostics?.delivery.decision(
+          sample!,
+          error instanceof GpsQueueError ? error.reason : "invalid",
+        );
         failUploads(
           error instanceof Error ? error.message : "Invalid GPS fix.",
         );
@@ -556,15 +600,18 @@ export async function startDriverTracking(
           "Waiting for a fresh GPS location. Retrying automatically; tracker reports continue with the last known location.",
         );
     };
-    recovery = new FreshLocationRecovery(
-      navigator.geolocation,
-      acceptPosition,
-      locationError,
-      diagnostics,
-    );
+    recovery = recoveryEnabled
+      ? new FreshLocationRecovery(
+          navigator.geolocation,
+          acceptPosition,
+          locationError,
+          diagnostics,
+        )
+      : undefined;
     watchId = navigator.geolocation.watchPosition(
       (position) => {
-        if (acceptPosition(position)) recovery?.watchReceivedFreshFix();
+        if (acceptPosition(position, "watch"))
+          recovery?.watchReceivedFreshFix();
       },
       locationError,
       watchLocationOptions,

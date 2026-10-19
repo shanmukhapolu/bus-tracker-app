@@ -35,11 +35,17 @@ it("does not advance capture age for repeated fixes or reports and exposes only 
     lastReportAgeMs: 0,
   });
   expect(
-    Object.values(d.snapshot()).every(
-      (v) => v === null || typeof v === "number" || typeof v === "boolean",
-    ),
+    Object.entries(d.snapshot())
+      .filter(([key]) => key !== "delivery")
+      .map(([, value]) => value)
+      .every(
+        (v) => v === null || typeof v === "number" || typeof v === "boolean",
+      ),
   ).toBe(true);
   expect(Object.keys(d.snapshot())).toEqual([
+    "diagnosticVersion",
+    "recoveryEnabled",
+    "delivery",
     "elapsedMs",
     "stopped",
     "firebaseConnected",
