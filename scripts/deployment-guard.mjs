@@ -26,6 +26,14 @@ if (target === "hosting") {
       "utf8",
     ),
   );
+  for (const redirect of config.hosting.redirects ?? []) {
+    const url = new URL(redirect.destination);
+    if (
+      url.origin !== "https://" + project + "-admin.web.app" ||
+      url.username || url.password || url.search || url.hash ||
+      redirect.type !== 302
+    ) throw Error("Admin redirects must target this environment's official dashboard.");
+  }
   if (
     manifest.projectId !== project ||
     manifest.environment !== environment ||

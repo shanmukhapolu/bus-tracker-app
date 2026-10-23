@@ -10,6 +10,7 @@ function check(
   environment: string,
   manifestEnvironment: string,
   manifestProject: string,
+  redirectDestination?: string,
 ) {
   const directory = mkdtempSync(join(tmpdir(), "ccs-deploy-guard-"));
   try {
@@ -30,7 +31,7 @@ function check(
           ? "firebase.json"
           : "firebase.staging.json",
       ),
-      JSON.stringify({ hosting: { site: manifestProject, public: dist } }),
+      JSON.stringify({ hosting: { site: manifestProject, public: dist, ...(redirectDestination ? { redirects: [{ source: "/admin", destination: redirectDestination, type: 302 }] } : {}) } }),
     );
     writeFileSync(
       join(directory, ".env.staging.local"),
@@ -79,4 +80,23 @@ describe("deployment target guard (no Firebase/network calls)", () => {
     expect(
       check(undefined, "production", "production", "chsbustracker2"),
     ).not.toBe(0));
+});
+
+
+describe("admin redirect environment guard", () => {
+  it("accepts an official production dashboard destination", () => {
+    expect(check("chsbustracker2", "production", "production", "chsbustracker2", "https://chsbustracker2-admin.web.app/")).toBe(0);
+  });
+  it("accepts the matching staging dashboard", () => {
+    expect(check("ccs-synthetic-stage", "staging", "staging", "ccs-synthetic-stage", "https://ccs-synthetic-stage-admin.web.app/geofences")).toBe(0);
+  });
+  it.each([
+    "https://chsbustracker2-admin.web.app/",
+    "https://attacker.example/",
+    "https://ccs-synthetic-stage-admin.web.app.attacker.example/",
+    "https://user@ccs-synthetic-stage-admin.web.app/",
+    "https://ccs-synthetic-stage-admin.web.app/?next=https://attacker.example/",
+  ])("rejects unsafe or cross-environment staging redirect %s", destination => {
+    expect(check("ccs-synthetic-stage", "staging", "staging", "ccs-synthetic-stage", destination)).not.toBe(0);
+  });
 });

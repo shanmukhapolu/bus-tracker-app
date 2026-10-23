@@ -178,3 +178,10 @@ Approved production GPS release deployed October 16, 2026: [live release results
 See [tracker heartbeat, GPS recovery and staging verification](docs/TRACKER-HEARTBEAT-VERIFICATION.md) for behavior, tests and production rollout restrictions.
 
 Current reporting cadence: [one-second tracking reports and staging verification](docs/ONE-SECOND-TRACKING-REPORTS.md).
+
+
+## Official admin address (October 22, 2026)
+
+The official Transportation dashboard is https://chsbustracker2-admin.web.app. Legacy `/admin` bookmarks now redirect there using reversible HTTP 302 responses. Live Map, Buses, Drivers, Devices, Safety Events and Trip History links open their matching pages; geofence bookmarks open the official geofence list, and `/bus/:busId` opens the official bus details page. Unknown legacy admin paths open the overview. The official site still requires its own authorized admin session; no credentials are transferred between sites.
+
+Staging redirects only to https://chsbustracker2-staging-admin.web.app. `configure:staging` rewrites the destination for the selected staging project, and the deployment guard rejects cross-environment or external destinations. The old admin source remains in the repository for recovery, but deployed legacy admin URLs enter the canonical dashboard. This change does not modify Firebase rules, data, driver tracking, signup, or bus-routing functionality. To undo the redirect, restore the preceding public Hosting release; never roll back security rules for a URL change.

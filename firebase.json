@@ -54,6 +54,53 @@
         "source": "**",
         "destination": "/index.html"
       }
+    ],
+    "redirects": [
+      {
+        "source": "/admin/map{,/}",
+        "destination": "https://chsbustracker2-admin.web.app/map",
+        "type": 302
+      },
+      {
+        "source": "/admin/buses{,/}",
+        "destination": "https://chsbustracker2-admin.web.app/buses",
+        "type": 302
+      },
+      {
+        "source": "/admin/drivers{,/}",
+        "destination": "https://chsbustracker2-admin.web.app/drivers",
+        "type": 302
+      },
+      {
+        "source": "/admin/devices{,/}",
+        "destination": "https://chsbustracker2-admin.web.app/devices",
+        "type": 302
+      },
+      {
+        "source": "/admin/events{,/}",
+        "destination": "https://chsbustracker2-admin.web.app/events",
+        "type": 302
+      },
+      {
+        "source": "/admin/history{,/}",
+        "destination": "https://chsbustracker2-admin.web.app/history",
+        "type": 302
+      },
+      {
+        "source": "/admin/geofences{,/**}",
+        "destination": "https://chsbustracker2-admin.web.app/geofences",
+        "type": 302
+      },
+      {
+        "source": "/bus/:busId",
+        "destination": "https://chsbustracker2-admin.web.app/buses/:busId",
+        "type": 302
+      },
+      {
+        "source": "/admin{,/**}",
+        "destination": "https://chsbustracker2-admin.web.app/",
+        "type": 302
+      }
     ]
   }
 }

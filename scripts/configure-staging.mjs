@@ -17,6 +17,14 @@ if (
 const config = JSON.parse(fs.readFileSync("firebase.json", "utf8"));
 config.hosting.site = site;
 config.hosting.public = "dist-staging";
+// Old admin bookmarks must stay within the selected environment.
+for (const redirect of config.hosting.redirects ?? []) {
+  const destination = new URL(redirect.destination);
+  if (destination.origin !== "https://chsbustracker2-admin.web.app")
+    throw Error("Unexpected legacy admin redirect destination.");
+  destination.hostname = project + "-admin.web.app";
+  redirect.destination = destination.toString();
+}
 for (const entry of config.hosting.headers ?? [])
   for (const header of entry.headers ?? []) {
     header.value = header.value.replaceAll(
