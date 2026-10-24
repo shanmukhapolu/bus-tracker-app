@@ -1,0 +1,42 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const firebase = JSON.parse(readFileSync("firebase.json", "utf8"));
+
+function policyHeader() {
+  const entries = firebase.hosting.headers as Array<{
+    source: string;
+    headers: Array<{ key: string; value: string }>;
+  }>;
+  return entries
+    .flatMap((entry) => entry.headers)
+    .find((header) => header.key === "Content-Security-Policy")?.value ?? "";
+}
+
+describe("Firebase deployment and browser security policy", () => {
+  it("permits Firebase Analytics' external gtag script using a narrow origin allowlist", () => {
+    const csp = policyHeader();
+    expect(csp).toContain(
+      "script-src 'self' https://www.gstatic.com https://www.googletagmanager.com",
+    );
+    expect(csp).not.toContain("script-src *");
+    expect(csp).not.toContain("script-src https:");
+  });
+
+  it("declares Realtime Database rules and guards deployment to chsbusapp", () => {
+    expect(firebase.database.rules).toBe("database.rules.json");
+    expect(firebase.database.predeploy).toContain(
+      "node scripts/deployment-guard.mjs production database",
+    );
+  });
+
+  it("keeps Hosting deployment guarded and rewrites app routes to the SPA entry point", () => {
+    expect(firebase.hosting.predeploy).toContain(
+      "node scripts/deployment-guard.mjs production hosting",
+    );
+    expect(firebase.hosting.rewrites).toContainEqual({
+      source: "**",
+      destination: "/index.html",
+    });
+  });
+});
