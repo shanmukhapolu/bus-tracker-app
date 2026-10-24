@@ -1,5 +1,5 @@
 import { resolveFirebaseEnvironment } from "./deploymentEnvironment";
-export const FIREBASE_SDK_VERSION = "12.19.0";
+export const FIREBASE_SDK_VERSION = "13.1.0";
 export const firebaseConfig = resolveFirebaseEnvironment(
   import.meta.env,
   import.meta.env.MODE,
@@ -18,7 +18,9 @@ export interface FirebaseRuntime {
   app: any;
   auth: any;
   db: any;
+  firestore?: any;
   initializeApp: (config: object) => any;
+  getFirestore?: (app: any) => any;
   getAuth: (app: any) => any;
   setPersistence: (auth: any, persistence: any) => Promise<void>;
   browserSessionPersistence: any;
@@ -81,7 +83,8 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
       loadFirebaseModule("app"),
       loadFirebaseModule("auth"),
       loadFirebaseModule("database"),
-    ]).then(async ([appModule, authModule, databaseModule]) => {
+      loadFirebaseModule("firestore"),
+    ]).then(async ([appModule, authModule, databaseModule, firestoreModule]) => {
       const app = appModule.initializeApp(firebaseConfig);
       const auth = authModule.getAuth(app);
       await authModule.setPersistence(
@@ -89,11 +92,14 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
         authModule.browserSessionPersistence,
       );
       const db = databaseModule.getDatabase(app, firebaseConfig.databaseURL);
+      const firestore = firestoreModule.getFirestore(app);
 
       return {
         app,
         auth,
         db,
+        firestore,
+        getFirestore: firestoreModule.getFirestore,
         initializeApp: appModule.initializeApp,
         getAuth: authModule.getAuth,
         setPersistence: authModule.setPersistence,
