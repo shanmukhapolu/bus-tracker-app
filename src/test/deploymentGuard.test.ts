@@ -53,7 +53,7 @@ function check(
 describe("deployment target guard (no Firebase/network calls)", () => {
   it("allows matching production artifacts", () =>
     expect(
-      check("chsbustracker2", "production", "production", "chsbustracker2"),
+      check("chsbusapp", "production", "production", "chsbusapp"),
     ).toBe(0));
   it("allows matching staging artifacts", () =>
     expect(
@@ -61,11 +61,11 @@ describe("deployment target guard (no Firebase/network calls)", () => {
     ).toBe(0));
   it("rejects staging code destined for production", () =>
     expect(
-      check("chsbustracker2", "production", "staging", "ccs-synthetic-stage"),
+      check("chsbusapp", "production", "staging", "ccs-synthetic-stage"),
     ).not.toBe(0));
   it("rejects production code destined for staging", () =>
     expect(
-      check("ccs-synthetic-stage", "staging", "production", "chsbustracker2"),
+      check("ccs-synthetic-stage", "staging", "production", "chsbusapp"),
     ).not.toBe(0));
   it("rejects staging command targeting production", () =>
     expect(
@@ -73,6 +73,6 @@ describe("deployment target guard (no Firebase/network calls)", () => {
     ).not.toBe(0));
   it("requires an explicit Firebase project", () =>
     expect(
-      check(undefined, "production", "production", "chsbustracker2"),
+      check(undefined, "production", "production", "chsbusapp"),
     ).not.toBe(0));
 });
