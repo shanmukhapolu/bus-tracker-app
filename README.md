@@ -1,5 +1,14 @@
 # CCS Bus Tracker
 
+
+## Firebase project setup for `working-gps-version`
+
+This branch's production web-app configuration and Hosting alias now target `chsbusapp`. The app's driver authentication, driver profiles, bus assignments, and live GPS code still use Firebase Authentication plus **Realtime Database**. The Firestore SDK is initialized for this project, but the current application does not read or write its bus-tracking data through Firestore; changing the web configuration does not migrate records, authentication users, or security rules.
+
+The supplied web config did not include a Realtime Database URL. `.env.example` therefore uses the conventional `https://chsbusapp-default-rtdb.firebaseio.com` URL as a placeholder assumption. Confirm the actual URL shown in Firebase Console after creating the Realtime Database, and update `src/config/deploymentEnvironment.ts` and `.env.example` if the instance uses a regional `firebasedatabase.app` URL.
+
+Before using this branch with real drivers, enable the required Authentication providers (Email/Password and Google if used by your sign-in flow), create Firestore in production mode if it is required, and provision Realtime Database with security rules reviewed specifically for `chsbusapp`. The documented `bus-safety-admin` rules ownership and the existing rules fixture refer to the prior `chsbustracker2` project; do not assume the old project's rules, users, or records have been migrated. GitHub changes do not create or enable Firebase Console resources.
+
 Public bus-location website and driver phone tracker for the shared CCS bus-tracking prototype. The protected operations dashboard is maintained separately in the private `bus-safety-admin` repository.
 
 ## Current system
