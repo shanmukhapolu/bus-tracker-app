@@ -32,6 +32,14 @@ describe("environment isolation", () => {
     ).toThrow(),
   );
   it.each([
+    { VITE_FIREBASE_PROJECT_ID: "chsbusapp" },
+    { VITE_FIREBASE_AUTH_DOMAIN: "chsbusapp.firebaseapp.com" },
+    { VITE_FIREBASE_DATABASE_URL: "https://chsbusapp-default-rtdb.firebaseio.com" },
+    { VITE_FIREBASE_APP_ID: "1:1047681628698:web:example" },
+    { VITE_FIREBASE_API_KEY: "AIzaSyBhAuYpVr2CT4t-Qmt8uAwf7tmIon2H0KY" },
+    { VITE_FIREBASE_STORAGE_BUCKET: "chsbusapp.firebasestorage.app" },
+    { VITE_FIREBASE_MESSAGING_SENDER_ID: "1047681628698" },
+    { VITE_FIREBASE_MEASUREMENT_ID: "G-BNL3ZXYPNV" },
     { VITE_FIREBASE_PROJECT_ID: "chsbustracker2" },
     { VITE_FIREBASE_AUTH_DOMAIN: "chsbustracker2.firebaseapp.com" },
     {
