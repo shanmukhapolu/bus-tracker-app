@@ -20,7 +20,17 @@ export function AdminSignupPage() {
   useEffect(() => {
     const style = document.createElement("style");
     style.id = "admin-reference-styles";
-    style.textContent = modernAdminStyles;
+    style.textContent = modernAdminStyles + `
+        .admin-ui .success-box {
+          border: 1px solid var(--ui-success);
+          background: var(--ui-success-soft);
+          color: var(--ui-success);
+          border-radius: 12px;
+          padding: 1rem;
+          overflow-wrap: anywhere;
+        }
+        .admin-ui .success-box p { margin: .75rem 0 0; }
+      `;
     document.getElementById(style.id)?.remove();
     document.head.appendChild(style);
     return () => document.getElementById(style.id)?.remove();
