@@ -18,10 +18,8 @@ export interface FirebaseRuntime {
   app: any;
   auth: any;
   db: any;
-  firestore?: any;
   analytics?: any;
   initializeApp: (config: object) => any;
-  getFirestore?: (app: any) => any;
   getAuth: (app: any) => any;
   setPersistence: (auth: any, persistence: any) => Promise<void>;
   browserSessionPersistence: any;
@@ -84,8 +82,7 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
       loadFirebaseModule("app"),
       loadFirebaseModule("auth"),
       loadFirebaseModule("database"),
-      loadFirebaseModule("firestore"),
-    ]).then(async ([appModule, authModule, databaseModule, firestoreModule]) => {
+    ]).then(async ([appModule, authModule, databaseModule]) => {
       const app = appModule.initializeApp(firebaseConfig);
       const auth = authModule.getAuth(app);
       await authModule.setPersistence(
@@ -93,7 +90,6 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
         authModule.browserSessionPersistence,
       );
       const db = databaseModule.getDatabase(app, firebaseConfig.databaseURL);
-      const firestore = firestoreModule.getFirestore(app);
       let analytics: any = null;
       if (firebaseConfig.measurementId) {
         try {
@@ -110,9 +106,7 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
         app,
         auth,
         db,
-        firestore,
         analytics,
-        getFirestore: firestoreModule.getFirestore,
         initializeApp: appModule.initializeApp,
         getAuth: authModule.getAuth,
         setPersistence: authModule.setPersistence,
