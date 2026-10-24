@@ -11,6 +11,10 @@ The supplied web config did not include a Realtime Database URL. `.env.example` 
 
 Before using this branch with real drivers, enable the required Authentication providers (Email/Password and Google if used by your sign-in flow), and provision Realtime Database with security rules reviewed specifically for `chsbusapp`. Cloud Firestore is not required by this application. The documented `bus-safety-admin` rules ownership and the existing rules fixture refer to the prior `chsbustracker2` project; do not assume the old project's rules, users, or records have been migrated. GitHub changes do not create or enable Firebase Console resources.
 
+The public admin signup route is `/admin/signup`. It creates a Firebase Authentication email/password account and a Realtime Database record at `admins/{uid}` with `role: "admin"` and `enabled: false`. The database rules permit each authenticated account to create only its own pending profile, validate the email against the Firebase Auth token, restrict allowed fields, and deny the account permission to edit the profile after creation. An authorized project owner must manually set `admins/{uid}/enabled` to `true` in the Firebase Console before the account can enter the admin panel. This client-side signup is a request workflow, not proof of a person's district affiliation.
+
+After reviewing the rules and confirming that the `chsbusapp` Realtime Database instance exists, publish its rules with `npx firebase-tools deploy --project chsbusapp --only database`. Publish the website and its CSP separately with `npx firebase-tools deploy --project chsbusapp --only hosting`. Never deploy these rules to `chsbustracker2`.
+
 ## Current system
 
 - `/` is the public bus map.
