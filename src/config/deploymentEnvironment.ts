@@ -16,6 +16,9 @@ export function resolveFirebaseEnvironment(
         authDomain: "demo-ccs-tests.firebaseapp.com",
         databaseURL: "http://127.0.0.1:9000?ns=demo-ccs-tests",
         appId: "1:1:web:synthetic",
+        storageBucket: "",
+        messagingSenderId: "",
+        measurementId: "",
       },
     };
   const value = (key: string, fallback = "") =>
