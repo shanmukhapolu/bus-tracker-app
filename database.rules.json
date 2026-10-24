@@ -45,7 +45,8 @@
     "admins": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": false
+        ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists() && newData.child('role').val() === 'admin' && newData.child('enabled').val() === false && newData.child('displayName').isString() && newData.child('displayName').val().length >= 2 && newData.child('displayName').val().length <= 100 && newData.child('email').isString() && newData.child('email').val() === auth.token.email",
+        ".validate": "newData.hasChildren(['displayName', 'email', 'role', 'enabled']) && newData.child('displayName').isString() && newData.child('displayName').val().length >= 2 && newData.child('displayName').val().length <= 100 && newData.child('email').isString() && newData.child('email').val() === auth.token.email && newData.child('role').val() === 'admin' && newData.child('enabled').isBoolean() && ($other === 'displayName' || $other === 'email' || $other === 'role' || $other === 'enabled')"
       }
     },
     "geofences": {
