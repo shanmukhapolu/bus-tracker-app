@@ -126,6 +126,9 @@ export function AdminLogin({
             <ArrowRight size={18} />
           </button>
         </form>
+        <p style={{ marginTop: "1rem" }}>
+          Need an account? <a href="/admin/signup">Request administrator access</a>
+        </p>
       </section>
     </main>
   );
