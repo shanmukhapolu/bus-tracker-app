@@ -49,6 +49,9 @@ function safeAuthError(error: unknown) {
   if (code === "auth/weak-password") {
     return new Error("Choose a password with at least 8 characters.");
   }
+  if (code === "auth/invalid-email") {
+    return new Error("Enter a valid email address.");
+  }
   if (
     code === "auth/invalid-credential" ||
     code === "auth/wrong-password" ||
