@@ -8,12 +8,17 @@ import { useBuses } from "./hooks/useBuses";
 import { useBusTools } from "./hooks/useBusTools";
 import { DriversPage } from "./pages/DriversPage";
 import { AdminPage } from "./pages/AdminPage";
+import { AdminSignupPage } from "./pages/AdminSignupPage";
 
 export default function App() {
   const path = window.location.pathname.replace(/\/+$/, "");
 
   if (path === "/drivers") {
     return <DriversPage />;
+  }
+
+  if (path === "/admin/signup") {
+    return <AdminSignupPage />;
   }
 
   if (
