@@ -7,6 +7,7 @@ const project = env.VITE_FIREBASE_PROJECT_ID,
 if (
   env.VITE_ENVIRONMENT !== "staging" ||
   !project ||
+  project.startsWith("chsbusapp") ||
   project.startsWith("chsbustracker2") ||
   !site?.startsWith(project)
 )
@@ -19,7 +20,7 @@ config.hosting.public = "dist-staging";
 for (const entry of config.hosting.headers ?? [])
   for (const header of entry.headers ?? []) {
     header.value = header.value.replaceAll(
-      "chsbustracker2.firebaseapp.com",
+      "chsbusapp.firebaseapp.com",
       project + ".firebaseapp.com",
     );
   }
