@@ -43,9 +43,9 @@ Do not put passwords, service-account credentials, tracker secrets, database sec
 
 ### Firebase security-rules ownership
 
-`bus-safety-admin` is the canonical owner of Realtime Database security rules for the shared `chsbustracker2` project. Database rules must be reviewed, tested, and deployed from that repository only.
+`bus-safety-admin` remains the canonical owner of Realtime Database security rules for the original shared `chsbustracker2` project. This `working-gps-version` branch now targets the separate `chsbusapp` Firebase project and configures `database.rules.json` as the rules source for that project only. The rules allow anonymous reads of the public-safe `publicBuses` projection, keep telemetry and administrator data restricted, and allow a user to create only their own pending administrator profile with `enabled: false`. A pending administrator cannot change their own role or enable themselves.
 
-This public repository keeps `database.rules.json` as a synchronized test fixture so its public and driver clients can be tested against the real security boundary. `firebase.json` intentionally has no database deployment target, and `npm run firebase:deploy` deploys hosting only. Do not re-enable database-rule deployment here.
+Before deploying rules to `chsbusapp`, review and test them against the current application schema. Deploy only with an explicit `--project chsbusapp` target; the deployment guard rejects the original `chsbustracker2` project. Never deploy this branch's rules to `chsbustracker2`. The standalone `bus-safety-admin` repository remains the rules owner for that original project.
 
 `npm run test:rules` uses the sibling `../bus-safety-admin/firebase.json` emulator configuration. Keep that repository beside this checkout, keep the rules fixture synchronized, and use Java 21 or newer for Firebase emulator tests. This command runs only against a `demo-` test project; it does not deploy or modify production data.
 
