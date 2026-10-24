@@ -3,7 +3,8 @@ export function resolveFirebaseEnvironment(
   mode: string,
   app: "public" | "admin",
 ) {
-  const production = "chsbustracker2";
+  const production = "chsbusapp";
+  const previousProduction = "chsbustracker2";
   const isProduction = mode === "production";
   if (mode === "test")
     return {
@@ -28,7 +29,7 @@ export function resolveFirebaseEnvironment(
   if (
     isProduction
       ? projectId !== production
-      : !projectId || projectId === production || projectId.startsWith("demo-")
+      : !projectId || projectId === production || projectId === previousProduction || projectId.startsWith("demo-")
   )
     throw new Error(
       "Firebase project does not match the build environment. Configure a separate staging project in .env.staging.local.",
@@ -41,7 +42,7 @@ export function resolveFirebaseEnvironment(
     projectId,
     apiKey: value(
       "VITE_FIREBASE_API_KEY",
-      isProduction ? "AIzaSyCmAOZY6xyCtXDh8nu8qdG4YcAd4_hiz0k" : "",
+      isProduction ? "AIzaSyBhAuYpVr2CT4t-Qmt8uAwf7tmIon2H0KY" : "",
     ),
     authDomain: value(
       "VITE_FIREBASE_AUTH_DOMAIN",
@@ -55,14 +56,22 @@ export function resolveFirebaseEnvironment(
     ),
     appId: value(
       "VITE_FIREBASE_APP_ID",
-      isProduction
-        ? app === "admin"
-          ? "1:343059758295:web:a0463669dccc13cba0c492"
-          : "1:343059758295:web:0ac65d6cf2ddb389a0c492"
-        : "",
+      isProduction ? "1:1047681628698:web:6c9c9d51517617f24cafa3" : "",
+    ),
+    storageBucket: value(
+      "VITE_FIREBASE_STORAGE_BUCKET",
+      isProduction ? "chsbusapp.firebasestorage.app" : "",
+    ),
+    messagingSenderId: value(
+      "VITE_FIREBASE_MESSAGING_SENDER_ID",
+      isProduction ? "1047681628698" : "",
+    ),
+    measurementId: value(
+      "VITE_FIREBASE_MEASUREMENT_ID",
+      isProduction ? "G-BNL3ZXYPNV" : "",
     ),
   };
-  if (Object.values(config).some((v) => !v))
+  if ([config.projectId, config.apiKey, config.authDomain, config.databaseURL, config.appId].some((v) => !v))
     throw new Error(
       "Missing Firebase environment configuration. No fallback is allowed for staging.",
     );
@@ -89,8 +98,21 @@ export function resolveFirebaseEnvironment(
     );
   if (
     !isProduction &&
-    (config.apiKey === "AIzaSyCmAOZY6xyCtXDh8nu8qdG4YcAd4_hiz0k" ||
-      config.appId.startsWith("1:343059758295:"))
+    (config.apiKey === "AIzaSyBhAuYpVr2CT4t-Qmt8uAwf7tmIon2H0KY" ||
+      config.apiKey === "AIzaSyCmAOZY6xyCtXDh8nu8qdG4YcAd4_hiz0k" ||
+      config.appId.startsWith("1:1047681628698:") ||
+      config.appId.startsWith("1:343059758295:") ||
+      config.storageBucket === "chsbusapp.firebasestorage.app" ||
+      config.storageBucket === "chsbustracker2.firebasestorage.app" ||
+      config.messagingSenderId === "1047681628698" ||
+      config.messagingSenderId === "343059758295" ||
+      config.measurementId === "G-BNL3ZXYPNV" ||
+      config.measurementId === "G-R4GTR1CDC3" ||
+      config.authDomain === "chsbusapp.firebaseapp.com" ||
+      config.authDomain === "chsbustracker2.firebaseapp.com" ||
+      config.databaseURL.includes("chsbusapp-default-rtdb") ||
+      config.databaseURL.includes("chsbustracker2-default-rtdb")
+    )
   )
     throw new Error(
       "Production Firebase app credentials cannot be used in staging.",
@@ -108,7 +130,8 @@ export function resolveFirebaseEnvironment(
     !hostingSite ||
     (!isProduction &&
       (!hostingSite.startsWith(projectId) ||
-        hostingSite.startsWith(production)))
+        hostingSite.startsWith(production) ||
+        hostingSite.startsWith(previousProduction)))
   )
     throw new Error(
       "Configure a staging Hosting site belonging to the staging project.",
