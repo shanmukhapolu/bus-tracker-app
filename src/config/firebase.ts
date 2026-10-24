@@ -19,6 +19,7 @@ export interface FirebaseRuntime {
   auth: any;
   db: any;
   firestore?: any;
+  analytics?: any;
   initializeApp: (config: object) => any;
   getFirestore?: (app: any) => any;
   getAuth: (app: any) => any;
@@ -93,12 +94,24 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
       );
       const db = databaseModule.getDatabase(app, firebaseConfig.databaseURL);
       const firestore = firestoreModule.getFirestore(app);
+      let analytics: any = null;
+      if (firebaseConfig.measurementId) {
+        try {
+          const analyticsModule = await loadFirebaseModule("analytics");
+          if (await analyticsModule.isSupported()) {
+            analytics = analyticsModule.getAnalytics(app);
+          }
+        } catch {
+          // Analytics is optional; authentication and tracking must still work.
+        }
+      }
 
       return {
         app,
         auth,
         db,
         firestore,
+        analytics,
         getFirestore: firestoreModule.getFirestore,
         initializeApp: appModule.initializeApp,
         getAuth: authModule.getAuth,
