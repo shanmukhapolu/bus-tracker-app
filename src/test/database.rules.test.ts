@@ -115,6 +115,49 @@ describe("Realtime Database public and protected boundaries", () => {
     await assertFails(get(ref(db, "auditLogs")));
   });
 
+  it("allows admin self-registration only as a disabled pending account", async () => {
+    const db = environment
+      .authenticatedContext("pending-admin", {
+        email: "pending-admin@example.test",
+      })
+      .database();
+    const pendingProfile = {
+      displayName: "Pending Admin",
+      email: "pending-admin@example.test",
+      role: "admin",
+      enabled: false,
+    };
+
+    await assertSucceeds(
+      set(ref(db, "admins/pending-admin"), pendingProfile),
+    );
+
+    // A self-registered profile cannot enable itself or change its role.
+    await assertFails(
+      update(ref(db, "admins/pending-admin"), { enabled: true }),
+    );
+    await assertFails(
+      update(ref(db, "admins/pending-admin"), { role: "owner" }),
+    );
+
+    // A user cannot create an enabled profile or write a profile for another UID.
+    await assertFails(
+      set(ref(db, "admins/self-enabled"), {
+        ...pendingProfile,
+        enabled: true,
+      }),
+    );
+    await assertFails(
+      set(ref(db, "admins/someone-else"), pendingProfile),
+    );
+    await assertFails(
+      set(ref(db, "admins/pending-admin"), {
+        ...pendingProfile,
+        unexpectedPrivilege: true,
+      }),
+    );
+  });
+
   it("denies every anonymous write, including public projection writes", async () => {
     const db = environment.unauthenticatedContext().database();
     await assertFails(set(ref(db, "publicBuses/12"), validPublicTelemetry()));
