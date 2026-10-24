@@ -11,6 +11,15 @@ const stage = {
   VITE_FIREBASE_HOSTING_SITE: "ccs-synthetic-stage-admin",
 };
 describe("environment isolation", () => {
+  it("uses chsbusapp Realtime Database settings for production", () => {
+    const resolved = resolveFirebaseEnvironment({}, "production", "public");
+    expect(resolved.config.projectId).toBe("chsbusapp");
+    expect(resolved.config.databaseURL).toBe(
+      "https://chsbusapp-default-rtdb.firebaseio.com",
+    );
+    expect(resolved.hostingSite).toBe("chsbusapp");
+    expect(resolved.config.measurementId).toBe("G-BNL3ZXYPNV");
+  });
   it("rejects development without explicit staging config", () =>
     expect(() =>
       resolveFirebaseEnvironment({}, "development", "admin"),
