@@ -34,6 +34,21 @@ function safeAuthError(error: unknown) {
   if (code === "auth/network-request-failed") {
     return new Error("Unable to connect. Check your internet connection.");
   }
+  if (code === "auth/operation-not-allowed") {
+    return new Error("Email/password sign-in is disabled. Enable Email/Password in Firebase Console → Authentication → Sign-in method.");
+  }
+  if (code === "auth/invalid-api-key" || code === "auth/api-key-not-valid") {
+    return new Error("Firebase rejected the API key. Verify it matches the web app configuration in the chsbusapp project.");
+  }
+  if (code === "auth/unauthorized-domain") {
+    return new Error("This website's hostname is not authorized for Firebase Authentication. Add it under Authentication → Settings → Authorized domains.");
+  }
+  if (code === "auth/configuration-not-found") {
+    return new Error("Firebase Authentication is not configured for this project. Open Authentication in Firebase Console and complete setup.");
+  }
+  if (code === "auth/weak-password") {
+    return new Error("Choose a password with at least 8 characters.");
+  }
   if (
     code === "auth/invalid-credential" ||
     code === "auth/wrong-password" ||
