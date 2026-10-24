@@ -5,7 +5,11 @@ if (!project || !["production", "staging"].includes(environment))
   throw Error(
     "Run through Firebase CLI with an explicit project and environment.",
   );
-if ((environment === "production") !== (project === "chsbustracker2"))
+const productionProjects = new Set(["chsbusapp", "chsbustracker2"]);
+if (
+  (environment === "production" && project !== "chsbusapp") ||
+  (environment === "staging" && productionProjects.has(project))
+)
   throw Error("Deployment project/environment mismatch.");
 if (target === "hosting") {
   const directory = environment === "production" ? "dist" : "dist-staging";
