@@ -58,6 +58,16 @@ describe("Firebase deployment and browser security policy", () => {
     );
   });
 
+  it("writes driver GPS to authorized records and keeps a 2.5-second upload cadence", () => {
+    const tracking = readFileSync("src/services/driverTrackingService.ts", "utf8");
+    expect(tracking).not.toContain('runtime.ref(runtime.db, "")');
+    expect(tracking).not.toContain('runtime.update(runtime.ref(runtime.db, "")');
+    expect(tracking).toContain('runtime.ref(runtime.db, `liveBuses/${options.busId}`)');
+    expect(tracking).toContain('runtime.ref(runtime.db, `publicBuses/${options.busId}`)');
+    expect(tracking).toContain('}, 2_500);');
+    expect(tracking).toContain('uploadIntervalMs: 2_500');
+  });
+
   it("keeps Hosting deployment guarded and rewrites app routes to the SPA entry point", () => {
     expect(firebase.hosting.predeploy).toContain(
       "node scripts/deployment-guard.mjs production hosting",
