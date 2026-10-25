@@ -221,11 +221,8 @@ export async function assignDriverToBus(
         runtime.ref(runtime.db, `liveBuses/${selectedDriver.assignedBus}`),
       );
       const liveValue = live.val() as Record<string, unknown> | null;
-      if (
-        active.val() === normalizedUid ||
-        (liveValue?.active === true && liveValue.driverUid === normalizedUid)
-      ) {
-        throw new Error("Stop this driver's live tracking before unassigning them.");
+      if (active.exists() || liveValue?.active === true) {
+        throw new Error("Stop live tracking on this bus before unassigning its driver.");
       }
     }
 
@@ -269,12 +266,9 @@ export async function assignDriverToBus(
       ),
     ]);
     const liveValue = live.val() as Record<string, unknown> | null;
-    if (
-      active.val() === otherDriver.uid ||
-      (liveValue?.active === true && liveValue.driverUid === otherDriver.uid)
-    ) {
+    if (active.exists() || liveValue?.active === true) {
       throw new Error(
-        `Stop ${otherDriver.displayName}'s live tracking before replacing the driver on Bus ${normalizedBusNumber}.`,
+        `Stop live tracking on Bus ${normalizedBusNumber} before replacing its driver.`,
       );
     }
   }
@@ -289,11 +283,8 @@ export async function assignDriverToBus(
       runtime.get(runtime.ref(runtime.db, `liveBuses/${oldBus}`)),
     ]);
     const liveValue = live.val() as Record<string, unknown> | null;
-    if (
-      active.val() === normalizedUid ||
-      (liveValue?.active === true && liveValue.driverUid === normalizedUid)
-    ) {
-      throw new Error("Stop this driver's live tracking before changing their assignment.");
+    if (active.exists() || liveValue?.active === true) {
+      throw new Error("Stop live tracking on the current bus before changing this driver's assignment.");
     }
   }
 
