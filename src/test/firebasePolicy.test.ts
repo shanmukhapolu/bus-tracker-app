@@ -17,7 +17,7 @@ describe("Firebase deployment and browser security policy", () => {
   it("permits Firebase Analytics' external gtag script using a narrow origin allowlist", () => {
     const csp = policyHeader();
     expect(csp).toContain(
-      "script-src 'self' https://www.gstatic.com https://www.googletagmanager.com",
+      "script-src 'self' https://www.gstatic.com https://www.googletagmanager.com https://apis.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/;",
     );
     expect(csp).toContain(
       "script-src-elem 'self' https://www.gstatic.com https://www.googletagmanager.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/",
@@ -27,6 +27,14 @@ describe("Firebase deployment and browser security policy", () => {
     expect(csp).toContain("https://recaptcha.google.com/recaptcha/");
     expect(csp).not.toContain("script-src *");
     expect(csp).not.toContain("script-src https:");
+  });
+
+  it("bundles Firebase SDK modules instead of relying on runtime CDN script requests", () => {
+    const runtime = readFileSync("src/config/firebase.ts", "utf8");
+    expect(runtime).toContain('from "firebase/app"');
+    expect(runtime).toContain('from "firebase/auth"');
+    expect(runtime).toContain('from "firebase/database"');
+    expect(runtime).not.toContain("https://www.gstatic.com/firebasejs/");
   });
 
   it("declares Realtime Database rules and guards deployment to chsbusapp", () => {
