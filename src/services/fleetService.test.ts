@@ -165,7 +165,7 @@ describe("fleet bus management", () => {
     });
 
     await expect(assignDriverToBus("driver-1", "218")).rejects.toThrow(
-      "Stop Driver Two's live tracking before replacing the driver",
+      "Stop live tracking on Bus 218 before replacing its driver",
     );
     expect(firebase.update).not.toHaveBeenCalled();
   });
