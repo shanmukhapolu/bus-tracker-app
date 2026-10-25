@@ -256,6 +256,35 @@ describe("Realtime Database public and protected boundaries", () => {
     );
   });
 
+  it("allows admins to atomically create a registered bus and its public projection", async () => {
+    const db = environment
+      .authenticatedContext("admin-a", { email: "admin@example.test" })
+      .database();
+    const now = Date.now();
+
+    await assertSucceeds(
+      update(ref(db, ""), {
+        "buses/218": {
+          busNumber: "218",
+          route: "North",
+          enabled: true,
+          lifecycleStatus: "active",
+          createdAt: now,
+          updatedAt: now,
+        },
+        "publicBuses/218": {
+          busNumber: "218",
+          route: "North",
+          enabled: true,
+          active: false,
+        },
+      }),
+    );
+
+    await assertSucceeds(get(ref(db, "buses/218")));
+    await assertSucceeds(get(ref(db, "publicBuses/218")));
+  });
+
   it("stores append-only private audit records", async () => {
     const admin = environment
       .authenticatedContext("admin-a", { email: "admin@example.test" })
