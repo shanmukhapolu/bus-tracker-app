@@ -1,5 +1,10 @@
+import * as appModule from "firebase/app";
+import * as authModule from "firebase/auth";
+import * as databaseModule from "firebase/database";
+import * as analyticsModule from "firebase/analytics";
+
 import { resolveFirebaseEnvironment } from "./deploymentEnvironment";
-export const FIREBASE_SDK_VERSION = "13.1.0";
+
 export const firebaseConfig = resolveFirebaseEnvironment(
   import.meta.env,
   import.meta.env.MODE,
@@ -58,18 +63,12 @@ export interface FirebaseRuntime {
 
 let runtimePromise: Promise<FirebaseRuntime> | null = null;
 
-async function loadFirebaseModule(service: string) {
-  return import(
-    /* @vite-ignore */
-    `https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VERSION}/firebase-${service}.js`
-  );
-}
-
 export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
-  if (import.meta.env.MODE === "test")
+  if (import.meta.env.MODE === "test") {
     throw new Error(
       "Unit tests must mock Firebase; cloud access is forbidden.",
     );
+  }
   if (!firebaseConfigured) {
     throw new Error(
       "Firebase Realtime Database is not configured. Create the database and set VITE_FIREBASE_DATABASE_URL.",
@@ -77,26 +76,22 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
   }
 
   if (!runtimePromise) {
-    runtimePromise = Promise.all([
-      loadFirebaseModule("app"),
-      loadFirebaseModule("auth"),
-      loadFirebaseModule("database"),
-    ]).then(async ([appModule, authModule, databaseModule]) => {
+    runtimePromise = (async () => {
       const app = appModule.initializeApp(firebaseConfig);
       const auth = authModule.getAuth(app);
+
       await authModule.setPersistence(
         auth,
         authModule.browserSessionPersistence,
       );
+
       const db = databaseModule.getDatabase(app, firebaseConfig.databaseURL);
 
-      // Analytics is non-critical. Initialize it asynchronously so a blocked
-      // gtag script or unsupported browser can never stall authentication,
-      // database listeners, or the admin loading screen.
+      // Analytics is optional. Its failure must never prevent authentication
+      // or Realtime Database from initializing.
       if (firebaseConfig.measurementId) {
         void (async () => {
           try {
-            const analyticsModule = await loadFirebaseModule("analytics");
             if (await analyticsModule.isSupported()) {
               analyticsModule.getAnalytics(app);
             }
@@ -134,7 +129,7 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
         runTransaction: databaseModule.runTransaction,
         serverTimestamp: databaseModule.serverTimestamp,
       };
-    });
+    })();
   }
 
   return runtimePromise;
