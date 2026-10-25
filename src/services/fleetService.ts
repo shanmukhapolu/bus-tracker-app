@@ -156,7 +156,7 @@ export async function addFleetBus(
   };
 
   // The public map reads a sanitized projection rather than the private
-  // fleet record. Write both records and the audit event atomically.
+  // fleet record. The audit helper writes each authorized record path in order.
   await auditedAdminUpdate(
     runtime,
     "bus_created",
@@ -310,32 +310,57 @@ export async function deleteFleetBus(busNumber: string): Promise<void> {
   if (!normalizedBusNumber) {
     throw new Error("Bus number is required.");
   }
+  validateBusKey(normalizedBusNumber);
 
-  const liveRef = runtime.ref(runtime.db, `liveBuses/${normalizedBusNumber}`);
-  const liveSnapshot = await runtime.get(liveRef);
-
-  if (liveSnapshot.exists()) {
-    const liveValue = liveSnapshot.val() as Record<string, unknown>;
-    if (liveValue.active === true) {
-      throw new Error("Stop tracking on this bus before deleting it.");
-    }
+  const busRef = runtime.ref(runtime.db, `buses/${normalizedBusNumber}`);
+  const busSnapshot = await runtime.get(busRef);
+  if (!busSnapshot.exists()) {
+    throw new Error(`Bus ${normalizedBusNumber} was not found.`);
   }
 
+  const liveRef = runtime.ref(runtime.db, `liveBuses/${normalizedBusNumber}`);
+  const activeDriverRef = runtime.ref(runtime.db, `activeDrivers/${normalizedBusNumber}`);
+  const [liveSnapshot, activeDriverSnapshot] = await Promise.all([
+    runtime.get(liveRef),
+    runtime.get(activeDriverRef),
+  ]);
+  const liveValue = liveSnapshot.val() as Record<string, unknown> | null;
+  if (liveValue?.active === true || activeDriverSnapshot.exists()) {
+    throw new Error("Stop live tracking on this bus before retiring it.");
+  }
+
+  const busValue = busSnapshot.val();
+  if (!busValue || typeof busValue !== "object") {
+    throw new Error("The bus record is invalid and cannot be retired.");
+  }
+
+  // Bus records are intentionally retained for historical references. Disable
+  // and retire the private record, remove its public projection, and unassign
+  // any inactive drivers instead of attempting a rule-forbidden hard delete.
   const updates: Record<string, unknown> = {
-    [`buses/${normalizedBusNumber}`]: null,
+    [`buses/${normalizedBusNumber}`]: {
+      ...(busValue as Record<string, unknown>),
+      enabled: false,
+      lifecycleStatus: "retired",
+      updatedAt: Date.now(),
+    },
     [`publicBuses/${normalizedBusNumber}`]: null,
   };
 
   const driversSnapshot = await runtime.get(runtime.ref(runtime.db, "drivers"));
   const drivers = normalizeFleetDrivers(driversSnapshot.val());
-
   drivers.forEach((driver) => {
     if (driver.assignedBus === normalizedBusNumber) {
       updates[`drivers/${driver.uid}/assignedBus`] = "";
     }
   });
 
-  await runtime.update(runtime.db, updates);
+  await auditedAdminUpdate(
+    runtime,
+    "bus_retired",
+    `buses/${normalizedBusNumber}`,
+    updates,
+  );
 }
 
 export function subscribeFleet(
