@@ -88,19 +88,19 @@ export function AdminSignupPage() {
           <label htmlFor="admin-signup-email">Email</label>
           <input
             id="admin-signup-email"
+            data-bwignore="true"
             name="email"
             type="email"
             autoComplete="email"
             required
             disabled={busy || Boolean(request)}
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          
-            data-bwignore="true"/>
+            onChange={(event) => setEmail(event.target.value)}/>
 
           <label htmlFor="admin-signup-password">Password</label>
           <input
             id="admin-signup-password"
+            data-bwignore="true"
             name="new-password"
             type="password"
             autoComplete="new-password"
@@ -109,13 +109,12 @@ export function AdminSignupPage() {
             required
             disabled={busy || Boolean(request)}
             value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          
-            data-bwignore="true"/>
+            onChange={(event) => setPassword(event.target.value)}/>
 
           <label htmlFor="admin-signup-confirm">Confirm password</label>
           <input
             id="admin-signup-confirm"
+            data-bwignore="true"
             name="confirm-password"
             type="password"
             autoComplete="new-password"
@@ -124,9 +123,7 @@ export function AdminSignupPage() {
             required
             disabled={busy || Boolean(request)}
             value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-          
-            data-bwignore="true"/>
+            onChange={(event) => setConfirmPassword(event.target.value)}/>
 
           {error && (
             <div className="admin-signup-error" role="alert">
