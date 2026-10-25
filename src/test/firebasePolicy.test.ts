@@ -19,6 +19,12 @@ describe("Firebase deployment and browser security policy", () => {
     expect(csp).toContain(
       "script-src 'self' https://www.gstatic.com https://www.googletagmanager.com",
     );
+    expect(csp).toContain(
+      "script-src-elem 'self' https://www.gstatic.com https://www.googletagmanager.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/",
+    );
+    expect(csp).toContain("https://*.google-analytics.com");
+    expect(csp).toContain("https://www.google.com/recaptcha/");
+    expect(csp).toContain("https://recaptcha.google.com/recaptcha/");
     expect(csp).not.toContain("script-src *");
     expect(csp).not.toContain("script-src https:");
   });
