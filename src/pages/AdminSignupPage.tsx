@@ -24,10 +24,7 @@ export function AdminSignupPage() {
 
     setBusy(true);
     try {
-      const result = await signUpAdmin(displayName, email, password);
-      setRequest(result);
-      setPassword("");
-      setConfirmPassword("");
+      setRequest(await signUpAdmin(displayName, email, password));
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -42,110 +39,114 @@ export function AdminSignupPage() {
   return (
     <main className="admin-signup-page">
       <section className="admin-signup-card" aria-labelledby="admin-signup-title">
-        {request ? (
-          <div role="status" aria-live="polite">
-            <h1 id="admin-signup-title">
-              {request.alreadyPending ? "Request already pending" : "Account created"}
-            </h1>
+        <p className="admin-signup-eyebrow">ADMINISTRATOR ACCESS</p>
+        <h1 id="admin-signup-title">
+          {request
+            ? request.alreadyPending
+              ? "Request already pending"
+              : "Account created"
+            : "Create account"}
+        </h1>
+        <p className="admin-signup-description">
+          {request
+            ? "Your account request is recorded. Administrator approval is still required."
+            : "Create an account to request administrator access. Your account stays disabled until the project owner approves it."}
+        </p>
+
+        {request && (
+          <div className="admin-signup-success" role="status" aria-live="polite">
+            <strong>Approval is still required.</strong>
             <p>
-              {request.alreadyPending
-                ? "This account is waiting for administrator approval."
-                : "Your account was created and your access request was submitted."}
+              Ask the Firebase project owner to set{" "}
+              <code>admins/{request.uid}/enabled</code> to <code>true</code>{" "}
+              in Realtime Database. New accounts cannot approve themselves.
             </p>
-            <div className="admin-signup-success">
-              <strong>Approval is still required.</strong>
-              <p>
-                Ask the Firebase project owner to set{" "}
-                <code>admins/{request.uid}/enabled</code> to <code>true</code>{" "}
-                in Realtime Database. New accounts cannot approve themselves.
-              </p>
-              <p>Account: {request.email}</p>
-            </div>
-            <p className="admin-signup-footer">
-              <a href="/admin">Return to administrator sign in</a>
-            </p>
+            <p>Account: {request.email}</p>
           </div>
-        ) : (
-          <>
-            <p className="admin-signup-eyebrow">ADMINISTRATOR ACCESS</p>
-            <h1 id="admin-signup-title">Create account</h1>
-            <p className="admin-signup-description">
-              Submit a request for administrator access. Your account stays
-              disabled until the project owner approves it.
-            </p>
-
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                void submit();
-              }}
-            >
-              <label htmlFor="admin-signup-name">Full name</label>
-              <input
-                id="admin-signup-name"
-                name="displayName"
-                type="text"
-                autoComplete="name"
-                minLength={2}
-                maxLength={100}
-                required
-                value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
-              />
-
-              <label htmlFor="admin-signup-email">Email</label>
-              <input
-                id="admin-signup-email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-
-              <label htmlFor="admin-signup-password">Password</label>
-              <input
-                id="admin-signup-password"
-                name="new-password"
-                type="password"
-                autoComplete="new-password"
-                minLength={8}
-                maxLength={128}
-                required
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-
-              <label htmlFor="admin-signup-confirm">Confirm password</label>
-              <input
-                id="admin-signup-confirm"
-                name="confirm-password"
-                type="password"
-                autoComplete="new-password"
-                minLength={8}
-                maxLength={128}
-                required
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-              />
-
-              {error && (
-                <div className="admin-signup-error" role="alert">
-                  {error}
-                </div>
-              )}
-
-              <button className="primary" type="submit" disabled={busy}>
-                {busy ? "Creating account…" : "Create account"}
-              </button>
-            </form>
-
-            <p className="admin-signup-footer">
-              Already have an account? <a href="/admin">Sign in</a>
-            </p>
-          </>
         )}
+
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submit();
+          }}
+        >
+          <label htmlFor="admin-signup-name">Full name</label>
+          <input
+            id="admin-signup-name"
+            name="displayName"
+            type="text"
+            autoComplete="name"
+            minLength={2}
+            maxLength={100}
+            required
+            disabled={busy || Boolean(request)}
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+          />
+
+          <label htmlFor="admin-signup-email">Email</label>
+          <input
+            id="admin-signup-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            disabled={busy || Boolean(request)}
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+
+          <label htmlFor="admin-signup-password">Password</label>
+          <input
+            id="admin-signup-password"
+            name="new-password"
+            type="password"
+            autoComplete="new-password"
+            minLength={8}
+            maxLength={128}
+            required
+            disabled={busy || Boolean(request)}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+
+          <label htmlFor="admin-signup-confirm">Confirm password</label>
+          <input
+            id="admin-signup-confirm"
+            name="confirm-password"
+            type="password"
+            autoComplete="new-password"
+            minLength={8}
+            maxLength={128}
+            required
+            disabled={busy || Boolean(request)}
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+          />
+
+          {error && (
+            <div className="admin-signup-error" role="alert">
+              {error}
+            </div>
+          )}
+
+          <button
+            className="primary"
+            type="submit"
+            disabled={busy || Boolean(request)}
+          >
+            {busy
+              ? "Creating account…"
+              : request
+                ? "Request submitted"
+                : "Create account"}
+          </button>
+        </form>
+
+        <p className="admin-signup-footer">
+          <a href="/admin">Return to administrator sign in</a>
+        </p>
       </section>
     </main>
   );
