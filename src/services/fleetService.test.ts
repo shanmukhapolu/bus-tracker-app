@@ -106,7 +106,7 @@ describe("fleet bus management", () => {
     ).toBe(true);
   });
 
-  it("prevents assigning a second driver to the same bus", async () => {
+  it("replaces an inactive bus assignment in one audited update", async () => {
     const selected = {
       displayName: "Driver One",
       enabled: true,
@@ -128,8 +128,44 @@ describe("fleet bus management", () => {
       return snapshot(null);
     });
 
+    await assignDriverToBus("driver-1", "218");
+
+    const updates = firebase.update.mock.calls[0]?.[1] as Record<string, unknown>;
+    expect(updates["drivers/driver-1/assignedBus"]).toBe("218");
+    expect(updates["drivers/driver-2/assignedBus"]).toBe("");
+    expect(
+      Object.keys(updates).some((path) => path.startsWith("auditLogs/")),
+    ).toBe(true);
+  });
+
+  it("blocks replacement when the current bus driver is actively tracking", async () => {
+    const selected = {
+      displayName: "Driver One",
+      enabled: true,
+      assignedBus: "",
+      approvalStatus: "approved",
+    };
+    const other = {
+      displayName: "Driver Two",
+      enabled: true,
+      assignedBus: "218",
+      approvalStatus: "approved",
+    };
+    firebase.get.mockImplementation(async (path: string) => {
+      if (path === "drivers/driver-1") return snapshot(selected);
+      if (path === "buses/218") return snapshot({ enabled: true });
+      if (path === "drivers") {
+        return snapshot({ "driver-1": selected, "driver-2": other });
+      }
+      if (path === "activeDrivers/218") return snapshot("driver-2");
+      if (path === "liveBuses/218") {
+        return snapshot({ active: true, driverUid: "driver-2" });
+      }
+      return snapshot(null);
+    });
+
     await expect(assignDriverToBus("driver-1", "218")).rejects.toThrow(
-      "Bus 218 is already assigned to Driver Two.",
+      "Stop Driver Two's live tracking before replacing the driver",
     );
     expect(firebase.update).not.toHaveBeenCalled();
   });
