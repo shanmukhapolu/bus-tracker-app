@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { ArrowUpDown, ChevronLeft, ChevronRight, Search, Trash2 } from "lucide-react";
+import { ArrowUpDown, ChevronLeft, ChevronRight, Plus, Search, Trash2 } from "lucide-react";
 import type { Bus } from "../types/bus";
 import type { FleetDriver } from "../services/fleetService";
-import { deleteFleetBus } from "../services/fleetService";
+import { addFleetBus, assignDriverToBus, deleteFleetBus } from "../services/fleetService";
 import { assignBusGeofence } from "../services/geofenceService";
 import type { Geofence } from "../types/geofence";
 import { Badge, Empty, ErrorState, Loading, PageHeading } from "./UI";
@@ -31,6 +31,10 @@ export function AdminBuses({
   const [page, setPage] = useState(0);
   const [deleting, setDeleting] = useState("");
   const [assigning, setAssigning] = useState("");
+  const [addingBus, setAddingBus] = useState(false);
+  const [newBusNumber, setNewBusNumber] = useState("");
+  const [newRoute, setNewRoute] = useState("");
+  const [newGeofenceId, setNewGeofenceId] = useState("");
   const [message, setMessage] = useState("");
   const [saveError, setSaveError] = useState("");
 
@@ -38,6 +42,14 @@ export function AdminBuses({
     const map = new Map<string, string>();
     drivers.forEach((driver) => {
       if (driver.assignedBus) map.set(driver.assignedBus, driver.displayName);
+    });
+    return map;
+  }, [drivers]);
+
+  const driverUidByBus = useMemo(() => {
+    const map = new Map<string, string>();
+    drivers.forEach((driver) => {
+      if (driver.assignedBus) map.set(driver.assignedBus, driver.uid);
     });
     return map;
   }, [drivers]);
@@ -70,6 +82,51 @@ export function AdminBuses({
     setSort(key);
     setAscending(sort === key ? !ascending : true);
     setPage(0);
+  };
+
+  const createBus = async () => {
+    setAddingBus(true);
+    setMessage("");
+    setSaveError("");
+    try {
+      const bus = await addFleetBus(newBusNumber, newRoute, newGeofenceId);
+      setMessage(`Bus ${bus.busNumber} created.`);
+      setNewBusNumber("");
+      setNewRoute("");
+      setNewGeofenceId("");
+      setPage(0);
+      setQuery("");
+      setFilter("all");
+    } catch (caught) {
+      setSaveError(caught instanceof Error ? caught.message : "Could not create the bus.");
+    } finally {
+      setAddingBus(false);
+    }
+  };
+
+  const assignDriver = async (bus: Bus, selectedUid: string) => {
+    const currentUid = driverUidByBus.get(bus.id) ?? "";
+    if (selectedUid === currentUid) return;
+
+    const targetUid = selectedUid || currentUid;
+    if (!targetUid) return;
+
+    setAssigning(bus.id);
+    setMessage("");
+    setSaveError("");
+    try {
+      await assignDriverToBus(targetUid, selectedUid ? bus.id : "");
+      const driver = drivers.find((candidate) => candidate.uid === targetUid);
+      setMessage(
+        selectedUid
+          ? `Assigned ${driver?.displayName ?? "driver"} to Bus ${bus.busNumber}.`
+          : `Unassigned ${driver?.displayName ?? "driver"} from Bus ${bus.busNumber}.`,
+      );
+    } catch (caught) {
+      setSaveError(caught instanceof Error ? caught.message : "Could not update the driver assignment.");
+    } finally {
+      setAssigning("");
+    }
   };
 
   const assignGeofence = async (bus: Bus, geofenceId: string) => {
@@ -111,10 +168,68 @@ export function AdminBuses({
     <div className="buses-page">
       <PageHeading
         title="Buses"
-        description="Monitor every registered bus and manage geofence assignments."
-      >
-        <span>Register and manage bus lifecycle in the official Transportation admin Buses page.</span>
-      </PageHeading>
+        description="Create buses, assign approved drivers, and manage geofence assignments."
+      />
+
+      <section className="panel bus-create-panel">
+        <div>
+          <h2>Add a bus</h2>
+          <p>Create a fleet record that is immediately available for driver assignment.</p>
+        </div>
+        <form
+          className="bus-create-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void createBus();
+          }}
+        >
+          <label>
+            Bus number
+            <input
+              aria-label="New bus number"
+              name="newBusNumber"
+              autoComplete="off"
+              required
+              maxLength={20}
+              value={newBusNumber}
+              disabled={addingBus}
+              onChange={(event) => setNewBusNumber(event.target.value)}
+              placeholder="e.g. 218"
+            />
+          </label>
+          <label>
+            Route
+            <input
+              aria-label="New bus route"
+              name="newBusRoute"
+              autoComplete="off"
+              required
+              maxLength={100}
+              value={newRoute}
+              disabled={addingBus}
+              onChange={(event) => setNewRoute(event.target.value)}
+              placeholder="e.g. North"
+            />
+          </label>
+          <label>
+            Geofence (optional)
+            <select
+              aria-label="Geofence for new bus"
+              value={newGeofenceId}
+              disabled={addingBus}
+              onChange={(event) => setNewGeofenceId(event.target.value)}
+            >
+              <option value="">No geofence</option>
+              {geofences.map((geofence) => (
+                <option key={geofence.id} value={geofence.id}>{geofence.name}</option>
+              ))}
+            </select>
+          </label>
+          <button className="primary" type="submit" disabled={addingBus || !newBusNumber.trim() || !newRoute.trim()}>
+            <Plus size={16} /> {addingBus ? "Creating…" : "Create bus"}
+          </button>
+        </form>
+      </section>
 
       <div className="overview-metrics">
         <div className="summary-stat"><span>Total buses</span><strong>{buses.length}</strong></div>
@@ -190,7 +305,38 @@ export function AdminBuses({
                       </td>
                       <td>{bus.route}</td>
                       <td><Badge value={bus.trackingActive ? "online" : "offline"} /></td>
-                      <td>{driverByBus.get(bus.id) ?? "Not assigned"}</td>
+                      <td>
+                        <select
+                          className="bus-driver-select"
+                          aria-label={`Driver for Bus ${bus.busNumber}`}
+                          value={driverUidByBus.get(bus.id) ?? ""}
+                          disabled={Boolean(assigning)}
+                          onClick={(event) => event.stopPropagation()}
+                          onChange={(event) => {
+                            event.stopPropagation();
+                            void assignDriver(bus, event.target.value);
+                          }}
+                        >
+                          <option value="">Not assigned</option>
+                          {drivers.map((driver) => {
+                            const currentUid = driverUidByBus.get(bus.id) ?? "";
+                            const assignedElsewhere = Boolean(driver.assignedBus && driver.assignedBus !== bus.id);
+                            const disabled = !driver.enabled || assignedElsewhere;
+                            return (
+                              <option
+                                key={driver.uid}
+                                value={driver.uid}
+                                disabled={disabled && driver.uid !== currentUid}
+                              >
+                                {driver.displayName}{driver.enabled ? "" : " (not approved)"}{assignedElsewhere ? " (assigned elsewhere)" : ""}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        {driverByBus.get(bus.id) && (
+                          <span className="sr-only">Assigned to {driverByBus.get(bus.id)}</span>
+                        )}
+                      </td>
                       <td>
                         <select
                           className="bus-geofence-select"
