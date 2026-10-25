@@ -40,30 +40,28 @@ export function AdminSignupPage() {
     <main className="admin-signup-page">
       <section className="admin-signup-card" aria-labelledby="admin-signup-title">
         <p className="admin-signup-eyebrow">ADMINISTRATOR ACCESS</p>
-        <h1 id="admin-signup-title">
-          {request
-            ? request.alreadyPending
-              ? "Request already pending"
-              : "Account created"
-            : "Create account"}
-        </h1>
+        <h1 id="admin-signup-title">Create account</h1>
         <p className="admin-signup-description">
-          {request
-            ? "Your account request is recorded. Administrator approval is still required."
-            : "Create an account to request administrator access. Your account stays disabled until the project owner approves it."}
+          Create an account to request administrator access. Your account stays
+          disabled until the project owner approves it.
         </p>
 
-        {request && (
-          <div className="admin-signup-success" role="status" aria-live="polite">
-            <strong>Approval is still required.</strong>
-            <p>
-              Ask the Firebase project owner to set{" "}
-              <code>admins/{request.uid}/enabled</code> to <code>true</code>{" "}
-              in Realtime Database. New accounts cannot approve themselves.
-            </p>
-            <p>Account: {request.email}</p>
-          </div>
-        )}
+        <div
+          className="admin-signup-success"
+          role="status"
+          aria-live="polite"
+          hidden={!request}
+        >
+          <strong>
+            {request?.alreadyPending ? "Request already pending" : "Account created"}
+          </strong>
+          <p>
+            Ask the Firebase project owner to set{" "}
+            <code>admins/{request?.uid ?? ""}/enabled</code> to <code>true</code>{" "}
+            in Realtime Database. New accounts cannot approve themselves.
+          </p>
+          <p>Account: {request?.email ?? ""}</p>
+        </div>
 
         <form
           onSubmit={(event) => {
@@ -80,7 +78,6 @@ export function AdminSignupPage() {
             minLength={2}
             maxLength={100}
             required
-            disabled={busy || Boolean(request)}
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
           />
@@ -93,9 +90,9 @@ export function AdminSignupPage() {
             type="email"
             autoComplete="email"
             required
-            disabled={busy || Boolean(request)}
             value={email}
-            onChange={(event) => setEmail(event.target.value)}/>
+            onChange={(event) => setEmail(event.target.value)}
+          />
 
           <label htmlFor="admin-signup-password">Password</label>
           <input
@@ -107,9 +104,9 @@ export function AdminSignupPage() {
             minLength={8}
             maxLength={128}
             required
-            disabled={busy || Boolean(request)}
             value={password}
-            onChange={(event) => setPassword(event.target.value)}/>
+            onChange={(event) => setPassword(event.target.value)}
+          />
 
           <label htmlFor="admin-signup-confirm">Confirm password</label>
           <input
@@ -121,9 +118,9 @@ export function AdminSignupPage() {
             minLength={8}
             maxLength={128}
             required
-            disabled={busy || Boolean(request)}
             value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}/>
+            onChange={(event) => setConfirmPassword(event.target.value)}
+          />
 
           {error && (
             <div className="admin-signup-error" role="alert">
@@ -135,12 +132,9 @@ export function AdminSignupPage() {
             className="primary"
             type="submit"
             disabled={busy || Boolean(request)}
+            aria-busy={busy}
           >
-            {busy
-              ? "Creating account…"
-              : request
-                ? "Request submitted"
-                : "Create account"}
+            Create account
           </button>
         </form>
 
