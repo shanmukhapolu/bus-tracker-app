@@ -2945,3 +2945,145 @@
   }
 }
 
+
+
+/* Minimal, static administrator signup form. */
+.admin-signup-page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f2f5f7;
+  color: #183047;
+}
+
+.admin-signup-card {
+  width: min(440px, 100%);
+  padding: clamp(24px, 5vw, 36px);
+  border: 1px solid #dfe6ec;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 36px rgba(24, 48, 71, .08);
+}
+
+.admin-signup-card h1 {
+  margin: 0;
+  color: #183047;
+  font-size: 28px;
+  line-height: 1.2;
+  letter-spacing: -.6px;
+}
+
+.admin-signup-eyebrow {
+  margin: 0 0 9px;
+  color: #63778a;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.admin-signup-description,
+.admin-signup-card > div > p {
+  margin: 9px 0 0;
+  color: #627386;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.admin-signup-card form {
+  display: grid;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.admin-signup-card label {
+  margin-top: 5px;
+  color: #394f63;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-signup-card input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #cbd6df;
+  border-radius: 7px;
+  background: #fff;
+  color: #183047;
+  font: inherit;
+  font-size: 14px;
+}
+
+.admin-signup-card input:focus-visible {
+  outline: 3px solid rgba(36, 100, 184, .2);
+  border-color: #2464b8;
+  outline-offset: 1px;
+}
+
+.admin-signup-card .primary {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
+  border-radius: 7px;
+  background: #17324d;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-signup-card .primary:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+
+.admin-signup-error {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid #efc7c7;
+  border-radius: 7px;
+  background: #fff4f4;
+  color: #9b2525;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.admin-signup-success {
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid #c7dfd0;
+  border-radius: 8px;
+  background: #f2faf5;
+  color: #225c3a;
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.admin-signup-success p {
+  margin: 9px 0 0;
+}
+
+.admin-signup-footer {
+  margin: 18px 0 0;
+  color: #627386;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-signup-footer a {
+  color: #1c5a96;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 480px) {
+  .admin-signup-page {
+    padding: 14px;
+  }
+  .admin-signup-card {
+    padding: 22px 18px;
+  }
+}
