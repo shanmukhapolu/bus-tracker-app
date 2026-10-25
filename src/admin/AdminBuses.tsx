@@ -139,13 +139,13 @@ export function AdminBuses({
   };
 
   const removeBus = async (bus: Bus) => {
-    if (!window.confirm(`Delete Bus ${bus.busNumber}? Any assigned driver will be unassigned.`)) return;
+    if (!window.confirm(`Retire Bus ${bus.busNumber} from the active fleet? Any assigned driver will be unassigned.`)) return;
     setDeleting(bus.id);
     try {
       await deleteFleetBus(bus.busNumber);
-      setMessage(`Bus ${bus.busNumber} deleted.`);
+      setMessage(`Bus ${bus.busNumber} retired from the active fleet.`);
     } catch (caught) {
-      setSaveError(caught instanceof Error ? caught.message : "Could not delete the bus.");
+      setSaveError(caught instanceof Error ? caught.message : "Could not retire the bus.");
     } finally {
       setDeleting("");
     }
@@ -332,7 +332,7 @@ export function AdminBuses({
                       <td>{bus.trackingActive ? bus.lastUpdated.toLocaleTimeString() : "Not reporting"}</td>
                       <td onClick={(event) => event.stopPropagation()}>
                         <button className="secondary admin-table-action admin-delete" type="button" disabled={Boolean(deleting)} onClick={() => void removeBus(bus)}>
-                          <Trash2 size={14} /> {deleting === bus.id ? "Deleting…" : "Delete"}
+                          <Trash2 size={14} /> {deleting === bus.id ? "Retiring…" : "Retire"}
                         </button>
                       </td>
                     </tr>
