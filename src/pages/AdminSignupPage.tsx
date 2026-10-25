@@ -95,7 +95,8 @@ export function AdminSignupPage() {
             disabled={busy || Boolean(request)}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-          />
+          
+            data-bwignore="true"/>
 
           <label htmlFor="admin-signup-password">Password</label>
           <input
@@ -109,7 +110,8 @@ export function AdminSignupPage() {
             disabled={busy || Boolean(request)}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-          />
+          
+            data-bwignore="true"/>
 
           <label htmlFor="admin-signup-confirm">Confirm password</label>
           <input
@@ -123,7 +125,8 @@ export function AdminSignupPage() {
             disabled={busy || Boolean(request)}
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
-          />
+          
+            data-bwignore="true"/>
 
           {error && (
             <div className="admin-signup-error" role="alert">
