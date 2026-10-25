@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const firebase = vi.hoisted(() => ({
-  ref: vi.fn((_db: unknown, path: string) => path),
+  ref: vi.fn((_db: unknown, path?: string) => path ?? "/"),
   get: vi.fn(async (_path: string): Promise<{ exists: () => boolean; val: () => unknown }> => ({ exists: () => false, val: () => null })),
   update: vi.fn(async (_reference: unknown, _updates: Record<string, unknown>) => undefined),
+  set: vi.fn(async (_reference: unknown, _value: unknown) => undefined),
   serverTimestamp: vi.fn(() => 1234),
   auth: { currentUser: { uid: "admin-1", email: "admin@example.test" } },
 }));
@@ -15,11 +16,18 @@ vi.mock("../config/firebase", () => ({
     ref: firebase.ref,
     get: firebase.get,
     update: firebase.update,
+    set: firebase.set,
     serverTimestamp: firebase.serverTimestamp,
   }),
 }));
 
 import { addFleetBus, assignDriverToBus } from "./fleetService";
+
+function writtenRecords() {
+  return Object.fromEntries(
+    firebase.set.mock.calls.map(([reference, value]) => [String(reference), value]),
+  ) as Record<string, unknown>;
+}
 
 function snapshot(value: unknown) {
   return {
@@ -32,6 +40,7 @@ beforeEach(() => {
   firebase.ref.mockClear();
   firebase.get.mockReset();
   firebase.update.mockReset();
+  firebase.set.mockReset();
   firebase.serverTimestamp.mockClear();
 });
 
@@ -47,7 +56,7 @@ describe("fleet bus management", () => {
       route: "North",
       enabled: true,
     });
-    const updates = firebase.update.mock.calls[0]?.[1] as Record<string, unknown>;
+    const updates = writtenRecords();
     expect(updates["buses/218"]).toMatchObject({
       busNumber: "218",
       route: "North",
@@ -64,7 +73,7 @@ describe("fleet bus management", () => {
       Object.keys(updates).some((path) => path.startsWith("auditLogs/")),
     ).toBe(true);
     expect(firebase.ref).not.toHaveBeenCalledWith({}, "");
-    expect(firebase.ref).toHaveBeenCalledWith({});
+    expect(firebase.ref).not.toHaveBeenCalledWith({});
   });
 
   it("rejects duplicate bus numbers", async () => {
@@ -101,7 +110,7 @@ describe("fleet bus management", () => {
 
     await assignDriverToBus("driver-1", "218");
 
-    const updates = firebase.update.mock.calls[0]?.[1] as Record<string, unknown>;
+    const updates = writtenRecords();
     expect(updates["drivers/driver-1/assignedBus"]).toBe("218");
     expect(
       Object.keys(updates).some((path) => path.startsWith("auditLogs/")),
@@ -132,7 +141,7 @@ describe("fleet bus management", () => {
 
     await assignDriverToBus("driver-1", "218");
 
-    const updates = firebase.update.mock.calls[0]?.[1] as Record<string, unknown>;
+    const updates = writtenRecords();
     expect(updates["drivers/driver-1/assignedBus"]).toBe("218");
     expect(updates["drivers/driver-2/assignedBus"]).toBe("");
     expect(
