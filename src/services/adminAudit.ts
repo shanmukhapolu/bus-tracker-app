@@ -10,7 +10,7 @@ export async function auditedAdminUpdate(
 ) {
   const user = runtime.auth.currentUser;
   if (!user) throw new Error("Administrator sign-in is required.");
-  await runtime.update(runtime.ref(runtime.db, ""), {
+  await runtime.update(runtime.ref(runtime.db), {
     ...updates,
     ["auditLogs/" + crypto.randomUUID()]: {
       actorUid: user.uid,
