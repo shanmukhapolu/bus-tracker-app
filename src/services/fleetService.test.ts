@@ -21,7 +21,7 @@ vi.mock("../config/firebase", () => ({
   }),
 }));
 
-import { addFleetBus, assignDriverToBus } from "./fleetService";
+import { addFleetBus, assignDriverToBus, deleteFleetBus } from "./fleetService";
 
 function writtenRecords() {
   return Object.fromEntries(
@@ -154,6 +154,47 @@ describe("fleet bus management", () => {
     expect(writePaths.indexOf("drivers/driver-2/assignedBus")).toBeLessThan(
       writePaths.indexOf("drivers/driver-1/assignedBus"),
     );
+  });
+
+  it("retires a bus through authorized paths and unassigns its inactive driver", async () => {
+    const bus = {
+      busNumber: "218",
+      route: "North",
+      enabled: true,
+      lifecycleStatus: "active",
+      createdAt: 100,
+      updatedAt: 200,
+    };
+    const driver = {
+      displayName: "Driver One",
+      enabled: true,
+      assignedBus: "218",
+      approvalStatus: "approved",
+    };
+    firebase.get.mockImplementation(async (path: string) => {
+      if (path === "buses/218") return snapshot(bus);
+      if (path === "drivers") return snapshot({ "driver-1": driver });
+      return snapshot(null);
+    });
+
+    await deleteFleetBus("218");
+
+    const writes = writtenRecords();
+    expect(writes["buses/218"]).toMatchObject({
+      busNumber: "218",
+      enabled: false,
+      lifecycleStatus: "retired",
+    });
+    expect(writes["publicBuses/218"]).toBeNull();
+    expect(writes["drivers/driver-1/assignedBus"]).toBe("");
+    expect(
+      Object.keys(writes).some((path) => path.startsWith("auditLogs/")),
+    ).toBe(true);
+    const writePaths = firebase.set.mock.calls.map(([reference]) => String(reference));
+    expect(writePaths.indexOf("drivers/driver-1/assignedBus")).toBeLessThan(
+      writePaths.indexOf("buses/218"),
+    );
+    expect(firebase.update).not.toHaveBeenCalled();
   });
 
   it("blocks replacement when the current bus driver is actively tracking", async () => {
