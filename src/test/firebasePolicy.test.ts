@@ -14,17 +14,18 @@ function policyHeader() {
 }
 
 describe("Firebase deployment and browser security policy", () => {
-  it("permits Firebase Analytics' external gtag script using a narrow origin allowlist", () => {
+  it("keeps the signup script policy narrow and allows Firebase Auth reCAPTCHA", () => {
     const csp = policyHeader();
     expect(csp).toContain(
-      "script-src 'self' https://www.gstatic.com https://www.googletagmanager.com https://apis.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/;",
+      "script-src 'self' https://www.gstatic.com https://apis.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/;",
     );
     expect(csp).toContain(
-      "script-src-elem 'self' https://www.gstatic.com https://www.googletagmanager.com https://apis.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/",
+      "script-src-elem 'self' https://www.gstatic.com https://apis.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/",
     );
-    expect(csp).toContain("https://*.google-analytics.com");
     expect(csp).toContain("https://www.google.com/recaptcha/");
     expect(csp).toContain("https://recaptcha.google.com/recaptcha/");
+    expect(csp).not.toContain("googletagmanager.com");
+    expect(csp).not.toContain("google-analytics.com");
     expect(csp).not.toContain("script-src *");
     expect(csp).not.toContain("script-src https:");
   });
@@ -34,6 +35,7 @@ describe("Firebase deployment and browser security policy", () => {
     expect(runtime).toContain('from "firebase/app"');
     expect(runtime).toContain('from "firebase/auth"');
     expect(runtime).toContain('from "firebase/database"');
+    expect(runtime).not.toContain('from "firebase/analytics"');
     expect(runtime).not.toContain("https://www.gstatic.com/firebasejs/");
   });
 
