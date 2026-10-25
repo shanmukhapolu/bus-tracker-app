@@ -18,7 +18,6 @@ export interface FirebaseRuntime {
   app: any;
   auth: any;
   db: any;
-  analytics?: any;
   initializeApp: (config: object) => any;
   getAuth: (app: any) => any;
   setPersistence: (auth: any, persistence: any) => Promise<void>;
@@ -90,23 +89,30 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
         authModule.browserSessionPersistence,
       );
       const db = databaseModule.getDatabase(app, firebaseConfig.databaseURL);
-      let analytics: any = null;
+
+      // Analytics is non-critical. Initialize it asynchronously so a blocked
+      // gtag script or unsupported browser can never stall authentication,
+      // database listeners, or the admin loading screen.
       if (firebaseConfig.measurementId) {
-        try {
-          const analyticsModule = await loadFirebaseModule("analytics");
-          if (await analyticsModule.isSupported()) {
-            analytics = analyticsModule.getAnalytics(app);
+        void (async () => {
+          try {
+            const analyticsModule = await loadFirebaseModule("analytics");
+            if (await analyticsModule.isSupported()) {
+              analyticsModule.getAnalytics(app);
+            }
+          } catch (error) {
+            console.warn(
+              "Firebase Analytics could not initialize; core app features remain available.",
+              error,
+            );
           }
-        } catch {
-          // Analytics is optional; authentication and tracking must still work.
-        }
+        })();
       }
 
       return {
         app,
         auth,
         db,
-        analytics,
         initializeApp: appModule.initializeApp,
         getAuth: authModule.getAuth,
         setPersistence: authModule.setPersistence,
