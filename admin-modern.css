@@ -3113,7 +3113,7 @@
 
 .buses-page .bus-create-form {
   display: grid;
-  grid-template-columns: minmax(130px, .8fr) minmax(160px, 1fr) minmax(160px, 1fr) auto;
+  grid-template-columns: minmax(130px, .8fr) minmax(160px, 1fr) auto;
   align-items: end;
   gap: 12px;
 }
@@ -3175,6 +3175,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .buses-page .bus-create-form .primary {
+    grid-column: 1 / -1;
     width: 100%;
   }
 }
