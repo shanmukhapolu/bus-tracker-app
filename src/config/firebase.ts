@@ -1,7 +1,6 @@
 import * as appModule from "firebase/app";
 import * as authModule from "firebase/auth";
 import * as databaseModule from "firebase/database";
-import * as analyticsModule from "firebase/analytics";
 
 import { resolveFirebaseEnvironment } from "./deploymentEnvironment";
 
@@ -86,23 +85,6 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
       );
 
       const db = databaseModule.getDatabase(app, firebaseConfig.databaseURL);
-
-      // Analytics is optional. Its failure must never prevent authentication
-      // or Realtime Database from initializing.
-      if (firebaseConfig.measurementId) {
-        void (async () => {
-          try {
-            if (await analyticsModule.isSupported()) {
-              analyticsModule.getAnalytics(app);
-            }
-          } catch (error) {
-            console.warn(
-              "Firebase Analytics could not initialize; core app features remain available.",
-              error,
-            );
-          }
-        })();
-      }
 
       return {
         app,
