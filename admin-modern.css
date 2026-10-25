@@ -3087,3 +3087,106 @@
     padding: 22px 18px;
   }
 }
+
+
+/* Bus registration and per-bus driver assignment controls. */
+.buses-page .bus-create-panel {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 16px;
+  padding: 20px;
+}
+
+.buses-page .bus-create-panel h2 {
+  margin: 0;
+  color: var(--ui-text, #183047);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.buses-page .bus-create-panel p {
+  margin: 5px 0 0;
+  color: var(--ui-text-muted, #627386);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.buses-page .bus-create-form {
+  display: grid;
+  grid-template-columns: minmax(130px, .8fr) minmax(160px, 1fr) minmax(160px, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.buses-page .bus-create-form label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--ui-text-muted, #627386);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.buses-page .bus-create-form input,
+.buses-page .bus-create-form select,
+.buses-page .bus-driver-select {
+  width: 100%;
+  min-width: 110px;
+  min-height: 38px;
+  padding: 7px 9px;
+  border: 1px solid var(--ui-border, #d5dfe5);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ui-text, #183047);
+  font: inherit;
+  font-size: 12px;
+}
+
+.buses-page .bus-create-form input:focus-visible,
+.buses-page .bus-create-form select:focus-visible,
+.buses-page .bus-driver-select:focus-visible {
+  outline: 3px solid rgba(36, 100, 184, .2);
+  outline-offset: 1px;
+  border-color: #2464b8;
+}
+
+.buses-page .bus-create-form .primary {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.buses-page .bus-create-form .primary:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.buses-page .bus-driver-select {
+  max-width: 220px;
+}
+
+@media (max-width: 1000px) {
+  .buses-page .bus-create-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .buses-page .bus-create-form .primary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .buses-page .bus-create-panel {
+    padding: 15px;
+  }
+  .buses-page .bus-create-form {
+    grid-template-columns: 1fr;
+  }
+  .buses-page .bus-driver-select {
+    max-width: none;
+  }
+}
