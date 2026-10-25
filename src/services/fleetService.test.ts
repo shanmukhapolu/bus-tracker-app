@@ -69,9 +69,12 @@ describe("fleet bus management", () => {
       enabled: true,
       active: false,
     });
-    expect(
-      Object.keys(updates).some((path) => path.startsWith("auditLogs/")),
-    ).toBe(true);
+    const auditPath = Object.keys(updates).find((path) => path.startsWith("auditLogs/"));
+    expect(auditPath).toBeTruthy();
+    const writePaths = firebase.set.mock.calls.map(([reference]) => String(reference));
+    expect(writePaths.indexOf("buses/218")).toBeLessThan(writePaths.indexOf("publicBuses/218"));
+    expect(writePaths.indexOf("publicBuses/218")).toBeLessThan(writePaths.indexOf(auditPath ?? ""));
+    expect(firebase.update).not.toHaveBeenCalled();
     expect(firebase.ref).not.toHaveBeenCalledWith({}, "");
     expect(firebase.ref).not.toHaveBeenCalledWith({});
   });
@@ -117,7 +120,7 @@ describe("fleet bus management", () => {
     ).toBe(true);
   });
 
-  it("replaces an inactive bus assignment in one audited update", async () => {
+  it("clears an inactive prior assignment before assigning and auditing the replacement", async () => {
     const selected = {
       displayName: "Driver One",
       enabled: true,
@@ -147,6 +150,10 @@ describe("fleet bus management", () => {
     expect(
       Object.keys(updates).some((path) => path.startsWith("auditLogs/")),
     ).toBe(true);
+    const writePaths = firebase.set.mock.calls.map(([reference]) => String(reference));
+    expect(writePaths.indexOf("drivers/driver-2/assignedBus")).toBeLessThan(
+      writePaths.indexOf("drivers/driver-1/assignedBus"),
+    );
   });
 
   it("blocks replacement when the current bus driver is actively tracking", async () => {
