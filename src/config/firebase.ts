@@ -23,7 +23,7 @@ export interface FirebaseRuntime {
   app: any;
   auth: any;
   db: any;
-  initializeApp: (config: object) => any;
+  initializeApp: (config: any) => any;
   getAuth: (app: any) => any;
   setPersistence: (auth: any, persistence: any) => Promise<void>;
   browserSessionPersistence: any;
