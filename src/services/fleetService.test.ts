@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const firebase = vi.hoisted(() => ({
   ref: vi.fn((_db: unknown, path: string) => path),
-  get: vi.fn(),
-  update: vi.fn(),
+  get: vi.fn(async (_path: string): Promise<{ exists: () => boolean; val: () => unknown }> => ({ exists: () => false, val: () => null })),
+  update: vi.fn(async (_reference: unknown, _updates: Record<string, unknown>) => undefined),
   serverTimestamp: vi.fn(() => 1234),
   auth: { currentUser: { uid: "admin-1", email: "admin@example.test" } },
 }));
