@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import modernAdminStyles from "../../admin-modern.css?raw";
+import "../../admin-modern.css";
 import { AdminLogin } from "../admin/AdminLogin";
 import { AdminLayout, type AdminPageKey } from "../admin/AdminLayout";
 import { AdminDashboard } from "../admin/AdminDashboard";
@@ -78,16 +78,6 @@ export function AdminPage() {
 
   const fleet = useAdminFleet(signedIn);
   const page = route.page;
-
-  useEffect(() => {
-    const style = document.createElement("style");
-    style.id = "admin-reference-styles";
-    style.textContent = modernAdminStyles;
-    document.getElementById(style.id)?.remove();
-    document.head.appendChild(style);
-
-    return () => document.getElementById(style.id)?.remove();
-  }, []);
 
   useEffect(() => {
     const currentPath = window.location.pathname;
