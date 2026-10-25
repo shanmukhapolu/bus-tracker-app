@@ -19,20 +19,32 @@ function authErrorCode(error: unknown) {
 
 function readableAdminAuthError(error: unknown) {
   const code = authErrorCode(error);
-  switch (code) {
-    case "auth/operation-not-allowed":
-      return "Email/password registration is disabled. In Firebase Console, open Authentication → Sign-in method and enable Email/Password.";
-    case "auth/invalid-api-key":
-    case "auth/api-key-not-valid":
-      return "Firebase rejected the API key. Verify the web app configuration under the chsbusapp project settings.";
-    case "auth/unauthorized-domain":
-      return "This website is not authorized for Firebase Authentication. Add its hostname under Authentication → Settings → Authorized domains.";
+  const normalized = code.toLowerCase();
+
+  // Firebase server responses may map to slightly different client error
+  // codes across SDK versions. Match important configuration failures by
+  // category so an HTTP 400 is not left as an unexplained console message.
+  if (/api.?key|invalid-api-key/.test(normalized)) {
+    return "Firebase rejected the API key. Verify that the API key in the web app settings belongs to the chsbusapp project and that its API restrictions allow Firebase Authentication.";
+  }
+  if (/unauthorized-domain|app-not-authorized/.test(normalized)) {
+    return "This website is not authorized for Firebase Authentication. Add its exact hostname under Authentication → Settings → Authorized domains.";
+  }
+  if (
+    normalized === "auth/operation-not-allowed" ||
+    normalized === "auth/admin-restricted-operation" ||
+    normalized === "auth/configuration-not-found"
+  ) {
+    return "Email/password account creation is not enabled for this Firebase project. In Firebase Console, open Authentication → Sign-in method, enable Email/Password, and complete Authentication setup.";
+  }
+
+  switch (normalized) {
     case "auth/invalid-email":
       return "Enter a valid email address.";
     case "auth/weak-password":
       return "Choose a stronger password with at least 8 characters.";
     case "auth/email-already-in-use":
-      return "An account already exists for this email. Sign in instead or use the account's existing password to recover a pending request.";
+      return "An account already exists for this email. Sign in with the existing password to check whether it has a pending administrator request.";
     case "auth/too-many-requests":
       return "Too many attempts. Wait a few minutes before trying again.";
     case "auth/network-request-failed":
@@ -41,9 +53,11 @@ function readableAdminAuthError(error: unknown) {
     case "auth/wrong-password":
     case "auth/user-not-found":
       return "The email or password is incorrect.";
+    case "auth/invalid-app-credential":
+      return "Firebase could not verify this app. Confirm the project's Authentication setup and authorized hostname, then inspect the failed request's Network response.";
     default:
       return code
-        ? `Firebase Authentication rejected the request (${code}). Check Firebase Console settings and the browser Network response.`
+        ? `Firebase Authentication rejected the request (${code}). Open browser Developer Tools → Network, select the failed identitytoolkit request, and inspect its Response for the specific cause.`
         : error instanceof Error
           ? error.message
           : "Unable to complete the authentication request.";
