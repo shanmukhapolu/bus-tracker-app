@@ -256,30 +256,37 @@ describe("Realtime Database public and protected boundaries", () => {
     );
   });
 
-  it("allows admins to atomically create a registered bus and its public projection", async () => {
+  it("requires bus creation writes to target explicitly authorized record paths", async () => {
     const db = environment
       .authenticatedContext("admin-a", { email: "admin@example.test" })
       .database();
     const now = Date.now();
+    const busRecord = {
+      busNumber: "218",
+      route: "North",
+      enabled: true,
+      lifecycleStatus: "active",
+      createdAt: now,
+      updatedAt: now,
+    };
+    const publicBusRecord = {
+      busNumber: "218",
+      route: "North",
+      enabled: true,
+      active: false,
+    };
 
-    await assertSucceeds(
+    // Child-level rules must not accidentally grant write permission at "/".
+    await assertFails(
       update(ref(db, ""), {
-        "buses/218": {
-          busNumber: "218",
-          route: "North",
-          enabled: true,
-          lifecycleStatus: "active",
-          createdAt: now,
-          updatedAt: now,
-        },
-        "publicBuses/218": {
-          busNumber: "218",
-          route: "North",
-          enabled: true,
-          active: false,
-        },
+        "buses/218": busRecord,
+        "publicBuses/218": publicBusRecord,
       }),
     );
+
+    // Each leaf record is writable under its own narrow admin rule.
+    await assertSucceeds(set(ref(db, "buses/218"), busRecord));
+    await assertSucceeds(set(ref(db, "publicBuses/218"), publicBusRecord));
 
     await assertSucceeds(get(ref(db, "buses/218")));
     await assertSucceeds(get(ref(db, "publicBuses/218")));
