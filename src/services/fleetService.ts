@@ -258,10 +258,25 @@ export async function assignDriverToBus(
       driver.uid !== normalizedUid &&
       driver.assignedBus === normalizedBusNumber,
   );
+
   if (otherDriver) {
-    throw new Error(
-      `Bus ${normalizedBusNumber} is already assigned to ${otherDriver.displayName}. Unassign them first.`,
-    );
+    const [active, live] = await Promise.all([
+      runtime.get(
+        runtime.ref(runtime.db, `activeDrivers/${normalizedBusNumber}`),
+      ),
+      runtime.get(
+        runtime.ref(runtime.db, `liveBuses/${normalizedBusNumber}`),
+      ),
+    ]);
+    const liveValue = live.val() as Record<string, unknown> | null;
+    if (
+      active.val() === otherDriver.uid ||
+      (liveValue?.active === true && liveValue.driverUid === otherDriver.uid)
+    ) {
+      throw new Error(
+        `Stop ${otherDriver.displayName}'s live tracking before replacing the driver on Bus ${normalizedBusNumber}.`,
+      );
+    }
   }
 
   if (
@@ -282,11 +297,18 @@ export async function assignDriverToBus(
     }
   }
 
+  const assignmentUpdates: Record<string, unknown> = {
+    [`drivers/${normalizedUid}/assignedBus`]: normalizedBusNumber,
+  };
+  if (otherDriver) {
+    assignmentUpdates[`drivers/${otherDriver.uid}/assignedBus`] = "";
+  }
+
   await auditedAdminUpdate(
     runtime,
     "bus_assignment_changed",
     `drivers/${normalizedUid}`,
-    { [`drivers/${normalizedUid}/assignedBus`]: normalizedBusNumber },
+    assignmentUpdates,
   );
 }
 
