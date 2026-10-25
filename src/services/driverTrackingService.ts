@@ -205,10 +205,16 @@ async function publishPosition(
     lastUpdated: runtime.serverTimestamp(),
   };
 
-  await runtime.update(runtime.ref(runtime.db, ""), {
-    [`liveBuses/${options.busId}`]: internalRecord,
-    [`publicBuses/${options.busId}`]: publicRecord,
-  });
+  // Each record is written at its own authorized Firebase path. A root-level
+  // multi-location update is rejected by the database's least-privilege rules.
+  await runtime.set(
+    runtime.ref(runtime.db, `liveBuses/${options.busId}`),
+    internalRecord,
+  );
+  await runtime.set(
+    runtime.ref(runtime.db, `publicBuses/${options.busId}`),
+    publicRecord,
+  );
 }
 
 async function startTrustedBackendTracking(
@@ -434,13 +440,12 @@ export async function startDriverTracking(
   };
 
   try {
-    // Keep the driver lock alive only while the Firebase connection exists.
-    await runtime.onDisconnect(lockRef).remove();
-
     // The first write is mandatory. We do not mark tracking live until
     // Firebase has actually accepted the GPS coordinates.
     await publishPosition(runtime, options, firstLocation);
 
+    // Register live-record cleanup before lock removal. On disconnect, marking
+    // the records inactive must be attempted while the driver's lock still exists.
     await runtime.onDisconnect(liveRef).update({
       active: false,
       lastUpdated: runtime.serverTimestamp(),
@@ -451,6 +456,7 @@ export async function startDriverTracking(
       lastUpdated: runtime.serverTimestamp(),
       endedAt: runtime.serverTimestamp(),
     });
+    await runtime.onDisconnect(lockRef).remove();
 
     watchId = navigator.geolocation.watchPosition(
       (position) => {
@@ -458,9 +464,6 @@ export async function startDriverTracking(
 
         latestPosition = toLocation(position);
         options.onPosition(latestPosition);
-
-        // New GPS fixes are published immediately.
-        void publishLatest();
       },
       (error) => {
         if (!stopped) {
@@ -470,11 +473,11 @@ export async function startDriverTracking(
       watchLocationOptions,
     );
 
-    // Continue publishing the latest known GPS position every second even
-    // when the browser has not delivered a new fix during that exact second.
+    // Publish the latest GPS fix every 2.5 seconds. watchPosition may deliver
+    // fixes at irregular intervals, so this timer gives the map a steady cadence.
     publishTimer = setInterval(() => {
       void publishLatest();
-    }, 1_000);
+    }, 2_500);
 
     stopConnectionListener = runtime.onValue(
       runtime.ref(runtime.db, ".info/connected"),
@@ -523,15 +526,18 @@ export async function startDriverTracking(
         // the most recent position received immediately before stopping.
         await activePublish;
 
-        await runtime.update(runtime.ref(runtime.db, ""), {
-          [`liveBuses/${options.busId}/active`]: false,
-          [`liveBuses/${options.busId}/lastUpdated`]: runtime.serverTimestamp(),
-          [`liveBuses/${options.busId}/endedAt`]: runtime.serverTimestamp(),
-          [`publicBuses/${options.busId}/active`]: false,
-          [`publicBuses/${options.busId}/lastUpdated`]:
-            runtime.serverTimestamp(),
-          [`publicBuses/${options.busId}/endedAt`]: runtime.serverTimestamp(),
-        });
+        await Promise.all([
+          runtime.update(liveRef, {
+            active: false,
+            lastUpdated: runtime.serverTimestamp(),
+            endedAt: runtime.serverTimestamp(),
+          }),
+          runtime.update(publicRef, {
+            active: false,
+            lastUpdated: runtime.serverTimestamp(),
+            endedAt: runtime.serverTimestamp(),
+          }),
+        ]);
       } finally {
         await runtime.remove(lockRef);
       }
@@ -540,7 +546,7 @@ export async function startDriverTracking(
     return {
       busId: options.busId,
       transport: "legacy_firebase",
-      uploadIntervalMs: 1_000,
+      uploadIntervalMs: 2_500,
       stop,
     };
   } catch (error) {
