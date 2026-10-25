@@ -98,8 +98,87 @@ export async function loadFleetDrivers(): Promise<FleetDriver[]> {
   return normalizeFleetDrivers(snapshot.val());
 }
 
-export async function addFleetBus(_busNumber: string, _route: string, _geofenceId = ""): Promise<FleetBus> {
-  throw new Error("Register buses in the official Transportation admin Buses page.");
+function validateBusKey(busNumber: string) {
+  if (
+    !busNumber ||
+    busNumber.length > 20 ||
+    [".", "#", "$", "[", "]", "/"].some((character) =>
+      busNumber.includes(character),
+    ) ||
+    /[\\u0000-\\u001f\\u007f]/.test(busNumber)
+  ) {
+    throw new Error(
+      "Bus number must be 1–20 characters and cannot contain . # $ [ ] or /.",
+    );
+  }
+}
+
+export async function addFleetBus(
+  busNumber: string,
+  route: string,
+  geofenceId = "",
+): Promise<FleetBus> {
+  const runtime = await getFirebaseRuntime();
+  const normalizedNumber = String(busNumber ?? "").trim();
+  const normalizedRoute = String(route ?? "").trim();
+  const normalizedGeofence = String(geofenceId ?? "").trim();
+
+  validateBusKey(normalizedNumber);
+  if (!normalizedRoute || normalizedRoute.length > 100) {
+    throw new Error("Route is required and must be 100 characters or fewer.");
+  }
+
+  const existing = await runtime.get(
+    runtime.ref(runtime.db, `buses/${normalizedNumber}`),
+  );
+  if (existing.exists()) {
+    throw new Error(`Bus ${normalizedNumber} already exists.`);
+  }
+
+  if (normalizedGeofence) {
+    const geofence = await runtime.get(
+      runtime.ref(runtime.db, `geofences/${normalizedGeofence}`),
+    );
+    if (!geofence.exists()) {
+      throw new Error("The selected geofence no longer exists. Refresh and choose another.");
+    }
+  }
+
+  const now = Date.now();
+  const busRecord = {
+    busNumber: normalizedNumber,
+    route: normalizedRoute,
+    enabled: true,
+    lifecycleStatus: "active",
+    createdAt: now,
+    updatedAt: now,
+    ...(normalizedGeofence ? { geofenceId: normalizedGeofence } : {}),
+  };
+
+  // The public map reads a sanitized projection rather than the private
+  // fleet record. Write both records and the audit event atomically.
+  await auditedAdminUpdate(
+    runtime,
+    "bus_created",
+    `buses/${normalizedNumber}`,
+    {
+      [`buses/${normalizedNumber}`]: busRecord,
+      [`publicBuses/${normalizedNumber}`]: {
+        busNumber: normalizedNumber,
+        route: normalizedRoute,
+        enabled: true,
+        active: false,
+      },
+    },
+  );
+
+  return {
+    id: normalizedNumber,
+    busNumber: normalizedNumber,
+    route: normalizedRoute,
+    enabled: true,
+    geofenceId: normalizedGeofence,
+  };
 }
 
 export async function assignDriverToBus(
@@ -107,21 +186,108 @@ export async function assignDriverToBus(
   busNumber: string,
 ): Promise<void> {
   const runtime = await getFirebaseRuntime();
+  const normalizedUid = String(driverUid ?? "").trim();
   const normalizedBusNumber = String(busNumber ?? "").trim();
 
+  if (
+    !normalizedUid ||
+    [".", "#", "$", "[", "]", "/"].some((character) =>
+      normalizedUid.includes(character),
+    )
+  ) {
+    throw new Error("Select a valid driver account.");
+  }
+
+  const driverSnapshot = await runtime.get(
+    runtime.ref(runtime.db, `drivers/${normalizedUid}`),
+  );
+  if (!driverSnapshot.exists()) {
+    throw new Error("Driver account not found.");
+  }
+
+  const selectedDriver = normalizeFleetDrivers({
+    [normalizedUid]: driverSnapshot.val(),
+  })[0];
+  if (!selectedDriver) {
+    throw new Error("The selected driver profile is invalid.");
+  }
+
   if (!normalizedBusNumber) {
-    await auditedAdminUpdate(runtime, "bus_assignment_changed", "drivers/" + driverUid, { ["drivers/" + driverUid + "/assignedBus"]: "" });
+    if (selectedDriver.assignedBus) {
+      const active = await runtime.get(
+        runtime.ref(runtime.db, `activeDrivers/${selectedDriver.assignedBus}`),
+      );
+      const live = await runtime.get(
+        runtime.ref(runtime.db, `liveBuses/${selectedDriver.assignedBus}`),
+      );
+      const liveValue = live.val() as Record<string, unknown> | null;
+      if (
+        active.val() === normalizedUid ||
+        (liveValue?.active === true && liveValue.driverUid === normalizedUid)
+      ) {
+        throw new Error("Stop this driver's live tracking before unassigning them.");
+      }
+    }
+
+    await auditedAdminUpdate(
+      runtime,
+      "bus_assignment_changed",
+      `drivers/${normalizedUid}`,
+      { [`drivers/${normalizedUid}/assignedBus`]: "" },
+    );
     return;
   }
+
+  validateBusKey(normalizedBusNumber);
 
   const busSnapshot = await runtime.get(
     runtime.ref(runtime.db, `buses/${normalizedBusNumber}`),
   );
-  if (!busSnapshot.exists()) {
-    throw new Error("That bus does not exist.");
+  if (!busSnapshot.exists() || busSnapshot.val()?.enabled !== true) {
+    throw new Error("Choose an active, registered bus.");
+  }
+  if (!selectedDriver.enabled) {
+    throw new Error("Approve and enable this driver in the Drivers section before assigning a bus.");
   }
 
-  await auditedAdminUpdate(runtime, "bus_assignment_changed", "drivers/" + driverUid, { ["drivers/" + driverUid + "/assignedBus"]: normalizedBusNumber });
+  const driversSnapshot = await runtime.get(
+    runtime.ref(runtime.db, "drivers"),
+  );
+  const otherDriver = normalizeFleetDrivers(driversSnapshot.val()).find(
+    (driver) =>
+      driver.uid !== normalizedUid &&
+      driver.assignedBus === normalizedBusNumber,
+  );
+  if (otherDriver) {
+    throw new Error(
+      `Bus ${normalizedBusNumber} is already assigned to ${otherDriver.displayName}. Unassign them first.`,
+    );
+  }
+
+  if (
+    selectedDriver.assignedBus &&
+    selectedDriver.assignedBus !== normalizedBusNumber
+  ) {
+    const oldBus = selectedDriver.assignedBus;
+    const [active, live] = await Promise.all([
+      runtime.get(runtime.ref(runtime.db, `activeDrivers/${oldBus}`)),
+      runtime.get(runtime.ref(runtime.db, `liveBuses/${oldBus}`)),
+    ]);
+    const liveValue = live.val() as Record<string, unknown> | null;
+    if (
+      active.val() === normalizedUid ||
+      (liveValue?.active === true && liveValue.driverUid === normalizedUid)
+    ) {
+      throw new Error("Stop this driver's live tracking before changing their assignment.");
+    }
+  }
+
+  await auditedAdminUpdate(
+    runtime,
+    "bus_assignment_changed",
+    `drivers/${normalizedUid}`,
+    { [`drivers/${normalizedUid}/assignedBus`]: normalizedBusNumber },
+  );
 }
 
 export async function deleteFleetBus(busNumber: string): Promise<void> {
