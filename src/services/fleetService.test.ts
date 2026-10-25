@@ -1,0 +1,155 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const firebase = vi.hoisted(() => ({
+  ref: vi.fn((_db: unknown, path: string) => path),
+  get: vi.fn(),
+  update: vi.fn(),
+  serverTimestamp: vi.fn(() => 1234),
+  auth: { currentUser: { uid: "admin-1", email: "admin@example.test" } },
+}));
+
+vi.mock("../config/firebase", () => ({
+  getFirebaseRuntime: async () => ({
+    db: {},
+    auth: firebase.auth,
+    ref: firebase.ref,
+    get: firebase.get,
+    update: firebase.update,
+    serverTimestamp: firebase.serverTimestamp,
+  }),
+}));
+
+import { addFleetBus, assignDriverToBus } from "./fleetService";
+
+function snapshot(value: unknown) {
+  return {
+    exists: () => value !== null && value !== undefined,
+    val: () => value,
+  };
+}
+
+beforeEach(() => {
+  firebase.ref.mockClear();
+  firebase.get.mockReset();
+  firebase.update.mockReset();
+  firebase.serverTimestamp.mockClear();
+});
+
+describe("fleet bus management", () => {
+  it("creates private and public bus records with an audit entry", async () => {
+    firebase.get.mockResolvedValue(snapshot(null));
+
+    const created = await addFleetBus(" 218 ", " North ");
+
+    expect(created).toMatchObject({
+      id: "218",
+      busNumber: "218",
+      route: "North",
+      enabled: true,
+    });
+    const updates = firebase.update.mock.calls[0]?.[1] as Record<string, unknown>;
+    expect(updates["buses/218"]).toMatchObject({
+      busNumber: "218",
+      route: "North",
+      enabled: true,
+      lifecycleStatus: "active",
+    });
+    expect(updates["publicBuses/218"]).toEqual({
+      busNumber: "218",
+      route: "North",
+      enabled: true,
+      active: false,
+    });
+    expect(
+      Object.keys(updates).some((path) => path.startsWith("auditLogs/")),
+    ).toBe(true);
+  });
+
+  it("rejects duplicate bus numbers", async () => {
+    firebase.get.mockResolvedValue(snapshot({ busNumber: "218" }));
+
+    await expect(addFleetBus("218", "North")).rejects.toThrow(
+      "Bus 218 already exists.",
+    );
+    expect(firebase.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid Firebase key characters", async () => {
+    await expect(addFleetBus("21/8", "North")).rejects.toThrow(
+      "Bus number must be 1–20 characters",
+    );
+    expect(firebase.get).not.toHaveBeenCalled();
+  });
+
+  it("assigns an enabled driver to an existing bus and audits the change", async () => {
+    const driver = {
+      displayName: "Driver One",
+      enabled: true,
+      assignedBus: "",
+      approvalStatus: "approved",
+    };
+    firebase.get.mockImplementation(async (path: string) => {
+      if (path === "drivers/driver-1") return snapshot(driver);
+      if (path === "buses/218") {
+        return snapshot({ busNumber: "218", route: "North", enabled: true });
+      }
+      if (path === "drivers") return snapshot({ "driver-1": driver });
+      return snapshot(null);
+    });
+
+    await assignDriverToBus("driver-1", "218");
+
+    const updates = firebase.update.mock.calls[0]?.[1] as Record<string, unknown>;
+    expect(updates["drivers/driver-1/assignedBus"]).toBe("218");
+    expect(
+      Object.keys(updates).some((path) => path.startsWith("auditLogs/")),
+    ).toBe(true);
+  });
+
+  it("prevents assigning a second driver to the same bus", async () => {
+    const selected = {
+      displayName: "Driver One",
+      enabled: true,
+      assignedBus: "",
+      approvalStatus: "approved",
+    };
+    const other = {
+      displayName: "Driver Two",
+      enabled: true,
+      assignedBus: "218",
+      approvalStatus: "approved",
+    };
+    firebase.get.mockImplementation(async (path: string) => {
+      if (path === "drivers/driver-1") return snapshot(selected);
+      if (path === "buses/218") return snapshot({ enabled: true });
+      if (path === "drivers") {
+        return snapshot({ "driver-1": selected, "driver-2": other });
+      }
+      return snapshot(null);
+    });
+
+    await expect(assignDriverToBus("driver-1", "218")).rejects.toThrow(
+      "Bus 218 is already assigned to Driver Two.",
+    );
+    expect(firebase.update).not.toHaveBeenCalled();
+  });
+
+  it("requires a driver to be approved before assignment", async () => {
+    const pending = {
+      displayName: "Pending Driver",
+      enabled: false,
+      assignedBus: "",
+      approvalStatus: "pending",
+    };
+    firebase.get.mockImplementation(async (path: string) => {
+      if (path === "drivers/driver-1") return snapshot(pending);
+      if (path === "buses/218") return snapshot({ enabled: true });
+      return snapshot(null);
+    });
+
+    await expect(assignDriverToBus("driver-1", "218")).rejects.toThrow(
+      "Approve and enable this driver",
+    );
+    expect(firebase.update).not.toHaveBeenCalled();
+  });
+});
