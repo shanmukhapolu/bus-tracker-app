@@ -39,6 +39,15 @@ describe("Firebase deployment and browser security policy", () => {
     expect(runtime).not.toContain("https://www.gstatic.com/firebasejs/");
   });
 
+  it("keeps signup simple and avoids replacing its form during the success state", () => {
+    const signup = readFileSync("src/pages/AdminSignupPage.tsx", "utf8");
+    expect(signup).toContain('import "../../admin-modern.css"');
+    expect(signup).toContain('name="email"');
+    expect(signup).toContain('autoComplete="new-password"');
+    expect(signup).toContain("disabled={busy || Boolean(request)}");
+    expect(signup).not.toContain('document.createElement("style")');
+  });
+
   it("declares Realtime Database rules and guards deployment to chsbusapp", () => {
     expect(firebase.database.rules).toBe("database.rules.json");
     expect(firebase.database.predeploy).toContain(
