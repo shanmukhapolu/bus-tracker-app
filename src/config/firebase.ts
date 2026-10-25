@@ -44,6 +44,7 @@ export interface FirebaseRuntime {
   signInWithPopup: (auth: any, provider: any) => Promise<{ user: any }>;
   signOut: (auth: any) => Promise<void>;
   get: (reference: any) => Promise<any>;
+  set: (reference: any, value: unknown) => Promise<void>;
   ref: (db: any, path?: string) => any;
   onValue: (
     query: any,
@@ -103,6 +104,7 @@ export async function getFirebaseRuntime(): Promise<FirebaseRuntime> {
         signInWithPopup: authModule.signInWithPopup,
         signOut: authModule.signOut,
         get: databaseModule.get,
+        set: databaseModule.set,
         ref: databaseModule.ref,
         onValue: databaseModule.onValue,
         onDisconnect: databaseModule.onDisconnect,
