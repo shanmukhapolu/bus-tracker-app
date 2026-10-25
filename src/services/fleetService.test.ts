@@ -63,6 +63,8 @@ describe("fleet bus management", () => {
     expect(
       Object.keys(updates).some((path) => path.startsWith("auditLogs/")),
     ).toBe(true);
+    expect(firebase.ref).not.toHaveBeenCalledWith({}, "");
+    expect(firebase.ref).toHaveBeenCalledWith({});
   });
 
   it("rejects duplicate bus numbers", async () => {
