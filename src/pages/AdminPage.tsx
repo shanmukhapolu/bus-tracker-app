@@ -158,6 +158,22 @@ export function AdminPage() {
   useEffect(() => {
     let stopped = false;
     let unsubscribe: (() => void) | undefined;
+    let receivedAuthState = false;
+
+    // Never leave the page on the loading screen forever if a blocked SDK
+    // resource or Firebase configuration/network issue prevents auth startup.
+    const initializationTimer = window.setTimeout(() => {
+      if (!stopped && !receivedAuthState) {
+        setAuthLoading(false);
+        setAuthError(
+          "Firebase Authentication did not finish initializing. Check the site's Content Security Policy, Firebase project configuration, and Network errors, then reload.",
+        );
+      }
+    }, 12000);
+
+    const clearInitializationTimer = () => {
+      window.clearTimeout(initializationTimer);
+    };
 
     void getFirebaseRuntime()
       .then((runtime) => {
@@ -166,10 +182,14 @@ export function AdminPage() {
         unsubscribe = runtime.onAuthStateChanged(
           runtime.auth,
           async (user) => {
+            receivedAuthState = true;
+            clearInitializationTimer();
+
             if (!user) {
               if (!stopped) {
                 setSignedIn(false);
                 setDisplayName("");
+                setAuthError("");
                 setAuthLoading(false);
               }
               return;
@@ -218,6 +238,7 @@ export function AdminPage() {
         );
       })
       .catch((caught) => {
+        clearInitializationTimer();
         if (!stopped) {
           setAuthLoading(false);
           setAuthError(
@@ -230,6 +251,7 @@ export function AdminPage() {
 
     return () => {
       stopped = true;
+      clearInitializationTimer();
       unsubscribe?.();
     };
   }, []);
