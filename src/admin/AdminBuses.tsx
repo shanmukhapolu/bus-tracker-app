@@ -297,14 +297,13 @@ export function AdminBuses({
                           {drivers.map((driver) => {
                             const currentUid = driverUidByBus.get(bus.id) ?? "";
                             const assignedElsewhere = Boolean(driver.assignedBus && driver.assignedBus !== bus.id);
-                            const disabled = !driver.enabled || assignedElsewhere;
                             return (
                               <option
                                 key={driver.uid}
                                 value={driver.uid}
-                                disabled={disabled && driver.uid !== currentUid}
+                                disabled={!driver.enabled && driver.uid !== currentUid}
                               >
-                                {driver.displayName}{driver.enabled ? "" : " (not approved)"}{assignedElsewhere ? " (assigned elsewhere)" : ""}
+                                {driver.displayName}{driver.enabled ? "" : " (not approved)"}{assignedElsewhere ? ` (currently on Bus ${driver.assignedBus})` : ""}
                               </option>
                             );
                           })}
