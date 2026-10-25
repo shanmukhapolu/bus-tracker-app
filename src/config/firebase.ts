@@ -44,7 +44,7 @@ export interface FirebaseRuntime {
   signInWithPopup: (auth: any, provider: any) => Promise<{ user: any }>;
   signOut: (auth: any) => Promise<void>;
   get: (reference: any) => Promise<any>;
-  ref: (db: any, path: string) => any;
+  ref: (db: any, path?: string) => any;
   onValue: (
     query: any,
     callback: (snapshot: any) => void,
