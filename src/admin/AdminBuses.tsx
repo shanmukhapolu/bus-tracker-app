@@ -34,17 +34,8 @@ export function AdminBuses({
   const [addingBus, setAddingBus] = useState(false);
   const [newBusNumber, setNewBusNumber] = useState("");
   const [newRoute, setNewRoute] = useState("");
-  const [newGeofenceId, setNewGeofenceId] = useState("");
   const [message, setMessage] = useState("");
   const [saveError, setSaveError] = useState("");
-
-  const driverByBus = useMemo(() => {
-    const map = new Map<string, string>();
-    drivers.forEach((driver) => {
-      if (driver.assignedBus) map.set(driver.assignedBus, driver.displayName);
-    });
-    return map;
-  }, [drivers]);
 
   const driverUidByBus = useMemo(() => {
     const map = new Map<string, string>();
@@ -89,11 +80,10 @@ export function AdminBuses({
     setMessage("");
     setSaveError("");
     try {
-      const bus = await addFleetBus(newBusNumber, newRoute, newGeofenceId);
+      const bus = await addFleetBus(newBusNumber, newRoute);
       setMessage(`Bus ${bus.busNumber} created.`);
       setNewBusNumber("");
       setNewRoute("");
-      setNewGeofenceId("");
       setPage(0);
       setQuery("");
       setFilter("all");
@@ -211,20 +201,6 @@ export function AdminBuses({
               placeholder="e.g. North"
             />
           </label>
-          <label>
-            Geofence (optional)
-            <select
-              aria-label="Geofence for new bus"
-              value={newGeofenceId}
-              disabled={addingBus}
-              onChange={(event) => setNewGeofenceId(event.target.value)}
-            >
-              <option value="">No geofence</option>
-              {geofences.map((geofence) => (
-                <option key={geofence.id} value={geofence.id}>{geofence.name}</option>
-              ))}
-            </select>
-          </label>
           <button className="primary" type="submit" disabled={addingBus || !newBusNumber.trim() || !newRoute.trim()}>
             <Plus size={16} /> {addingBus ? "Creating…" : "Create bus"}
           </button>
@@ -333,9 +309,6 @@ export function AdminBuses({
                             );
                           })}
                         </select>
-                        {driverByBus.get(bus.id) && (
-                          <span className="sr-only">Assigned to {driverByBus.get(bus.id)}</span>
-                        )}
                       </td>
                       <td>
                         <select
