@@ -46,6 +46,8 @@ describe("Firebase deployment and browser security policy", () => {
     expect(signup).toContain('autoComplete="new-password"');
     expect(signup).toContain('data-bwignore="true"');
     expect(signup).toContain("disabled={busy || Boolean(request)}");
+    expect(signup).toContain("hidden={!request}");
+    expect(signup).not.toContain("{request && (");
     expect(signup).not.toContain('document.createElement("style")');
   });
 
