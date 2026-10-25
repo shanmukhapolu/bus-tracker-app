@@ -105,7 +105,7 @@ function validateBusKey(busNumber: string) {
     [".", "#", "$", "[", "]", "/"].some((character) =>
       busNumber.includes(character),
     ) ||
-    /[\\x00-\\x1f\\x7f]/.test(busNumber)
+    /[\x00-\x1f\x7f]/.test(busNumber)
   ) {
     throw new Error(
       "Bus number must be 1–20 characters and cannot contain . # $ [ ] or /.",
